@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Roboto_Mono } from "next/font/google";
-import { Navbar } from "@/components/layout";
+import { Navbar, Footer } from "@/components/layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
@@ -30,7 +30,7 @@ export default function RootLayout({
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
           <Navbar />
           <main className='min-h-screen flex flex-col'>{children}</main>
-          {/* <Footer /> */}
+          <Footer />
         </ThemeProvider>
       </body>
     </html>
