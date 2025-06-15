@@ -2,57 +2,49 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ModeToggle } from "@/components/mode-toggle";
-import { ConnectButton } from "@/components/connect-button";
+import { ConnectButton } from "@/components/ConnectBtn";
+import DoxxIcon from "@/assets/icons/doxx-icon.svg";
+import TradingToggle from "../TradingToggle";
 
 const navigation = [
   { name: "Explore", href: "/explore" },
-  { name: "Liquidity", href: "/liquidity" },
+  { name: "Trade", href: "/" },
+  { name: "Earn", href: "/earn" },
+  { name: "Launch", href: "/launch" },
   { name: "Portfolio", href: "/portfolio" },
-  { name: "eUMBRA", href: "/eumbra" },
-  { name: "Expedition", href: "/expedition" },
 ];
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className='bg-background border-b border-border'>
-      <div className='mx-auto max-w-7xl px-4 sm:px-6 lg:px-8'>
-        <div className='flex h-16 justify-between items-center'>
-          {/* Logo */}
-          <div className='flex items-center space-x-2'>
-            <span className='w-7 h-7 rounded-full bg-gradient-to-br from-chart-4 via-chart-3 to-chart-1 flex items-center justify-center mr-2' />
-            <span className='text-lg font-bold tracking-wide text-foreground'>UMBRA</span>
-            <Badge variant='secondary' className='ml-1 px-2 py-0.5 rounded text-xs font-semibold'>
-              V2
-            </Badge>
+    <nav className='bg-background w-full'>
+      <div className='mx-auto px-6 py-2 w-full'>
+        <div className='flex items-center gap-12 justify-between'>
+          <div className='flex items-center gap-12'>
+            <DoxxIcon />
+
+            {/* Desktop navigation */}
+            <div className='hidden md:flex md:items-center space-x-9'>
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    "text-b3 text-gray-500 hover:text-gray-50",
+                    item.href === "/" && "text-gray-50"
+                  )}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </div>
           </div>
 
-          {/* Desktop navigation */}
-          <div className='hidden md:flex md:items-center md:space-x-2 lg:space-x-6'>
-            {/* Swap with dropdown arrow */}
-            <button className='flex items-center text-muted-foreground hover:text-foreground px-3 py-2 text-sm font-medium focus:outline-none'>
-              Swap <ChevronDown className='ml-1 h-4 w-4' />
-            </button>
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className='text-muted-foreground hover:text-foreground px-3 py-2 text-sm font-medium'
-              >
-                {item.name}
-              </Link>
-            ))}
-          </div>
-
-          {/* Right side: ModeToggle and Connect Wallet */}
-          <div className='hidden md:flex items-center space-x-2'>
-            <ModeToggle />
+          <div className='flex items-center gap-4'>
+            <TradingToggle />
             <ConnectButton />
           </div>
 
@@ -96,7 +88,7 @@ export function Navbar() {
             </Link>
           ))}
           <div className='flex items-center space-x-2 mt-2'>
-            <ModeToggle />
+            {/* <ModeToggle /> */}
             <ConnectButton />
           </div>
         </div>
