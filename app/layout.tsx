@@ -29,7 +29,8 @@ export default function RootLayout({
       <body className={`${plusJakartaSans.variable} ${robotoMono.variable} antialiased`}>
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
           <Navbar />
-          <main className='min-h-screen'>{children}</main>
+          <main className='min-h-screen flex flex-col'>{children}</main>
+          {/* <Footer /> */}
         </ThemeProvider>
       </body>
     </html>

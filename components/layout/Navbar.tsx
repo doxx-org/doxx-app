@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConnectButton } from "@/components/ConnectBtn";
 import DoxxIcon from "@/assets/icons/doxx-icon.svg";
@@ -45,7 +45,7 @@ export function Navbar() {
 
           <div className='flex items-center gap-4'>
             <TradingToggle />
-            <ConnectButton />
+            <ConnectButton className='text-hsb2' />
           </div>
 
           {/* Mobile menu button */}

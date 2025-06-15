@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { SwapInput } from "./SwapInput";
 import Zap from "@/assets/icons/zap.svg";
 import Gear from "@/assets/icons/gear.svg";
+import ArrowRight from "@/assets/icons/arrow-right.svg";
+import Info from "@/assets/icons/info.svg";
 import { parseDecimalsInput } from "@/lib/utils";
-import { symbol } from "motion/react-client";
+import { Separator } from "../ui/separator";
+import { ConnectButton } from "../ConnectBtn";
 
 export function SwapWidget() {
   const [sellCoin, setSellCoin] = useState("SOL");
@@ -27,7 +30,7 @@ export function SwapWidget() {
   ];
 
   return (
-    <Card className='flex flex-col p-0 rounded-3xl'>
+    <Card className='flex flex-col p-0 rounded-2xl'>
       <CardHeader className='flex flex-row items-center gap-2 flex-1 p-6 border-b border-gray-800'>
         <Zap />
         <CardTitle>Instant Swap</CardTitle>
@@ -53,7 +56,36 @@ export function SwapWidget() {
             onCoinChange={setBuyCoin}
           />
         </div>
+        {/* details */}
+        <div className='flex flex-col gap-2'>
+          <div className='flex flex-row items-center justify-between'>
+            <div className='flex flex-row gap-1 items-center justify-center'>
+              <p className='text-sb3 text-gray-600'>1 SOL</p>
+              <ArrowRight />
+              <p className='text-sb3 text-gray-600'>1000.00 USDC</p>
+            </div>
+            <p className='text-sb3 text-gray-600'>= 1000.00 USDC</p>
+          </div>
+          <div className='flex flex-row items-center justify-between'>
+            <div className='flex flex-row gap-1 items-center justify-center'>
+              <p className='text-sb3 text-gray-600'>Routing</p>
+              <Info />
+            </div>
+            <p className='text-sb3 text-gray-600'>CLOB</p>
+          </div>
+          <Separator className='bg-gray-800' />
+          <div className='flex flex-row items-center justify-between'>
+            <div className='flex flex-row gap-1 items-center justify-center'>
+              <p className='text-sb3 text-gray-600'>Slippage</p>
+              <Info />
+            </div>
+            <p className='text-sb3 text-gray-600'>0.5%</p>
+          </div>
+        </div>
       </CardContent>
+      <CardFooter className='flex flex-row w-full items-center justify-between p-3'>
+        <ConnectButton className='w-full p-6 rounded-xl h-16 text-hsb1' />
+      </CardFooter>
     </Card>
   );
 }

@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import { Button } from "../ui/button";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 
@@ -22,7 +15,7 @@ interface TokenSelectProps {
   options: TokenOption[];
 }
 
-export function TokenSelect({ value, onChange, options }: TokenSelectProps) {
+export function TokenSelect({ value, options }: TokenSelectProps) {
   const selected = options.find((t) => t.value === value);
 
   return (

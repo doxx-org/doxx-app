@@ -1,8 +1,11 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 export function ConnectButton({ className }: { className?: string }) {
-  return <Button className={cn("text-hsb2 text-green", className)}>Connect Wallet</Button>;
+  return (
+    <Button variant='connect' className={className}>
+      Connect Wallet
+    </Button>
+  );
 }

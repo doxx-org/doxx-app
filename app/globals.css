@@ -44,19 +44,19 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --color-green: #9df09c;
-  --color-red: #ff1744;
-  --color-black-900: #000000;
-  --color-black-800: #0a0a0a;
-  --color-black-700: #141414;
-  --color-gray-800: #282828;
-  --color-gray-700: #4a4a4a;
-  --color-gray-600: #646464;
-  --color-gray-500: #777777;
-  --color-gray-400: #a0a0a2;
-  --color-gray-300: #c4c4c4;
-  --color-gray-200: #e6e6e6;
-  --color-gray-50: #fafafa;
+  --color-green: var(--green);
+  --color-red: var(--red);
+  --color-black-900: var(--black-900);
+  --color-black-800: var(--black-800);
+  --color-black-700: var(--black-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-700: var(--gray-700);
+  --color-gray-600: var(--gray-600);
+  --color-gray-500: var(--gray-500);
+  --color-gray-400: var(--gray-400);
+  --color-gray-300: var(--gray-300);
+  --color-gray-200: var(--gray-200);
+  --color-gray-50: var(--gray-50);
 
   /* Text */
   --text-h1: 64px var(--font-plus-jakarta-sans) font-bold;
@@ -71,8 +71,8 @@
   --text-sb1: 16px var(--font-roboto-mono) font-normal;
   --text-sb2: 14px var(--font-roboto-mono) font-normal;
   --text-sb3: 12px var(--font-roboto-mono) font-normal;
-  --text-hsb1: 16px var(--font-plus-jakarta-sans);
-  --text-hsb2: 12px var(--font-plus-jakarta-sans) semibold;
+  --text-hsb1: 16px var(--font-plus-jakarta-sans) font-semibold;
+  --text-hsb2: 12px var(--font-plus-jakarta-sans) font-semibold;
   --animate-marquee: marquee var(--duration) infinite linear;
   --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
   @keyframes marquee {
@@ -127,8 +127,19 @@
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
 
-  --font-plus-jakarta-sans: "Plus Jakarta Sans", sans-serif;
-  --text-h1: 64px var(--font-plus-jakarta-sans);
+  --green: #9df09c;
+  --red: #ff1744;
+  --black-900: #000000;
+  --black-800: #0a0a0a;
+  --black-700: #141414;
+  --gray-800: #282828;
+  --gray-700: #4a4a4a;
+  --gray-600: #646464;
+  --gray-500: #777777;
+  --gray-400: #a0a0a2;
+  --gray-300: #c4c4c4;
+  --gray-200: #e6e6e6;
+  --gray-50: #fafafa;
 }
 
 .dark {
@@ -215,11 +226,11 @@
   }
 
   .text-hsb1 {
-    @apply text-[16px] font-semibold font-plus-jakarta-sans text-inherit;
+    @apply text-[16px] font-semibold font-plus-jakarta-sans text-green;
   }
 
   .text-hsb2 {
-    @apply text-[12px] font-semibold font-plus-jakarta-sans text-inherit;
+    @apply text-[12px] font-semibold font-plus-jakarta-sans text-green;
   }
 }
 
