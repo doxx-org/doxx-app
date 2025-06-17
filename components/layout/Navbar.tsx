@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { ConnectButton } from "@/components/ConnectBtn";
 import DoxxIcon from "@/assets/icons/doxx-icon.svg";
 import TradingToggle from "../TradingToggle";
+import { usePathname } from "next/navigation";
 
 const navigation = [
   { name: "Explore", href: "/explore" },
@@ -18,6 +19,7 @@ const navigation = [
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <nav className='bg-background w-full'>
@@ -34,7 +36,7 @@ export function Navbar() {
                   href={item.href}
                   className={cn(
                     "text-b3 text-gray-500 hover:text-gray-50",
-                    item.href === "/" && "text-gray-50"
+                    pathname === item.href && "text-gray-50"
                   )}
                 >
                   {item.name}
