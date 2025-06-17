@@ -12,24 +12,34 @@ import { cn, parseDecimalsInput } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import { ConnectButton } from "../ConnectBtn";
 import { text } from "@/lib/text";
+const coinOptions = [
+  {
+    value: "LAYER",
+    symbol: "LAYER",
+    image: "/coins/layer.svg",
+  },
+  {
+    value: "sUSD",
+    symbol: "sUSD",
+    image: "/coins/susd.svg",
+  },
+  {
+    value: "USDC",
+    symbol: "USDC",
+    image: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
+  },
+  {
+    value: "sSOL",
+    symbol: "sSOL",
+    image: "/coins/ssol.svg",
+  },
+];
 
 export function SwapWidget() {
-  const [sellCoin, setSellCoin] = useState("SOL");
-  const [buyCoin, setBuyCoin] = useState("USDC");
+  const [sellCoin, setSellCoin] = useState(coinOptions[0].value);
+  const [buyCoin, setBuyCoin] = useState(coinOptions[1].value);
   const [sellAmount, setSellAmount] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
-  const coinOptions = [
-    {
-      value: "SOL",
-      symbol: "SOL",
-      img: "https://assets.coingecko.com/coins/images/4128/large/solana.png?1640133422",
-    },
-    {
-      value: "USDC",
-      symbol: "USDC",
-      img: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
-    },
-  ];
 
   return (
     <Card className='flex flex-col p-0 rounded-2xl'>

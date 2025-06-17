@@ -8,7 +8,7 @@ import { text } from "@/lib/text";
 interface TokenOption {
   value: string;
   symbol: string;
-  img: string;
+  image: string;
 }
 
 interface TokenSelectProps {
@@ -26,7 +26,11 @@ export function TokenSelect({ value, options }: TokenSelectProps) {
       className=' bg-white/5 border-1 border-white/10 h-fit w-fit rounded-2xl gap-2 p-[6px]'
     >
       <div className='flex items-center justify-center  bg-white/5 rounded-full w-8 h-8'>
-        <img src={selected?.img} alt={selected?.symbol} className='w-6 h-6' />
+        <img
+          src={selected?.image}
+          alt={selected?.symbol}
+          className='w-6 h-6 rounded-full'
+        />
       </div>
       <span className={cn(text.b3(), "text-gray-300")}>{selected?.symbol}</span>
       <ChevronDown />

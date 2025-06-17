@@ -9,7 +9,7 @@ import { text } from "@/lib/text";
 interface CoinOption {
   value: string;
   symbol: string;
-  img: string;
+  image: string;
 }
 
 interface SwapInputProps {

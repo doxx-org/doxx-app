@@ -23,7 +23,7 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className='bg-background w-full'>
+    <nav className='bg-background w-full text-it5'>
       <div className='mx-auto px-6 py-2 w-full'>
         <div className='flex items-center gap-12 justify-between'>
           <div className='flex items-center gap-12'>

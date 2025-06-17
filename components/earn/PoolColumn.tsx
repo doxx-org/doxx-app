@@ -1,0 +1,72 @@
+"use client";
+
+import { ColumnDef } from "@tanstack/react-table";
+import { NumberRows } from "./rows/NumberRow";
+import { SortColumn } from "./cols/sortColomn";
+import { Button } from "../ui/button";
+import Link from "next/link";
+import { PoolRow } from "./rows/";
+
+// This type is used to define the shape of our data.
+// You can use a Zod schema here if you want.
+type Token = {
+  name: string;
+  image: string;
+};
+export type Pool = {
+  id: string;
+  pool: {
+    token1: Token;
+    token2: Token;
+  };
+  apr: string;
+  tvl: string;
+  dailyVol: string;
+  dailyVolperTvl: string;
+};
+
+const depositButton = () => {
+  return (
+    <Button className='bg-gray-800 text-gray-400 hover:bg-gray-800'>
+      <Link href='/deposit'>Deposit</Link>
+    </Button>
+  );
+};
+
+export const columns: ColumnDef<Pool>[] = [
+  {
+    id: "poolName",
+    accessorKey: "pool",
+    header: "Pool",
+    cell: ({ row }) => <PoolRow pool={row.original.pool} />,
+  },
+  {
+    id: "apr",
+    accessorKey: "apr",
+    header: () => <SortColumn header='APR' />,
+    cell: ({ row }) => <NumberRows value={row.original.apr} displayValue='percent' />,
+  },
+  {
+    id: "tvl",
+    accessorKey: "tvl",
+    header: () => <SortColumn header='TVL' />,
+    cell: ({ row }) => <NumberRows value={row.original.tvl} displayValue='dollar' />,
+  },
+  {
+    id: "dailyVol",
+    accessorKey: "dailyVol",
+    header: () => <SortColumn header='Volume 24h' />,
+    cell: ({ row }) => <NumberRows value={row.original.dailyVol} displayValue='dollar' />,
+  },
+  {
+    id: "dailyVolperTvl",
+    accessorKey: "dailyVolperTvl",
+    header: () => <SortColumn header='1D Vol/TVL' />,
+    cell: ({ row }) => <NumberRows value={row.original.dailyVolperTvl} displayValue='percent' />,
+  },
+  {
+    id: "action",
+    enableHiding: false,
+    cell: ({ row }) => depositButton(),
+  },
+];

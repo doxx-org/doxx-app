@@ -7,42 +7,42 @@ const mockTokens = [
   {
     name: "ETH",
     symbol: "ETH",
-    img: "https://assets.coingecko.com/coins/images/279/large/ethereum.png?1747033579",
+    image: "https://assets.coingecko.com/coins/images/279/large/ethereum.png?1747033579",
   },
   {
     name: "USDC",
     symbol: "USDC",
-    img: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
+    image: "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
   },
   {
     name: "USDT",
     symbol: "USDT",
-    img: "https://assets.coingecko.com/coins/images/325/large/Tether.png?1598003707",
+    image: "https://assets.coingecko.com/coins/images/325/large/Tether.png?1598003707",
   },
   {
     name: "SOL",
     symbol: "SOL",
-    img: "https://assets.coingecko.com/coins/images/4128/large/solana.png?1640133422",
+    image: "https://assets.coingecko.com/coins/images/4128/large/solana.png?1640133422",
   },
   {
     name: "BTC",
     symbol: "BTC",
-    img: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579",
+    image: "https://assets.coingecko.com/coins/images/1/large/bitcoin.png?1547033579",
   },
   {
     name: "DOGE",
     symbol: "DOGE",
-    img: "https://assets.coingecko.com/coins/images/5/large/dogecoin.png?1696501628",
+    image: "https://assets.coingecko.com/coins/images/5/large/dogecoin.png?1696501628",
   },
 ];
 
 const TokenContainer = ({
   rank,
-  img,
+  image,
   name,
 }: {
   rank: number;
-  img: string;
+  image: string;
   symbol: string;
   name: string;
 }) => {
@@ -50,7 +50,7 @@ const TokenContainer = ({
     <figure>
       <div className='flex flex-row items-center gap-1 justify-center'>
         <p className='text-gray-700'>#{rank}</p>
-        <img className='rounded-full' width='12' height='10' alt='' src={img} />
+        <img className='rounded-full' width='12' height='10' alt='' src={image} />
         <p className='text-gray-400'>{name}</p>
       </div>
     </figure>

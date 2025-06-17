@@ -25,9 +25,13 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     getCoreRowModel: getCoreRowModel(),
   });
 
+  const isEmpty = table.getRowModel().rows?.length === 0;
+
   return (
-    <div className='rounded-md border overflow-hidden bg-black-800'>
-      <Table>
+    <div
+      className={cn("rounded-md border overflow-hidden bg-black-800 h-full", isEmpty && "h-full")}
+    >
+      <Table className={cn(isEmpty && "h-full")}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
@@ -36,7 +40,11 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                 return (
                   <TableHead
                     key={header.id}
-                    className={header.index === 0 ? "text-left" : "text-right"}
+                    className={cn(
+                      text.sb3(),
+                      "text-gray-500 px-4",
+                      header.index === 0 ? "text-left" : "text-right"
+                    )}
                   >
                     {header.isPlaceholder
                       ? null
@@ -52,7 +60,14 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             table.getRowModel().rows.map((row) => (
               <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                 {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      text.b4(),
+                      "px-4 text-gray-300 border-b border-gray-800",
+                      cell.column.id === "tokenName" ? "text-left" : "text-right"
+                    )}
+                  >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
                   </TableCell>
                 ))}
@@ -62,7 +77,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
             <TableRow>
               <TableCell
                 colSpan={columns.length}
-                className={cn(text.sb2(), "h-24 text-center text-gray-700")}
+                className={cn(text.sb2(), "text-center text-gray-700")}
               >
                 No results.
               </TableCell>

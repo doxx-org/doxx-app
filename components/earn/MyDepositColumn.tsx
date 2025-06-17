@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { SortColumn } from "./cols/sortColomn";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -14,19 +15,23 @@ export type Deposit = {
 
 export const columns: ColumnDef<Deposit>[] = [
   {
+    id: "tokenName",
     accessorKey: "tokenName",
     header: "Token Name",
   },
   {
+    id: "depositAmount",
     accessorKey: "depositAmount",
-    header: "Deposited",
+    header: () => <SortColumn header='Deposited' />,
   },
   {
+    id: "shareAmount",
     accessorKey: "shareAmount",
-    header: "Share of Pool",
+    header: () => <SortColumn header='Share of Pool' />,
   },
   {
+    id: "tokenAmount",
     accessorKey: "tokenAmount",
-    header: "Token Amount",
+    header: () => <SortColumn header='Token Amount' />,
   },
 ];
