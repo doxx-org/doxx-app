@@ -7,6 +7,7 @@ import Zap from "@/assets/icons/zap.svg";
 import Gear from "@/assets/icons/gear.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
+import ArrowDown from "@/assets/icons/arrow-down.svg";
 import { parseDecimalsInput } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import { ConnectButton } from "../ConnectBtn";
@@ -39,7 +40,7 @@ export function SwapWidget() {
         <div className='flex flex-row items-center w-full justify-end'>
           <Gear />
         </div>
-        <div className='flex flex-col gap-1'>
+        <div className='flex flex-col gap-1 relative'>
           <SwapInput
             coin={sellCoin}
             coinOptions={coinOptions}
@@ -47,6 +48,17 @@ export function SwapWidget() {
             onAmountChange={(value) => setSellAmount(parseDecimalsInput(value))}
             onCoinChange={setSellCoin}
           />
+          <button
+            type='button'
+            className=' p-1 absolute left-1/2 -translate-x-1/2 -translate-y-1/2 top-1/2 z-10 flex items-center justify-center w-9 h-9 rounded-full border border-gray-800 bg-black-700 hover:bg-black-800 transition-colors'
+            onClick={() => {
+              setSellCoin(buyCoin);
+              setBuyCoin(sellCoin);
+            }}
+            aria-label='Swap tokens'
+          >
+            <ArrowDown className='hover:rotate-180 transition-transform' />
+          </button>
           <SwapInput
             className='rounded-none rounded-b-xl'
             coin={buyCoin}
