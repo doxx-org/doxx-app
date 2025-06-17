@@ -8,9 +8,10 @@ import Gear from "@/assets/icons/gear.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
-import { parseDecimalsInput } from "@/lib/utils";
+import { cn, parseDecimalsInput } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import { ConnectButton } from "../ConnectBtn";
+import { text } from "@/lib/text";
 
 export function SwapWidget() {
   const [sellCoin, setSellCoin] = useState("SOL");
@@ -69,34 +70,34 @@ export function SwapWidget() {
           />
         </div>
         {/* details */}
-        <div className='flex flex-col gap-2'>
+        <div className={cn(text.sb3(), "flex flex-col gap-2 text-gray-600")}>
           <div className='flex flex-row items-center justify-between'>
             <div className='flex flex-row gap-1 items-center justify-center'>
-              <p className='text-sb3 text-gray-600'>1 SOL</p>
+              <p>1 SOL</p>
               <ArrowRight />
-              <p className='text-sb3 text-gray-600'>1000.00 USDC</p>
+              <p>1000.00 USDC</p>
             </div>
-            <p className='text-sb3 text-gray-600'>= 1000.00 USDC</p>
+            <p>= 1000.00 USDC</p>
           </div>
           <div className='flex flex-row items-center justify-between'>
             <div className='flex flex-row gap-1 items-center justify-center'>
-              <p className='text-sb3 text-gray-600'>Routing</p>
+              <p>Routing</p>
               <Info />
             </div>
-            <p className='text-sb3 text-gray-600'>CLOB</p>
+            <p>CLOB</p>
           </div>
           <Separator className='bg-gray-800' />
           <div className='flex flex-row items-center justify-between'>
             <div className='flex flex-row gap-1 items-center justify-center'>
-              <p className='text-sb3 text-gray-600'>Slippage</p>
+              <p>Slippage</p>
               <Info />
             </div>
-            <p className='text-sb3 text-gray-600'>0.5%</p>
+            <p>0.5%</p>
           </div>
         </div>
       </CardContent>
       <CardFooter className='flex flex-row w-full items-center justify-between p-3'>
-        <ConnectButton className='w-full p-6 rounded-xl h-16 text-hsb1' />
+        <ConnectButton className={cn(text.hsb1(), "w-full p-6 rounded-xl h-16")} />
       </CardFooter>
     </Card>
   );

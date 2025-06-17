@@ -1,4 +1,6 @@
 import { Marquee } from "@/components/magicui/marquee";
+import { cn } from "@/lib/utils";
+import { text } from "@/lib/text";
 
 // export function TrendingTokens() {
 const mockTokens = [
@@ -47,18 +49,23 @@ const TokenContainer = ({
   return (
     <figure>
       <div className='flex flex-row items-center gap-1 justify-center'>
-        <p className='text-b4 text-gray-700'>#{rank}</p>
+        <p className='text-gray-700'>#{rank}</p>
         <img className='rounded-full' width='12' height='10' alt='' src={img} />
-        <p className='text-b4 text-gray-400'>{name}</p>
+        <p className='text-gray-400'>{name}</p>
       </div>
     </figure>
   );
 };
 export function TrendingTokens() {
   return (
-    <div className='relative flex w-full flex-row items-center justify-center overflow-hidden border-1 border-gray-800 bg-black-800 rounded-full px-6 py-3 gap-4'>
+    <div
+      className={cn(
+        text.b4(),
+        "relative flex w-full flex-row items-center justify-center overflow-hidden border-1 border-gray-800 bg-black-800 rounded-full px-6 py-3 gap-4"
+      )}
+    >
       {/* add gradient to text */}
-      <h1 className='text-b4 bg-gradient-to-r from-gray-400 to-gray-700 bg-clip-text text-transparent'>
+      <h1 className='bg-gradient-to-r from-gray-400 to-gray-700 bg-clip-text text-transparent'>
         Trending:
       </h1>
       <Marquee pauseOnHover className='[--duration:20s]'>

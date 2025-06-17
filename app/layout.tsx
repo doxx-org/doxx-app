@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Roboto_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Roboto_Mono, Poltawski_Nowy } from "next/font/google";
 import { Navbar, Footer } from "@/components/layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
@@ -7,6 +7,11 @@ import "./globals.css";
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
   subsets: ["latin"],
+});
+
+const poltawskiNowy = Poltawski_Nowy({
+  variable: "--font-poltawski-nowy",
+  style: ["italic"],
 });
 
 const robotoMono = Roboto_Mono({
@@ -26,7 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang='en' suppressHydrationWarning>
-      <body className={`${plusJakartaSans.variable} ${robotoMono.variable} antialiased`}>
+      <body
+        className={`${plusJakartaSans.variable} ${robotoMono.variable} ${poltawskiNowy.variable} antialiased`}
+      >
         <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
           <Navbar />
           <main className='min-h-screen flex flex-col'>{children}</main>

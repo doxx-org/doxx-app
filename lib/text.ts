@@ -1,0 +1,21 @@
+// utils/text.ts
+import { cva } from "class-variance-authority";
+
+export const text = {
+  h1: cva("text-[32px] font-bold font-plus-jakarta-sans"),
+  h2: cva("text-[24px] font-bold font-plus-jakarta-sans"),
+  h3: cva("text-[20px] font-bold font-plus-jakarta-sans"),
+  sh1: cva("text-[24px] font-medium font-plus-jakarta-sans"),
+  sh2: cva("text-[20px] font-medium font-plus-jakarta-sans"),
+  b1: cva("text-[20px] font-medium font-plus-jakarta-sans"),
+  b2: cva("text-[16px] font-medium font-plus-jakarta-sans"),
+  b3: cva("text-[14px] font-medium font-plus-jakarta-sans"),
+  b4: cva("text-[12px] font-medium font-plus-jakarta-sans"),
+  sb1: cva("text-[16px] font-normal font-roboto-mono"),
+  sb2: cva("text-[14px] font-normal font-roboto-mono"),
+  sb3: cva("text-[12px] font-normal font-roboto-mono"),
+  hsb1: cva("text-[16px] font-semibold font-plus-jakarta-sans"),
+  hsb2: cva("text-[12px] font-semibold font-plus-jakarta-sans"),
+  it1: cva("text-[24px] font-medium font-poltawski-nowy italic"),
+  it2: cva("text-[16px] font-medium font-poltawski-nowy italic"),
+};

@@ -8,6 +8,7 @@ import { ConnectButton } from "@/components/ConnectBtn";
 import DoxxIcon from "@/assets/icons/doxx-icon.svg";
 import TradingToggle from "../TradingToggle";
 import { usePathname } from "next/navigation";
+import { text } from "@/lib/text";
 
 const navigation = [
   { name: "Explore", href: "/explore" },
@@ -35,7 +36,8 @@ export function Navbar() {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    "text-b3 text-gray-500 hover:text-gray-50",
+                    text.b3(),
+                    "text-gray-500",
                     pathname === item.href && "text-gray-50"
                   )}
                 >
@@ -47,7 +49,7 @@ export function Navbar() {
 
           <div className='flex items-center gap-4'>
             <TradingToggle />
-            <ConnectButton className='text-hsb2' />
+            <ConnectButton className={cn(text.hsb2())} />
           </div>
 
           {/* Mobile menu button */}

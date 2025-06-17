@@ -2,6 +2,8 @@
 
 import { Button } from "../ui/button";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
+import { cn } from "@/lib/utils";
+import { text } from "@/lib/text";
 
 interface TokenOption {
   value: string;
@@ -26,7 +28,7 @@ export function TokenSelect({ value, options }: TokenSelectProps) {
       <div className='flex items-center justify-center  bg-white/5 rounded-full w-8 h-8'>
         <img src={selected?.img} alt={selected?.symbol} className='w-6 h-6' />
       </div>
-      <span className='text-b3 text-gray-300'>{selected?.symbol}</span>
+      <span className={cn(text.b3(), "text-gray-300")}>{selected?.symbol}</span>
       <ChevronDown />
     </Button>
   );
