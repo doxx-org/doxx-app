@@ -49,7 +49,7 @@ export function Navbar() {
 
           <div className='flex items-center gap-4'>
             <TradingToggle />
-            <ConnectButton className={cn(text.hsb2())} />
+            <ConnectButton className={cn(text.hsb3())} />
           </div>
 
           {/* Mobile menu button */}

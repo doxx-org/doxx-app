@@ -15,7 +15,7 @@ export function MyDeposit() {
   return (
     <div className='flex flex-col gap-4'>
       <h1 className={cn(text.it1(), "text-green")}>My Deposit</h1>
-      <div className='container w-full min-h-[178px]'>
+      <div className='w-full min-h-[178px]'>
         <DataTable columns={columns} data={data} />
       </div>
     </div>

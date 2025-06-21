@@ -8,10 +8,11 @@ import Gear from "@/assets/icons/gear.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
-import { cn, parseDecimalsInput } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { Separator } from "../ui/separator";
 import { ConnectButton } from "../ConnectBtn";
 import { text } from "@/lib/text";
+import { parseDecimalsInput } from "@/lib/utils";
 const coinOptions = [
   {
     value: "LAYER",

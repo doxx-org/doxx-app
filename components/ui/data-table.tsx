@@ -31,7 +31,7 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
     <div
       className={cn("rounded-md border overflow-hidden bg-black-800 h-full", isEmpty && "h-full")}
     >
-      <Table className={cn(isEmpty && "h-full")}>
+      <Table className={cn(isEmpty && "h-full", "w-full")}>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>

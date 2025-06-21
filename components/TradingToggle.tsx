@@ -23,7 +23,7 @@ export default function TradingToggle() {
       onClick={toggleSwitch}
     >
       <motion.div
-        className={cn(text.hsb2(), "px-2")}
+        className={cn(text.hsb3(), "px-2")}
         layout
         transition={{
           type: "spring",

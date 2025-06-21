@@ -2,11 +2,15 @@ import { cn } from "@/lib/utils";
 import { columns, Pool } from "./PoolColumn";
 import { DataTable } from "../ui/data-table";
 import { text } from "@/lib/text";
+import { Button } from "../ui/button";
+import PlusIcon from "@/assets/icons/table/plus.svg";
 
 const data: Pool[] = [
   {
     id: "1",
-    pool: {
+    account: "5w1cUnWz2edZW8g4YWrFejNDqChKYuWpy6B8okBYkkh2",
+    fee: "0.04",
+    lpToken: {
       token1: {
         name: "LAYER",
         image: "/coins/layer.svg",
@@ -23,7 +27,9 @@ const data: Pool[] = [
   },
   {
     id: "2",
-    pool: {
+    account: "5w1cUnWz2edZW8g4YWrFejNDqChKYuWpy6B8okBYkkh2",
+    fee: "0.04",
+    lpToken: {
       token1: {
         name: "sSOL",
         image: "/coins/ssol.svg",
@@ -40,7 +46,9 @@ const data: Pool[] = [
   },
   {
     id: "3",
-    pool: {
+    account: "5w1cUnWz2edZW8g4YWrFejNDqChKYuWpy6B8okBYkkh2",
+    fee: "0.04",
+    lpToken: {
       token1: {
         name: "LAYER",
         image: "/coins/layer.svg",
@@ -60,8 +68,13 @@ const data: Pool[] = [
 export function Pools() {
   return (
     <div className='flex flex-col gap-4'>
-      <h1 className={cn(text.it1(), "text-green")}>All Pools</h1>
-      <div className='container w-full min-h-[660px] h-full'>
+      <div className='flex flex-row items-center justify-between'>
+        <h1 className={cn(text.it1(), "text-green")}>All Pools</h1>
+        <Button className={cn(text.hsb2(), "text-green flex flex-row items-center justify-center")}>
+          Create Pool
+        </Button>
+      </div>
+      <div className='w-full min-h-[660px] h-full'>
         <DataTable columns={columns} data={data} />
       </div>
     </div>

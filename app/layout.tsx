@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Roboto_Mono, Poltawski_Nowy } from "next/font/google";
 import { Navbar, Footer } from "@/components/layout";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -38,6 +39,7 @@ export default function RootLayout({
           <Navbar />
           <main className='min-h-screen flex flex-col'>{children}</main>
           <Footer />
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

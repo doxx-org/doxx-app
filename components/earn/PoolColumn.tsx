@@ -15,7 +15,9 @@ type Token = {
 };
 export type Pool = {
   id: string;
-  pool: {
+  account: string;
+  fee: string;
+  lpToken: {
     token1: Token;
     token2: Token;
   };
@@ -25,10 +27,10 @@ export type Pool = {
   dailyVolperTvl: string;
 };
 
-const depositButton = () => {
+const depositButton = (poolAccount: string) => {
   return (
     <Button className='bg-gray-800 text-gray-400 hover:bg-gray-800'>
-      <Link href='/deposit'>Deposit</Link>
+      <Link href={`/deposit/${poolAccount}`}>Deposit</Link>
     </Button>
   );
 };
@@ -38,7 +40,7 @@ export const columns: ColumnDef<Pool>[] = [
     id: "poolName",
     accessorKey: "pool",
     header: "Pool",
-    cell: ({ row }) => <PoolRow pool={row.original.pool} />,
+    cell: ({ row }) => <PoolRow pool={row.original} />,
   },
   {
     id: "apr",
@@ -67,6 +69,6 @@ export const columns: ColumnDef<Pool>[] = [
   {
     id: "action",
     enableHiding: false,
-    cell: ({ row }) => depositButton(),
+    cell: ({ row }) => depositButton(row.original.account),
   },
 ];

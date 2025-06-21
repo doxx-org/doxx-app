@@ -15,7 +15,8 @@ export const text = {
   sb2: cva("text-[14px] font-normal font-roboto-mono"),
   sb3: cva("text-[12px] font-normal font-roboto-mono"),
   hsb1: cva("text-[16px] font-semibold font-plus-jakarta-sans"),
-  hsb2: cva("text-[12px] font-semibold font-plus-jakarta-sans"),
+  hsb2: cva("text-[14px] font-semibold font-plus-jakarta-sans"),
+  hsb3: cva("text-[12px] font-semibold font-plus-jakarta-sans"),
   it1: cva("text-[24px] font-medium font-poltawski-nowy italic"),
   it2: cva("text-[16px] font-medium font-poltawski-nowy italic"),
 };
