@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Roboto_Mono, Poltawski_Nowy } from "next/font/google";
-import { Navbar, Footer } from "@/components/layout";
+import {
+  Plus_Jakarta_Sans,
+  Poltawski_Nowy,
+  Roboto_Mono,
+} from "next/font/google";
+import { Footer, Navbar } from "@/components/layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
@@ -31,13 +35,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en' suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${plusJakartaSans.variable} ${robotoMono.variable} ${poltawskiNowy.variable} antialiased`}
       >
-        <ThemeProvider attribute='class' defaultTheme='system' enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
           <Navbar />
-          <main className='min-h-screen flex flex-col'>{children}</main>
+          <main className="flex min-h-screen flex-col">{children}</main>
           <Footer />
           <Toaster />
         </ThemeProvider>

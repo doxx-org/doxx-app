@@ -22,16 +22,16 @@ export const columns: ColumnDef<Deposit>[] = [
   {
     id: "depositAmount",
     accessorKey: "depositAmount",
-    header: () => <SortColumn header='Deposited' />,
+    header: () => <SortColumn header="Deposited" />,
   },
   {
     id: "shareAmount",
     accessorKey: "shareAmount",
-    header: () => <SortColumn header='Share of Pool' />,
+    header: () => <SortColumn header="Share of Pool" />,
   },
   {
     id: "tokenAmount",
     accessorKey: "tokenAmount",
-    header: () => <SortColumn header='Token Amount' />,
+    header: () => <SortColumn header="Token Amount" />,
   },
 ];

@@ -1,10 +1,10 @@
 "use client";
 
-import { TokenSelect } from "@/components/swap/TokenSelect";
 import Wallet from "@/assets/icons/wallet.svg";
+import { TokenSelect } from "@/components/swap/TokenSelect";
+import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { text } from "@/lib/text";
 
 interface CoinOption {
   value: string;
@@ -37,39 +37,48 @@ export function SwapInput({
     <div
       className={cn(
         text.sb3(),
-        "flex flex-col items-center gap-4 bg-black-700 px-4 pt-4 pb-5 rounded-t-xl",
-        className
+        "bg-black-700 flex flex-col items-center gap-4 rounded-t-xl px-4 pt-4 pb-5",
+        className,
       )}
     >
-      <div className='flex flex-row justify-between w-full items-center'>
-        <p className='text-white'>Selling</p>
-        <div className='flex items-center gap-[6px]'>
+      <div className="flex w-full flex-row items-center justify-between">
+        <p className="text-white">Selling</p>
+        <div className="flex items-center gap-[6px]">
           <Wallet />
-          <p className='text-gray-600'>1,000</p>
-          <p className='text-gray-600'>{coinOptions.find((c) => c.value === coin)?.symbol}</p>
-          <Button variant='adjust' className='text-gray-600 px-3 py-1 h-fit'>
+          <p className="text-gray-600">1,000</p>
+          <p className="text-gray-600">
+            {coinOptions.find((c) => c.value === coin)?.symbol}
+          </p>
+          <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
             HALF
           </Button>
-          <Button variant='adjust' className='text-gray-600 px-3 py-1 h-fit'>
+          <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
             MAX
           </Button>
         </div>
       </div>
-      <div className='flex items-center justify-between w-full'>
-        <div className='flex '>
-          <TokenSelect value={coin} onChange={onCoinChange} options={coinOptions} />
+      <div className="flex w-full items-center justify-between">
+        <div className="flex">
+          <TokenSelect
+            value={coin}
+            onChange={onCoinChange}
+            options={coinOptions}
+          />
         </div>
-        <div className='flex flex-col overflow-hidden'>
+        <div className="flex flex-col overflow-hidden">
           {disabled}
           <input
-            type='text'
+            type="text"
             value={amount}
             onChange={(e) => onAmountChange?.(e.target.value)}
-            className={cn(text.sh1(), "flex-1 text-right text-gray-600 outline-none")}
+            className={cn(
+              text.sh1(),
+              "flex-1 text-right text-gray-600 outline-none",
+            )}
             placeholder={placeholder}
             disabled={disabled}
           />
-          <p className='text-gray-600 text-right'>$0.00</p>
+          <p className="text-right text-gray-600">$0.00</p>
         </div>
       </div>
     </div>
