@@ -1,17 +1,37 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Prerequisites
+
+- Node.js version ^24.2.0
+- pnpm as a package manager
+
 ## Getting Started
 
-First, run the development server:
+Node Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# this will install node 24.2.0 as config in .nvmrc (can skip if already installed)
+nvm install
+# use node version from config
+nvm use
+```
+
+Setup pnpm version
+
+```bash
+corepack install
+```
+
+Install packages
+
+```bash
+pnpm i
+```
+
+Run the development server:
+
+```bash
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
