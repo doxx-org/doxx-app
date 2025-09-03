@@ -1,5 +1,6 @@
 // utils/text.ts
 import { cva } from "class-variance-authority";
+import { toast } from "sonner";
 
 export const text = {
   h1: cva("text-[32px] font-bold font-plus-jakarta-sans"),
@@ -20,3 +21,8 @@ export const text = {
   it1: cva("text-[24px] font-medium font-poltawski-nowy italic"),
   it2: cva("text-[16px] font-medium font-poltawski-nowy italic"),
 };
+
+export function copyToClipboard(text: string) {
+  navigator.clipboard.writeText(text);
+  toast.success("Copied to clipboard");
+}

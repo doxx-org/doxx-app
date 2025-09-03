@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { toast } from "sonner";
 import CopyIcon from "@/assets/icons/table/copy.svg";
 import DollarIcon from "@/assets/icons/table/dollar.svg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { text } from "@/lib/text";
+import { copyToClipboard, text } from "@/lib/text";
 import { cn, parseDisplayAccount } from "@/lib/utils";
 import { Pool } from "../PoolColumn";
 
@@ -42,8 +41,7 @@ export function PoolRow({ pool }: PoolRowProps) {
             </p>
             <CopyIcon
               onClick={() => {
-                navigator.clipboard.writeText(account);
-                toast.success("Copied to clipboard");
+                copyToClipboard(account);
               }}
             />
           </div>
