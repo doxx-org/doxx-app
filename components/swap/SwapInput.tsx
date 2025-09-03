@@ -1,22 +1,19 @@
 "use client";
 
+import { Dispatch, SetStateAction } from "react";
+import Image from "next/image";
+import ChevronDown from "@/assets/icons/chevron-down.svg";
 import Wallet from "@/assets/icons/wallet.svg";
-import { TokenSelect } from "@/components/swap/TokenSelect";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
+import { TokenProfile } from "@/utils/tokens";
 import { Button } from "../ui/button";
 
-interface CoinOption {
-  value: string;
-  symbol: string;
-  image: string;
-}
-
 interface SwapInputProps {
-  coin: string;
-  onCoinChange?: (value: string) => void;
-  coinOptions: CoinOption[];
+  title: string;
+  token: TokenProfile;
   amount: string;
+  onOpenTokenSelector: Dispatch<SetStateAction<boolean>>;
   onAmountChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -24,10 +21,10 @@ interface SwapInputProps {
 }
 
 export function SwapInput({
-  coin,
-  onCoinChange,
-  coinOptions,
+  title,
+  token,
   amount,
+  onOpenTokenSelector,
   onAmountChange,
   placeholder = "0.00",
   disabled = false,
@@ -42,13 +39,11 @@ export function SwapInput({
       )}
     >
       <div className="flex w-full flex-row items-center justify-between">
-        <p className="text-white">Selling</p>
+        <p className="text-white">{title}</p>
         <div className="flex items-center gap-[6px]">
           <Wallet />
           <p className="text-gray-600">1,000</p>
-          <p className="text-gray-600">
-            {coinOptions.find((c) => c.value === coin)?.symbol}
-          </p>
+          <p className="text-gray-600">{token.symbol}</p>
           <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
             HALF
           </Button>
@@ -59,14 +54,27 @@ export function SwapInput({
       </div>
       <div className="flex w-full items-center justify-between">
         <div className="flex">
-          <TokenSelect
-            value={coin}
-            onChange={onCoinChange}
-            options={coinOptions}
-          />
+          <Button
+            variant="outline"
+            className="h-fit w-fit gap-2 rounded-2xl border-1 border-white/10 bg-white/5 p-[6px]"
+            onClick={() => onOpenTokenSelector(true)}
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
+              <Image
+                width={24}
+                height={24}
+                src={token.image}
+                alt={token.symbol}
+                className="rounded-full"
+              />
+            </div>
+            <span className={cn(text.b3(), "text-gray-300")}>
+              {token.symbol}
+            </span>
+            <ChevronDown />
+          </Button>
         </div>
         <div className="flex flex-col overflow-hidden">
-          {disabled}
           <input
             type="text"
             value={amount}

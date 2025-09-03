@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Marquee } from "@/components/magicui/marquee";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -56,7 +57,7 @@ const TokenContainer = ({
     <figure>
       <div className="flex flex-row items-center justify-center gap-1">
         <p className="text-gray-700">#{rank}</p>
-        <img
+        <Image
           className="rounded-full"
           width="12"
           height="10"
