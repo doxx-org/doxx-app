@@ -1,6 +1,6 @@
 "use client";
 
-import React, { FC, ReactNode, useEffect, useMemo, useState } from "react";
+import React, { FC, ReactNode, useEffect, useState } from "react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
@@ -40,14 +40,14 @@ const wallets = [
   new CoinbaseWalletAdapter(),
 ];
 
+// NOTE: provide a custom RPC endpoint if needed
+const endpoint = clusterApiUrl(network);
+
 export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
   children,
 }) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []); // only render children on client
-
-  // NOTE: provide a custom RPC endpoint if needed
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
 
   if (!mounted) return null;
 

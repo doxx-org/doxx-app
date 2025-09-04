@@ -19,8 +19,8 @@ import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
 import { TokenProfile, tokenProfiles } from "@/utils/tokens";
-import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
+import { SwapButton } from "./SwapButton";
 import { SwapInput } from "./SwapInput";
 import { TokenSelectorDialog } from "./TokenSelectorDialog";
 
@@ -150,7 +150,7 @@ export function SwapWidget() {
         <ConnectButtonWrapper
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
         >
-          <Button className="w-full">Swap</Button>
+          <SwapButton />
         </ConnectButtonWrapper>
       </CardFooter>
       {isOpen && (
