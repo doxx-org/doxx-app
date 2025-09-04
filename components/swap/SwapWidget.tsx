@@ -14,7 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useDialogState } from "@/hooks/useOpenDialog";
+import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
