@@ -5,7 +5,7 @@ import { ChevronDown, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import DoxxIcon from "@/assets/icons/doxx-icon.svg";
-import { ConnectButton } from "@/components/ConnectBtn";
+import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import TradingToggle from "../TradingToggle";
@@ -48,7 +48,7 @@ export function Navbar() {
 
           <div className="flex items-center gap-4">
             <TradingToggle />
-            <ConnectButton className={cn(text.hsb3())} />
+            <ConnectButtonWrapper className={cn(text.hsb3())} />
           </div>
 
           {/* Mobile menu button */}
@@ -92,7 +92,7 @@ export function Navbar() {
           ))}
           <div className="mt-2 flex items-center space-x-2">
             {/* <ModeToggle /> */}
-            <ConnectButton />
+            <ConnectButtonWrapper />
           </div>
         </div>
       </div>

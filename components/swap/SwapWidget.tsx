@@ -6,7 +6,6 @@ import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Gear from "@/assets/icons/gear.svg";
 import Info from "@/assets/icons/info.svg";
 import Zap from "@/assets/icons/zap.svg";
-import { ConnectButton } from "@/components/ConnectBtn";
 import {
   Card,
   CardContent,
@@ -14,11 +13,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { useDialogState } from "@/hooks/useOpenDialog";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
 import { TokenProfile, tokenProfiles } from "@/utils/tokens";
+import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { SwapInput } from "./SwapInput";
 import { TokenSelectorDialog } from "./TokenSelectorDialog";
@@ -146,9 +147,11 @@ export function SwapWidget() {
         </div>
       </CardContent>
       <CardFooter className="flex w-full flex-row items-center justify-between p-3">
-        <ConnectButton
+        <ConnectButtonWrapper
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
-        />
+        >
+          <Button className="w-full">Swap</Button>
+        </ConnectButtonWrapper>
       </CardFooter>
       {isOpen && (
         <TokenSelectorDialog
