@@ -1,7 +1,11 @@
 "use client";
 
-import { ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
-
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
 import {
   Table,
   TableBody,
@@ -10,15 +14,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { cn } from "@/lib/utils";
 import { text } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+  columns,
+  data,
+}: DataTableProps<TData, TValue>) {
   const table = useReactTable({
     data,
     columns,
@@ -29,7 +36,10 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
 
   return (
     <div
-      className={cn("rounded-md border overflow-hidden bg-black-800 h-full", isEmpty && "h-full")}
+      className={cn(
+        "bg-black-800 h-full overflow-hidden rounded-md border",
+        isEmpty && "h-full",
+      )}
     >
       <Table className={cn(isEmpty && "h-full", "w-full")}>
         <TableHeader>
@@ -42,13 +52,16 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                     key={header.id}
                     className={cn(
                       text.sb3(),
-                      "text-gray-500 px-4",
-                      header.index === 0 ? "text-left" : "text-right"
+                      "px-4 text-gray-500",
+                      header.index === 0 ? "text-left" : "text-right",
                     )}
                   >
                     {header.isPlaceholder
                       ? null
-                      : flexRender(header.column.columnDef.header, header.getContext())}
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
                   </TableHead>
                 );
               })}
@@ -58,14 +71,19 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
         <TableBody>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+              <TableRow
+                key={row.id}
+                data-state={row.getIsSelected() && "selected"}
+              >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
                     key={cell.id}
                     className={cn(
                       text.b4(),
-                      "px-4 text-gray-300 border-b border-gray-800",
-                      cell.column.id === "tokenName" ? "text-left" : "text-right"
+                      "border-b border-gray-800 px-4 text-gray-300",
+                      cell.column.id === "tokenName"
+                        ? "text-left"
+                        : "text-right",
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

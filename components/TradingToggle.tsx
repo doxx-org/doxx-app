@@ -1,9 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import * as motion from "motion/react-client";
 import { useState } from "react";
+import * as motion from "motion/react-client";
 import { text } from "@/lib/text";
+import { cn } from "@/lib/utils";
 
 export default function TradingToggle() {
   const [isPro, setIsPro] = useState(true);
@@ -13,12 +13,13 @@ export default function TradingToggle() {
   return (
     <button
       className={cn(
-        "flex w-21 align-middle justify-between items-center rounded-full pointer-none p-2 border-1",
+        "pointer-none flex w-21 items-center justify-between rounded-full border-1 p-2 align-middle",
         isPro ? "flex-row-reverse" : "flex-row",
+
         isPro
-          ? "bg-gradient-to-l from-[#1C1C1C]/30 from-[54%] to-green/20"
-          : "bg-gradient-to-r from-[#1C1C1C]/30 from-[54%] to-red/20",
-        isPro ? "border-green/40" : "border-red/40"
+          ? "to-green/20 bg-gradient-to-l from-[#1C1C1C]/30 from-[54%]"
+          : "to-red/20 bg-gradient-to-r from-[#1C1C1C]/30 from-[54%]",
+        isPro ? "border-green/40" : "border-red/40",
       )}
       onClick={toggleSwitch}
     >
@@ -34,7 +35,7 @@ export default function TradingToggle() {
         {isPro ? "LITE" : "PRO"}
       </motion.div>
       <motion.div
-        className='w-6 h-6 rounded-full bg-gray-50'
+        className="h-6 w-6 rounded-full bg-gray-50"
         layout
         transition={{
           type: "spring",

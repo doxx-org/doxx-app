@@ -1,9 +1,8 @@
-import { cn } from "@/lib/utils";
-import { columns, Pool } from "./PoolColumn";
-import { DataTable } from "../ui/data-table";
 import { text } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import PlusIcon from "@/assets/icons/table/plus.svg";
+import { DataTable } from "../ui/data-table";
+import { Pool, columns } from "./PoolColumn";
 
 const data: Pool[] = [
   {
@@ -67,14 +66,19 @@ const data: Pool[] = [
 
 export function Pools() {
   return (
-    <div className='flex flex-col gap-4'>
-      <div className='flex flex-row items-center justify-between'>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-row items-center justify-between">
         <h1 className={cn(text.it1(), "text-green")}>All Pools</h1>
-        <Button className={cn(text.hsb2(), "text-green flex flex-row items-center justify-center")}>
+        <Button
+          className={cn(
+            text.hsb2(),
+            "text-green flex flex-row items-center justify-center",
+          )}
+        >
           Create Pool
         </Button>
       </div>
-      <div className='w-full min-h-[660px] h-full'>
+      <div className="h-full min-h-[660px] w-full">
         <DataTable columns={columns} data={data} />
       </div>
     </div>

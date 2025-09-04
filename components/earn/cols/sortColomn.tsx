@@ -1,14 +1,10 @@
 import ChevronUpDown from "@/assets/icons/chevron-up-down.svg";
 
-export function SortColumn({
-  header,
-}: {
-  header: string;
-}) {
+export function SortColumn({ header }: { header: string }) {
   return (
-    <div className='flex flex-row items-center gap-1 justify-end'>
+    <div className="flex flex-row items-center justify-end gap-1">
       <p>{header}</p>
-      <ChevronUpDown className='hover:stroke-gray-600' />
+      <ChevronUpDown className="hover:stroke-gray-600" />
     </div>
   );
 }

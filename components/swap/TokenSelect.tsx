@@ -1,9 +1,9 @@
 "use client";
 
-import { Button } from "../ui/button";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
-import { cn } from "@/lib/utils";
 import { text } from "@/lib/text";
+import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
 
 interface TokenOption {
   value: string;
@@ -22,14 +22,14 @@ export function TokenSelect({ value, options }: TokenSelectProps) {
 
   return (
     <Button
-      variant='outline'
-      className=' bg-white/5 border-1 border-white/10 h-fit w-fit rounded-2xl gap-2 p-[6px]'
+      variant="outline"
+      className="h-fit w-fit gap-2 rounded-2xl border-1 border-white/10 bg-white/5 p-[6px]"
     >
-      <div className='flex items-center justify-center  bg-white/5 rounded-full w-8 h-8'>
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
         <img
           src={selected?.image}
           alt={selected?.symbol}
-          className='w-6 h-6 rounded-full'
+          className="h-6 w-6 rounded-full"
         />
       </div>
       <span className={cn(text.b3(), "text-gray-300")}>{selected?.symbol}</span>
