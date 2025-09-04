@@ -16,6 +16,8 @@ import {
   WalletConnectWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
+import { toast } from "sonner";
+import { simplifyErrorMessage } from "@/utils/error";
 
 interface WalletConnectionProviderProps {
   children: ReactNode;
@@ -51,9 +53,13 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
 
   if (!mounted) return null;
 
+  const handleError = (error: Error) => {
+    toast.error(simplifyErrorMessage(error));
+  };
+
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect onError={handleError}>
         <WalletModalProvider>{children}</WalletModalProvider>
       </WalletProvider>
     </ConnectionProvider>
