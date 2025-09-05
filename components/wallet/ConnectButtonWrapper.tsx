@@ -7,7 +7,7 @@ import { CopyIcon, LogOutIcon } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
-import { useDialogState } from "@/hooks/useOpenDialog";
+import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { copyToClipboard, text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { simplifyErrorMessage } from "@/utils/error";
@@ -105,7 +105,7 @@ function ConnectWalletButton({
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogContent className="flex max-h-[598px] min-h-[598px] w-[420px] flex-col gap-0 overflow-hidden">
             <DialogHeader className="h-fit border-b border-gray-800 py-7">
-              <DialogTitle>Connect a wallet on Solana to continue</DialogTitle>
+              <DialogTitle>Connect a wallet on Solayer to continue</DialogTitle>
             </DialogHeader>
             <DialogBody className="flex flex-1 flex-col overflow-hidden overflow-y-auto px-0">
               {wallets.map((wallet, index) => (
