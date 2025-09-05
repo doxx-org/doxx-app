@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
-import { useDialogState } from "@/hooks/useOpenDialog";
+import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
@@ -27,7 +27,6 @@ import { TokenSelectorDialog } from "./TokenSelectorDialog";
 enum SelectTokenType {
   SELL,
   BUY,
-  NONE,
 }
 
 export function SwapWidget() {
@@ -36,7 +35,7 @@ export function SwapWidget() {
   const [sellAmount, setSellAmount] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
   const [selectedTokenType, setSelectedTokenType] = useState(
-    SelectTokenType.NONE,
+    SelectTokenType.SELL,
   );
   const { isOpen, setIsOpen } = useDialogState();
 
@@ -63,12 +62,12 @@ export function SwapWidget() {
       if (selectedTokenType === SelectTokenType.SELL) {
         switchOppositeTokenIfSame(sellToken, buyToken, setBuyToken);
         setSellToken(newToken);
-      } else if (selectedTokenType === SelectTokenType.BUY) {
+      } else {
         switchOppositeTokenIfSame(buyToken, sellToken, setSellToken);
         setBuyToken(newToken);
       }
 
-      setSelectedTokenType(SelectTokenType.NONE);
+      setSelectedTokenType(SelectTokenType.SELL);
       setIsOpen(false);
     },
     [selectedTokenType, sellToken, buyToken, setIsOpen],
