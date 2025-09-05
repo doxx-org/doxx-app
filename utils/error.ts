@@ -11,12 +11,21 @@ const USER_REJECTED_ERROR: KnownError = {
 // NOTE: add more known errors here
 const KNOWN_ERRORS: KnownError[] = [USER_REJECTED_ERROR];
 
-export const simplifyErrorMessage = (error: Error) => {
-  if (KNOWN_ERRORS.some((knownError) => knownError.message === error.message)) {
-    return KNOWN_ERRORS.find(
-      (knownError) => knownError.message === error.message,
-    )?.simplifiedMessage;
-  }
+export const simplifyErrorMessage = (error: Error, defaultMessage?: string) => {
+  const unhandledError = defaultMessage ?? "An unknown error occurred.";
+  // try to simplify the error message
+  try {
+    const index = KNOWN_ERRORS.findIndex((knownError) =>
+      knownError.message.toLowerCase().includes(error.message.toLowerCase()),
+    );
 
-  return "An unknown error occurred.";
+    if (index !== -1) {
+      return KNOWN_ERRORS[index].simplifiedMessage;
+    }
+
+    return unhandledError;
+  } catch {
+    // if the error is not a known error, return the unhandled error
+    return unhandledError;
+  }
 };

@@ -1,16 +1,16 @@
 "use client";
 
-import { HTMLAttributes, ReactNode, useCallback, useMemo } from "react";
+import { ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
 import { WalletName } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { CopyIcon, LogOutIcon } from "lucide-react";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import { toast } from "sonner";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 import { useDialogState } from "@/hooks/useOpenDialog";
 import { copyToClipboard, text } from "@/lib/text";
 import { cn } from "@/lib/utils";
+import { simplifyErrorMessage } from "@/utils/error";
 import { ellipseAddress } from "@/utils/tokens";
 import { Button } from "../ui/button";
 import {
@@ -32,23 +32,60 @@ interface ConnectButtonWrapperProps {
   children?: ReactNode;
 }
 
+interface ConnectWalletButtonProps
+  extends Omit<ConnectButtonWrapperProps, "children"> {
+  selectedWalletRef: React.RefObject<WalletName | null>;
+  connectionAttemptRef: React.RefObject<boolean>;
+  onConnectionSuccess?: () => void;
+}
+
 function ConnectWalletButton({
   className,
-}: Omit<ConnectButtonWrapperProps, "button">) {
+  selectedWalletRef,
+  connectionAttemptRef,
+  onConnectionSuccess,
+}: ConnectWalletButtonProps) {
   const { isOpen, setIsOpen } = useDialogState();
-  const { select, wallets, connecting } = useWallet();
+  const { select, wallets, connecting, connected } = useWallet();
+
+  // Handle successful connection and close dialog
+  useEffect(() => {
+    if (
+      connected &&
+      selectedWalletRef.current &&
+      connectionAttemptRef.current
+    ) {
+      // Close the dialog
+      setIsOpen(false);
+      onConnectionSuccess?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connected, setIsOpen, onConnectionSuccess]);
 
   const handleConnectWallet = useCallback(
     (wallet: WalletName) => {
       try {
+        // Set refs to track this connection attempt
+        selectedWalletRef.current = wallet;
+        connectionAttemptRef.current = true;
+
         select(wallet);
-        toast.success("Connected wallet successfully");
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_) {
-        toast.error("Failed to connect to wallet, please try again");
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        // Reset refs on error
+        selectedWalletRef.current = null;
+        connectionAttemptRef.current = false;
+
+        toast.error(
+          simplifyErrorMessage(
+            error,
+            "Failed to connect wallet, please try again",
+          ),
+        );
       }
     },
-    [select],
+    [select, selectedWalletRef, connectionAttemptRef],
   );
 
   const label = useMemo(() => {
@@ -106,10 +143,22 @@ function ConnectedWalletButton({
     try {
       disconnect();
       toast.success("Disconnected wallet successfully");
-    } catch (_) {
-      toast.error("Failed to disconnect wallet, please try again");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      toast.error(
+        simplifyErrorMessage(
+          error,
+          "Failed to disconnect wallet, please try again",
+        ),
+      );
     }
   }, [disconnect]);
+
+  const handleCopyWallet = useCallback(() => {
+    if (publicKey) {
+      copyToClipboard(publicKey.toString());
+    }
+  }, [publicKey]);
 
   return (
     <>
@@ -125,9 +174,7 @@ function ConnectedWalletButton({
           <ChevronDown />
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuItem
-            onClick={() => publicKey && copyToClipboard(publicKey.toString())}
-          >
+          <DropdownMenuItem onClick={handleCopyWallet}>
             <CopyIcon />
             <span>Copy wallet</span>
           </DropdownMenuItem>
@@ -148,10 +195,59 @@ export function ConnectButtonWrapper({
   className,
   children,
 }: ConnectButtonWrapperProps) {
-  const { connected, publicKey, wallet } = useWallet();
+  const { connected, publicKey, wallet, connecting } = useWallet();
+  const selectedWalletRef = useRef<WalletName | null>(null);
+  const connectionAttemptRef = useRef<boolean>(false);
+
+  // Handle successful connection
+  useEffect(() => {
+    if (
+      connected &&
+      publicKey &&
+      selectedWalletRef.current &&
+      connectionAttemptRef.current
+    ) {
+      const walletName = selectedWalletRef.current;
+      toast.success(
+        <div className="flex flex-col gap-0.5">
+          <span>
+            Successfully connected to {ellipseAddress(publicKey.toString(), 4)}
+          </span>
+          <span>with {walletName} wallet</span>
+        </div>,
+      );
+
+      // Reset refs
+      selectedWalletRef.current = null;
+      connectionAttemptRef.current = false;
+    }
+  }, [connected, publicKey]);
+
+  // Reset connection attempt if user cancels or connection fails
+  useEffect(() => {
+    if (!connecting && connectionAttemptRef.current && !connected) {
+      // Connection was attempted but failed or was cancelled
+      const walletName = selectedWalletRef.current;
+
+      // Only show error if we have a wallet name (connection was actually attempted)
+      if (walletName) {
+        toast.error(`Failed to connect to ${walletName}. Please try again.`);
+      }
+
+      // Reset refs
+      connectionAttemptRef.current = false;
+      selectedWalletRef.current = null;
+    }
+  }, [connecting, connected, connectionAttemptRef, selectedWalletRef]);
 
   if (!connected || !publicKey || !wallet) {
-    return <ConnectWalletButton className={className} />;
+    return (
+      <ConnectWalletButton
+        className={className}
+        selectedWalletRef={selectedWalletRef}
+        connectionAttemptRef={connectionAttemptRef}
+      />
+    );
   }
 
   if (!children) {
@@ -165,18 +261,3 @@ export function ConnectButtonWrapper({
 
   return <>{children}</>;
 }
-
-const WalletMultiButton = dynamic(
-  async () =>
-    (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
-  { ssr: false },
-);
-
-export const ConnectWallet = (props: HTMLAttributes<HTMLButtonElement>) => {
-  return (
-    <WalletMultiButton
-      {...props}
-      className={cn(props.className, "text-green")}
-    />
-  );
-};

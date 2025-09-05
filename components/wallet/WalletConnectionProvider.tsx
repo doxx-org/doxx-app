@@ -1,13 +1,11 @@
 "use client";
 
-import React, { FC, ReactNode, useEffect, useState } from "react";
+import React, { FC, ReactNode, useEffect, useMemo, useState } from "react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
-import "@solana/wallet-adapter-react-ui/styles.css";
 import {
   BitgetWalletAdapter,
   CoinbaseWalletAdapter,
@@ -27,21 +25,6 @@ interface WalletConnectionProviderProps {
 // TODO: use value from .env?
 const network = WalletAdapterNetwork.Devnet;
 
-// NOTE: add or remove wallets as needed
-const wallets = [
-  new PhantomWalletAdapter(),
-  new WalletConnectWalletAdapter({
-    network,
-    options: {
-      // TODO: replace with actual project id
-      projectId: "1234567890",
-    },
-  }),
-  new SolflareWalletAdapter(),
-  new BitgetWalletAdapter(),
-  new CoinbaseWalletAdapter(),
-];
-
 // NOTE: provide a custom RPC endpoint if needed
 const endpoint = clusterApiUrl(network);
 
@@ -50,6 +33,24 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
 }) => {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []); // only render children on client
+
+  // Memoize wallets array to prevent recreation on every render
+  const wallets = useMemo(
+    () => [
+      new PhantomWalletAdapter(),
+      new WalletConnectWalletAdapter({
+        network,
+        options: {
+          // TODO: replace with actual project id
+          projectId: "1234567890",
+        },
+      }),
+      new SolflareWalletAdapter(),
+      new BitgetWalletAdapter(),
+      new CoinbaseWalletAdapter(),
+    ],
+    [],
+  );
 
   if (!mounted) return null;
 
@@ -60,7 +61,7 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
   return (
     <ConnectionProvider endpoint={endpoint}>
       <WalletProvider wallets={wallets} autoConnect onError={handleError}>
-        <WalletModalProvider>{children}</WalletModalProvider>
+        {children}
       </WalletProvider>
     </ConnectionProvider>
   );
