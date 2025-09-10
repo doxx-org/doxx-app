@@ -2,9 +2,9 @@
 
 import Image from "next/image";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
+import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { TokenProfile } from "@/utils/tokens";
 import { Button } from "../ui/button";
 
 interface TokenSelectProps {
