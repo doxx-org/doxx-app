@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, ReactNode, SetStateAction } from "react";
+import { ReactNode } from "react";
 import Image from "next/image";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 import Wallet from "@/assets/icons/wallet.svg";
@@ -13,7 +13,7 @@ interface SwapInputProps {
   title: string;
   token: TokenProfile;
   amount: string;
-  onOpenTokenSelector: Dispatch<SetStateAction<boolean>>;
+  onOpenTokenSelector: () => void;
   onAmountChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -56,7 +56,7 @@ export function SwapInput({
           <Button
             variant="outline"
             className="h-fit w-fit gap-2 rounded-2xl border-1 border-white/10 bg-white/5 p-[6px]"
-            onClick={() => onOpenTokenSelector(true)}
+            onClick={onOpenTokenSelector}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
               <Image
