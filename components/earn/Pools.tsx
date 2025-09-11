@@ -90,10 +90,12 @@ export function Pools() {
       </div>
 
       {/* Create Pool Dialog */}
-      <CreatePoolDialog
-        isOpen={isCreatePoolOpen}
-        onOpenChange={setIsCreatePoolOpen}
-      />
+      {isCreatePoolOpen && (
+        <CreatePoolDialog
+          isOpen={isCreatePoolOpen}
+          onOpenChange={setIsCreatePoolOpen}
+        />
+      )}
     </div>
   );
 }
