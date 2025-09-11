@@ -1,6 +1,7 @@
 "use client";
 
 import { Dispatch, SetStateAction, useCallback, useState } from "react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Gear from "@/assets/icons/gear.svg";
@@ -15,10 +16,12 @@ import {
 } from "@/components/ui/card";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
+import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
+import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { SwapButton } from "./SwapButton";
 import { SwapInput } from "./SwapInput";
@@ -29,6 +32,33 @@ enum SelectTokenType {
   BUY,
 }
 
+const SellActionButtons = ({
+  onHalf,
+  onMax,
+}: {
+  onHalf: () => void;
+  onMax: () => void;
+}) => {
+  return (
+    <>
+      <Button
+        variant="adjust"
+        className="h-fit px-3 py-1 text-gray-600"
+        onClick={onHalf}
+      >
+        HALF
+      </Button>
+      <Button
+        variant="adjust"
+        className="h-fit px-3 py-1 text-gray-600"
+        onClick={onMax}
+      >
+        MAX
+      </Button>
+    </>
+  );
+};
+
 export function SwapWidget() {
   const [sellToken, setSellToken] = useState(tokenProfiles[0]);
   const [buyToken, setBuyToken] = useState(tokenProfiles[1]);
@@ -38,12 +68,22 @@ export function SwapWidget() {
     SelectTokenType.SELL,
   );
   const { isOpen, setIsOpen } = useDialogState();
+  const { connection } = useConnection();
+  const { wallet } = useWallet();
 
   // callback when click switch token button
   const handleSelectSwitchToken = useCallback(() => {
     setSellToken(buyToken);
     setBuyToken(sellToken);
-  }, [sellToken, buyToken]);
+    setSellAmount(buyAmount);
+    setBuyAmount(sellAmount);
+  }, [sellToken, buyToken, sellAmount, buyAmount]);
+
+  const { data: splBalances } = useAllSplBalances(
+    connection,
+    wallet?.adapter.publicKey ?? undefined,
+    tokenProfiles,
+  );
 
   // callback when select token inside token selector dialog
   const handleSelectToken = useCallback(
@@ -79,6 +119,22 @@ export function SwapWidget() {
     setIsOpen(true);
   };
 
+  // Handler functions for HALF and MAX buttons - memoized with useCallback
+  const handleHalf = useCallback(() => {
+    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
+    if (sellTokenBalance) {
+      const halfAmount = (sellTokenBalance / 2).toString();
+      setSellAmount(parseDecimalsInput(halfAmount));
+    }
+  }, [sellToken.symbol, splBalances]);
+
+  const handleMax = useCallback(() => {
+    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
+    if (sellTokenBalance) {
+      setSellAmount(parseDecimalsInput(sellTokenBalance.toString()));
+    }
+  }, [sellToken.symbol, splBalances]);
+
   return (
     <Card className="flex flex-col rounded-2xl p-0">
       <CardHeader className="flex flex-1 flex-row items-center gap-2 border-b border-gray-800 p-6">
@@ -98,6 +154,10 @@ export function SwapWidget() {
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.SELL);
             }}
+            tokenBalance={splBalances?.[sellToken.symbol]?.amount}
+            actionButtons={
+              <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
+            }
           />
           <button
             type="button"
@@ -116,6 +176,7 @@ export function SwapWidget() {
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.BUY);
             }}
+            tokenBalance={splBalances?.[buyToken.symbol]?.amount}
           />
         </div>
         {/* details */}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
+import { Dispatch, ReactNode, SetStateAction } from "react";
 import Image from "next/image";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 import Wallet from "@/assets/icons/wallet.svg";
@@ -18,6 +18,8 @@ interface SwapInputProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  tokenBalance: number | undefined;
+  actionButtons?: ReactNode;
 }
 
 export function SwapInput({
@@ -29,6 +31,8 @@ export function SwapInput({
   placeholder = "0.00",
   disabled = false,
   className,
+  tokenBalance,
+  actionButtons,
 }: SwapInputProps) {
   return (
     <div
@@ -42,14 +46,9 @@ export function SwapInput({
         <p className="text-white">{title}</p>
         <div className="flex items-center gap-[6px]">
           <Wallet />
-          <p className="text-gray-600">1,000</p>
+          <p className="text-gray-600">{tokenBalance ?? "-"}</p>
           <p className="text-gray-600">{token.symbol}</p>
-          <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
-            HALF
-          </Button>
-          <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
-            MAX
-          </Button>
+          {actionButtons}
         </div>
       </div>
       <div className="flex w-full items-center justify-between">
