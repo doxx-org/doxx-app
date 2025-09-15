@@ -4,6 +4,7 @@ import {
   Poltawski_Nowy,
   Roboto_Mono,
 } from "next/font/google";
+import { WalletConnectionProvider } from "@/components/wallet/WalletConnectionProvider";
 import { Footer, Navbar } from "@/components/layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,12 +40,14 @@ export default function RootLayout({
       <body
         className={`${plusJakartaSans.variable} ${robotoMono.variable} ${poltawskiNowy.variable} antialiased`}
       >
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-          <Navbar />
-          <main className="flex min-h-screen flex-col">{children}</main>
-          <Footer />
-          <Toaster />
-        </ThemeProvider>
+        <WalletConnectionProvider>
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+            <Navbar />
+            <main className="flex min-h-screen flex-col">{children}</main>
+            <Footer />
+            <Toaster />
+          </ThemeProvider>
+        </WalletConnectionProvider>
       </body>
     </html>
   );
