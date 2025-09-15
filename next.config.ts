@@ -17,6 +17,13 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  images: {
+    remotePatterns: [
+      {
+        hostname: "assets.coingecko.com",
+      },
+    ],
+  },
 };
 
 export default nextConfig;

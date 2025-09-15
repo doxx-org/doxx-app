@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useState } from "react";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Gear from "@/assets/icons/gear.svg";
 import Info from "@/assets/icons/info.svg";
 import Zap from "@/assets/icons/zap.svg";
+import { ConnectButton } from "@/components/ConnectBtn";
 import {
   Card,
   CardContent,
@@ -13,42 +14,69 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
-import { ConnectButton } from "../ConnectBtn";
+import { TokenProfile, tokenProfiles } from "@/utils/tokens";
 import { Separator } from "../ui/separator";
 import { SwapInput } from "./SwapInput";
+import { TokenSelectorDialog } from "./TokenSelectorDialog";
 
-const coinOptions = [
-  {
-    value: "LAYER",
-    symbol: "LAYER",
-    image: "/coins/layer.svg",
-  },
-  {
-    value: "sUSD",
-    symbol: "sUSD",
-    image: "/coins/susd.svg",
-  },
-  {
-    value: "USDC",
-    symbol: "USDC",
-    image:
-      "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
-  },
-  {
-    value: "sSOL",
-    symbol: "sSOL",
-    image: "/coins/ssol.svg",
-  },
-];
+enum SelectTokenType {
+  SELL,
+  BUY,
+}
 
 export function SwapWidget() {
-  const [sellCoin, setSellCoin] = useState(coinOptions[0].value);
-  const [buyCoin, setBuyCoin] = useState(coinOptions[1].value);
+  const [sellToken, setSellToken] = useState(tokenProfiles[0]);
+  const [buyToken, setBuyToken] = useState(tokenProfiles[1]);
   const [sellAmount, setSellAmount] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
+  const [selectedTokenType, setSelectedTokenType] = useState(
+    SelectTokenType.SELL,
+  );
+  const { isOpen, setIsOpen } = useDialogState();
+
+  // callback when click switch token button
+  const handleSelectSwitchToken = useCallback(() => {
+    setSellToken(buyToken);
+    setBuyToken(sellToken);
+  }, [sellToken, buyToken]);
+
+  // callback when select token inside token selector dialog
+  const handleSelectToken = useCallback(
+    (newToken: TokenProfile) => {
+      // helper function to switch opposite token to current token if new token selecting is the same as the opposite one
+      function switchOppositeTokenIfSame(
+        currentToken: TokenProfile,
+        oppositeToken: TokenProfile,
+        setOppositeToken: Dispatch<SetStateAction<TokenProfile>>,
+      ) {
+        if (oppositeToken.symbol === newToken.symbol) {
+          setOppositeToken(currentToken);
+        }
+      }
+
+      if (selectedTokenType === SelectTokenType.SELL) {
+        switchOppositeTokenIfSame(sellToken, buyToken, setBuyToken);
+        setSellToken(newToken);
+      } else {
+        switchOppositeTokenIfSame(buyToken, sellToken, setSellToken);
+        setBuyToken(newToken);
+      }
+
+      setSelectedTokenType(SelectTokenType.SELL);
+      setIsOpen(false);
+    },
+    [selectedTokenType, sellToken, buyToken, setIsOpen],
+  );
+
+  // callback when open token selector dialog
+  const handleOpenTokenSelector = (selectTokenType: SelectTokenType) => {
+    setSelectedTokenType(selectTokenType);
+    setIsOpen(true);
+  };
 
   return (
     <Card className="flex flex-col rounded-2xl p-0">
@@ -62,30 +90,31 @@ export function SwapWidget() {
         </div>
         <div className="relative flex flex-col gap-1">
           <SwapInput
-            coin={sellCoin}
-            coinOptions={coinOptions}
+            title="Selling"
+            token={sellToken}
             amount={sellAmount}
             onAmountChange={(value) => setSellAmount(parseDecimalsInput(value))}
-            onCoinChange={setSellCoin}
+            onOpenTokenSelector={() => {
+              handleOpenTokenSelector(SelectTokenType.SELL);
+            }}
           />
           <button
             type="button"
             className="bg-black-700 hover:bg-black-800 absolute top-1/2 left-1/2 z-10 flex h-9 w-9 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-gray-800 p-1 transition-colors"
-            onClick={() => {
-              setSellCoin(buyCoin);
-              setBuyCoin(sellCoin);
-            }}
+            onClick={handleSelectSwitchToken}
             aria-label="Swap tokens"
           >
             <ArrowDown className="transition-transform hover:rotate-180" />
           </button>
           <SwapInput
             className="rounded-none rounded-b-xl"
-            coin={buyCoin}
-            coinOptions={coinOptions}
+            title="Buying"
+            token={buyToken}
             amount={buyAmount}
             onAmountChange={(value) => setBuyAmount(parseDecimalsInput(value))}
-            onCoinChange={setBuyCoin}
+            onOpenTokenSelector={() => {
+              handleOpenTokenSelector(SelectTokenType.BUY);
+            }}
           />
         </div>
         {/* details */}
@@ -120,6 +149,14 @@ export function SwapWidget() {
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
         />
       </CardFooter>
+      {isOpen && (
+        <TokenSelectorDialog
+          isOpen={isOpen}
+          onOpenChange={setIsOpen}
+          tokenProfiles={tokenProfiles}
+          onSelectToken={handleSelectToken}
+        />
+      )}
     </Card>
   );
 }
