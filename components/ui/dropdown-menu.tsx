@@ -11,6 +11,8 @@ const dropdownTriggerVariants = cva(
     variants: {
       variant: {
         default: "shadow-xs",
+        outline:
+          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
       },
       size: {
         default: "h-9 p-5 rounded-md",
