@@ -203,7 +203,7 @@ export function SwapWidget() {
               <p>Slippage</p>
               <Info />
             </div>
-            <p>0.5%</p>
+            <p>{slippage}%</p>
           </div>
         </div>
       </CardContent>
