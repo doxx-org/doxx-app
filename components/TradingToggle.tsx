@@ -3,7 +3,7 @@
 import { useState } from "react";
 import * as motion from "motion/react-client";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 
 export default function TradingToggle() {
   const [isPro, setIsPro] = useState(true);

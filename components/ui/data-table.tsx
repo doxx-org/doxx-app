@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

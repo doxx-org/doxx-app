@@ -15,7 +15,8 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { clusterApiUrl } from "@solana/web3.js";
 import { toast } from "sonner";
-import { simplifyErrorMessage } from "@/utils/error";
+import { clientEnvConfig } from "@/lib/config/envConfig";
+import { simplifyErrorMessage } from "@/lib/utils/error";
 
 interface WalletConnectionProviderProps {
   children: ReactNode;
@@ -23,7 +24,7 @@ interface WalletConnectionProviderProps {
 
 // The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
 // TODO: use value from .env?
-const network = WalletAdapterNetwork.Devnet;
+const network = clientEnvConfig.NEXT_PUBLIC_NETWORK;
 
 // NOTE: provide a custom RPC endpoint if needed
 const endpoint = clusterApiUrl(network);
@@ -39,7 +40,9 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
     () => [
       new PhantomWalletAdapter(),
       new WalletConnectWalletAdapter({
-        network,
+        network: network as
+          | WalletAdapterNetwork.Mainnet
+          | WalletAdapterNetwork.Devnet,
         options: {
           // TODO: replace with actual project id
           projectId: "1234567890",

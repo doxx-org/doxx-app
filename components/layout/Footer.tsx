@@ -2,7 +2,7 @@ import Link from "next/link";
 import Discord from "@/assets/icons/socials/discord.svg";
 import X from "@/assets/icons/socials/x.svg";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 
 export function Footer() {
   const navigation = [

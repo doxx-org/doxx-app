@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Marquee } from "@/components/magicui/marquee";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 
 // export function TrendingTokens() {
 const mockTokens = [

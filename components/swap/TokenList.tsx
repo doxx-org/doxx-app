@@ -2,8 +2,8 @@ import { CopyIcon } from "lucide-react";
 import Image from "next/image";
 import { TokenProfile } from "@/lib/config/tokens";
 import { copyToClipboard, text } from "@/lib/text";
-import { cn } from "@/lib/utils";
-import { ellipseAddress } from "@/utils/tokens";
+import { cn } from "@/lib/utils/style";
+import { ellipseAddress } from "@/lib/utils/tokens";
 
 interface TokenListProps {
   filteredTokenProfiles: TokenProfile[];

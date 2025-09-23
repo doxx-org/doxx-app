@@ -1,7 +1,7 @@
 "use client";
 
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 import { DataTable } from "../ui/data-table";
 import { Deposit, columns } from "./MyDepositColumn";
 

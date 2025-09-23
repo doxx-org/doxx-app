@@ -1,9 +1,4 @@
-import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { BN } from "@coral-xyz/anchor";
 
 export function parseDecimalsInput(value: string): string {
   // ✅ Disallow leading zeros (unless '0' or '0.xxx' or '.xxx')
@@ -21,6 +16,6 @@ export function parseDecimalsInput(value: string): string {
   return "0";
 }
 
-export function parseDisplayAccount(account: string): string {
-  return account.slice(0, 5) + "..." + account.slice(-4);
+export function toBN(v: BN | number | string) {
+  return BN.isBN(v) ? (v as BN) : new BN(v);
 }
