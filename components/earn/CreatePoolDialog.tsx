@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { TokenProfile, tokenProfiles } from "@/utils/tokens";
 import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
 import { Button } from "../ui/button";
 import {
