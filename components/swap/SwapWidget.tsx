@@ -4,7 +4,6 @@ import { Dispatch, SetStateAction, useCallback, useState } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
-import Gear from "@/assets/icons/gear.svg";
 import Info from "@/assets/icons/info.svg";
 import Zap from "@/assets/icons/zap.svg";
 import {
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/card";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
+import { DEFAULT_SLIPPAGE } from "@/lib/constants";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
@@ -25,6 +25,7 @@ import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { SwapButton } from "./SwapButton";
 import { SwapInput } from "./SwapInput";
+import { SwapSetting } from "./SwapSetting";
 import { TokenSelectorDialog } from "./TokenSelectorDialog";
 
 enum SelectTokenType {
@@ -67,6 +68,8 @@ export function SwapWidget() {
   const [selectedTokenType, setSelectedTokenType] = useState(
     SelectTokenType.SELL,
   );
+  const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE);
+
   const { isOpen, setIsOpen } = useDialogState();
   const { connection } = useConnection();
   const { wallet } = useWallet();
@@ -142,9 +145,7 @@ export function SwapWidget() {
         <CardTitle>Instant Swap</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4 p-3">
-        <div className="flex w-full flex-row items-center justify-end">
-          <Gear />
-        </div>
+        <SwapSetting slippage={slippage} onSlippageChange={setSlippage} />
         <div className="relative flex flex-col gap-1">
           <SwapInput
             title="Selling"
@@ -202,7 +203,7 @@ export function SwapWidget() {
               <p>Slippage</p>
               <Info />
             </div>
-            <p>0.5%</p>
+            <p>{slippage}%</p>
           </div>
         </div>
       </CardContent>

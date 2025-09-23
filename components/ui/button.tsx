@@ -20,6 +20,7 @@ const buttonVariants = cva(
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
         adjust: "bg-gray-800 rounded-lg hover:bg-gray-700",
+        gray: "bg-[#343434] hover:bg-[#343434]/80 text-gray-400",
       },
       size: {
         default: "h-9 p-5 rounded-md",
