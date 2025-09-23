@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
+import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { TokenProfile } from "@/utils/tokens";
 import {
   Dialog,
   DialogBody,

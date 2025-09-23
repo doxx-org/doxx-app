@@ -14,11 +14,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
+import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { parseDecimalsInput } from "@/lib/utils";
-import { TokenProfile, tokenProfiles } from "@/utils/tokens";
 import { Separator } from "../ui/separator";
 import { SwapButton } from "./SwapButton";
 import { SwapInput } from "./SwapInput";

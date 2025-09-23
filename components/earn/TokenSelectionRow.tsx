@@ -2,9 +2,9 @@
 
 import { ChevronDown } from "lucide-react";
 import Image from "next/image";
+import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { TokenProfile } from "@/utils/tokens";
 import { Button } from "../ui/button";
 
 interface TokenSelectionRowProps {

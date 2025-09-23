@@ -4,10 +4,11 @@ import {
   Poltawski_Nowy,
   Roboto_Mono,
 } from "next/font/google";
-import { WalletConnectionProvider } from "@/components/wallet/WalletConnectionProvider";
 import { Footer, Navbar } from "@/components/layout";
+import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { WalletConnectionProvider } from "@/components/wallet/WalletConnectionProvider";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -41,12 +42,14 @@ export default function RootLayout({
         className={`${plusJakartaSans.variable} ${robotoMono.variable} ${poltawskiNowy.variable} antialiased`}
       >
         <WalletConnectionProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            <Navbar />
-            <main className="flex min-h-screen flex-col">{children}</main>
-            <Footer />
-            <Toaster />
-          </ThemeProvider>
+          <QueryProvider>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <Navbar />
+              <main className="flex min-h-screen flex-col">{children}</main>
+              <Footer />
+              <Toaster />
+            </ThemeProvider>
+          </QueryProvider>
         </WalletConnectionProvider>
       </body>
     </html>

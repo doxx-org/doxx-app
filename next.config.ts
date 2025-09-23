@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { clientEnvConfig } from "./lib/config/envConfig";
+
+clientEnvConfig.NEXT_PUBLIC_APP_ENV; // load env variables to validate if something is missing
 
 const nextConfig: NextConfig = {
   /* config options here */
