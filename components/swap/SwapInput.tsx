@@ -1,6 +1,6 @@
 "use client";
 
-import { Dispatch, SetStateAction } from "react";
+import { ReactNode } from "react";
 import Image from "next/image";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 import Wallet from "@/assets/icons/wallet.svg";
@@ -13,11 +13,13 @@ interface SwapInputProps {
   title: string;
   token: TokenProfile;
   amount: string;
-  onOpenTokenSelector: Dispatch<SetStateAction<boolean>>;
+  onOpenTokenSelector: () => void;
   onAmountChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  tokenBalance: number | undefined;
+  actionButtons?: ReactNode;
 }
 
 export function SwapInput({
@@ -29,6 +31,8 @@ export function SwapInput({
   placeholder = "0.00",
   disabled = false,
   className,
+  tokenBalance,
+  actionButtons,
 }: SwapInputProps) {
   return (
     <div
@@ -42,14 +46,9 @@ export function SwapInput({
         <p className="text-white">{title}</p>
         <div className="flex items-center gap-[6px]">
           <Wallet />
-          <p className="text-gray-600">1,000</p>
+          <p className="text-gray-600">{tokenBalance ?? "-"}</p>
           <p className="text-gray-600">{token.symbol}</p>
-          <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
-            HALF
-          </Button>
-          <Button variant="adjust" className="h-fit px-3 py-1 text-gray-600">
-            MAX
-          </Button>
+          {actionButtons}
         </div>
       </div>
       <div className="flex w-full items-center justify-between">
@@ -57,7 +56,7 @@ export function SwapInput({
           <Button
             variant="outline"
             className="h-fit w-fit gap-2 rounded-2xl border-1 border-white/10 bg-white/5 p-[6px]"
-            onClick={() => onOpenTokenSelector(true)}
+            onClick={onOpenTokenSelector}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
               <Image

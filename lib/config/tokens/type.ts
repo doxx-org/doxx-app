@@ -9,6 +9,6 @@ export interface TokenProfile {
   name: string;
   symbol: TokenSymbol;
   address: string;
-  // TODO: add decimal
+  decimal: number;
   image: string;
 }
