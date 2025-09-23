@@ -45,11 +45,13 @@ const parsed = envSchema.safeParse({
 });
 
 if (!parsed.success) {
-  const format = z.treeifyError(parsed.error).errors;
-  console.error(
-    "❌ Invalid client environment variables:",
-    Object.keys(format),
-  );
+  const format = z.treeifyError(parsed.error).properties;
+  if (format) {
+    console.error(
+      "❌ Some of these client environment variables are missing or invalid:",
+      format,
+    );
+  }
   throw new Error(
     "Invalid client environment variables. See logs for details.",
   );

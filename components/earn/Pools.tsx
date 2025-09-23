@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
+import { CreatePoolDialog } from "./CreatePoolDialog";
 import { Pool, columns } from "./PoolColumn";
 
 const data: Pool[] = [
@@ -65,6 +69,8 @@ const data: Pool[] = [
 ];
 
 export function Pools() {
+  const [isCreatePoolOpen, setIsCreatePoolOpen] = useState(false);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-row items-center justify-between">
@@ -74,6 +80,7 @@ export function Pools() {
             text.hsb2(),
             "text-green flex flex-row items-center justify-center",
           )}
+          onClick={() => setIsCreatePoolOpen(true)}
         >
           Create Pool
         </Button>
@@ -81,6 +88,14 @@ export function Pools() {
       <div className="h-full min-h-[660px] w-full">
         <DataTable columns={columns} data={data} />
       </div>
+
+      {/* Create Pool Dialog */}
+      {isCreatePoolOpen && (
+        <CreatePoolDialog
+          isOpen={isCreatePoolOpen}
+          onOpenChange={setIsCreatePoolOpen}
+        />
+      )}
     </div>
   );
 }
