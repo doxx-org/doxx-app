@@ -295,6 +295,7 @@ export function SwapWidget() {
             token1={buyToken}
             amount0={sellAmount}
             amount1={buyAmount}
+            // TODO: find best routes instead of hardcode
             poolState={allPoolStates?.[0].poolState}
             wallet={wallet}
             onSuccess={handleSuccess}
