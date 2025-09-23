@@ -13,6 +13,11 @@ export const PROGRAM_WALLET_UNAVAILABLE_ERROR: KnownError = {
   simplifiedMessage: "Program/wallet unavailable",
 };
 
+export const PROVIDER_UNAVAILABLE_ERROR: KnownError = {
+  message: "Provider unavailable",
+  simplifiedMessage: "Provider unavailable",
+};
+
 // NOTE: add more known errors here
 const KNOWN_ERRORS: KnownError[] = [
   USER_REJECTED_ERROR,

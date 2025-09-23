@@ -2,7 +2,7 @@
 
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { useQuery } from "@tanstack/react-query";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 import { TokenProfile, TokenSymbol } from "@/lib/config/tokens";
 
 interface AccountDataParsedInfoTokenAmount {
@@ -35,19 +35,13 @@ type SplBalance = {
 
 export type BalanceMap = Record<TokenSymbol, SplBalance | undefined>;
 
-interface IUseBalance<I> {
-  data: I;
-  loading: boolean;
-  error: unknown;
-}
-
 // Fetch balance for a single mint
 export function useSplBalanceByMint(
   connection: Connection,
   owner: PublicKey | undefined,
   mint: PublicKey | undefined,
-): IUseBalance<SplBalance | undefined> {
-  const { data, isLoading, error } = useQuery({
+): UseQueryResult<SplBalance | undefined, Error> {
+  return useQuery({
     queryKey: ["splBalance", owner?.toBase58(), mint?.toBase58()],
     queryFn: async (): Promise<SplBalance | undefined> => {
       if (!owner || !mint) return undefined;
@@ -91,12 +85,6 @@ export function useSplBalanceByMint(
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-
-  return {
-    data,
-    loading: isLoading,
-    error,
-  };
 }
 
 // List *all* token balances (jsonParsed over the Token Program)
@@ -104,8 +92,8 @@ export function useAllSplBalances(
   connection: Connection,
   owner: PublicKey | undefined,
   tokenProfiles: TokenProfile[],
-): IUseBalance<BalanceMap | undefined> {
-  const { data, isLoading, error } = useQuery({
+): UseQueryResult<BalanceMap | undefined, Error> {
+  return useQuery({
     queryKey: [
       "allSplBalances",
       owner?.toBase58(),
@@ -174,10 +162,4 @@ export function useAllSplBalances(
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-
-  return {
-    data,
-    loading: isLoading,
-    error,
-  };
 }

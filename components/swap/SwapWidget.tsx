@@ -1,7 +1,15 @@
 "use client";
 
-import { Dispatch, SetStateAction, useCallback, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useMemo,
+  useState,
+} from "react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { CopyIcon } from "lucide-react";
+import { toast } from "sonner";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
@@ -16,11 +24,18 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
+import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
-import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
-import { parseDecimalsInput } from "@/lib/utils";
+import { copyToClipboard, text } from "@/lib/text";
+import {
+  cn,
+  ellipseAddress,
+  parseDecimalsInput,
+  simplifyErrorMessage,
+} from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { SwapButton } from "./SwapButton";
@@ -72,7 +87,29 @@ export function SwapWidget() {
 
   const { isOpen, setIsOpen } = useDialogState();
   const { connection } = useConnection();
-  const { wallet } = useWallet();
+  const wallet = useAnchorWallet();
+  const provider = useProvider({ connection, wallet });
+
+  const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
+    connection,
+    wallet?.publicKey ?? undefined,
+    tokenProfiles,
+  );
+
+  const token0Balance = useMemo(() => {
+    return splBalances?.[sellToken.symbol]?.amount;
+  }, [splBalances, sellToken.symbol]);
+
+  const token1Balance = useMemo(() => {
+    return splBalances?.[buyToken.symbol]?.amount;
+  }, [splBalances, buyToken.symbol]);
+
+  const doxxAmmProgram = useDoxxAmmProgram({
+    provider,
+  });
+
+  const { data: allPoolStates, refetch: refetchAllPoolStates } =
+    useGetAllPools(doxxAmmProgram);
 
   // callback when click switch token button
   const handleSelectSwitchToken = useCallback(() => {
@@ -81,12 +118,6 @@ export function SwapWidget() {
     setSellAmount(buyAmount);
     setBuyAmount(sellAmount);
   }, [sellToken, buyToken, sellAmount, buyAmount]);
-
-  const { data: splBalances } = useAllSplBalances(
-    connection,
-    wallet?.adapter.publicKey ?? undefined,
-    tokenProfiles,
-  );
 
   // callback when select token inside token selector dialog
   const handleSelectToken = useCallback(
@@ -138,6 +169,53 @@ export function SwapWidget() {
     }
   }, [sellToken.symbol, splBalances]);
 
+  const handleSuccess = useCallback(
+    (txSignature: string | undefined) => {
+      if (txSignature) {
+        toast.success(
+          <div className="flex flex-col gap-0.5">
+            <span>Swap successful</span>
+            <div className="flex flex-row items-center gap-1">
+              <span>Transaction signature: </span>
+              <a
+                href={`https://solscan.io/tx/${txSignature}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-500 underline"
+              >
+                {ellipseAddress(txSignature, 4)}
+              </a>
+              <CopyIcon
+                className="h-4 w-4 cursor-pointer"
+                onClick={() => copyToClipboard(txSignature)}
+              />
+            </div>
+          </div>,
+        );
+      } else {
+        toast.error(
+          <div className="flex flex-col gap-0.5">
+            <span>Swap failed with unknown reason.</span>
+            <span>Please try again</span>
+          </div>,
+        );
+      }
+
+      // delay to refetch balances and pool states
+      setTimeout(() => {
+        refetchSplBalances();
+        refetchAllPoolStates();
+        setSellAmount("");
+        setBuyAmount("");
+      }, 2000);
+    },
+    [refetchSplBalances, refetchAllPoolStates],
+  );
+
+  const handleError = useCallback((error: Error) => {
+    toast.error(simplifyErrorMessage(error, "Swap failed"));
+  }, []);
+
   return (
     <Card className="flex flex-col rounded-2xl p-0">
       <CardHeader className="flex flex-1 flex-row items-center gap-2 border-b border-gray-800 p-6">
@@ -155,7 +233,7 @@ export function SwapWidget() {
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.SELL);
             }}
-            tokenBalance={splBalances?.[sellToken.symbol]?.amount}
+            tokenBalance={token0Balance}
             actionButtons={
               <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
             }
@@ -177,7 +255,7 @@ export function SwapWidget() {
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.BUY);
             }}
-            tokenBalance={splBalances?.[buyToken.symbol]?.amount}
+            tokenBalance={token1Balance}
           />
         </div>
         {/* details */}
@@ -211,7 +289,17 @@ export function SwapWidget() {
         <ConnectButtonWrapper
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
         >
-          <SwapButton />
+          <SwapButton
+            program={doxxAmmProgram}
+            token0={sellToken}
+            token1={buyToken}
+            amount0={sellAmount}
+            amount1={buyAmount}
+            poolState={allPoolStates?.[0].poolState}
+            wallet={wallet}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
         </ConnectButtonWrapper>
       </CardFooter>
       {isOpen && (
