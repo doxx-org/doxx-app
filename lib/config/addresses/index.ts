@@ -1,9 +1,34 @@
-import { APP_NETWORK, clientEnvConfig } from "../envConfig";
-import addresses from "./address.devnet.json";
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+import { clientEnvConfig } from "../envConfig";
+import addressesDevnet from "./address.devnet.json";
+import addressesMainnet from "./address.mainnet.json";
+import addressesTestnet from "./address.testnet.json";
+
+interface _Pool {
+  poolState: string;
+  ammConfig: string;
+  mintA: string;
+  mintB: string;
+  authority: string;
+  lpMint: string;
+  vaultA: string;
+  vaultB: string;
+  feeVault: string;
+  observation: string;
+}
+
+interface Pool {
+  owner: string;
+  programId: string;
+}
+
+interface AllPools {
+  usdcSsol: Pool;
+}
 
 export interface AddressConfig {
   contracts: {
-    pool: string;
+    pools: AllPools;
   };
   tokens: {
     solayer: string;
@@ -14,20 +39,18 @@ export interface AddressConfig {
 }
 
 export const getAddresses = (): AddressConfig => {
-  if (clientEnvConfig.NEXT_PUBLIC_NETWORK === APP_NETWORK.DEVNET) {
-    return addresses;
+  switch (clientEnvConfig.NEXT_PUBLIC_NETWORK) {
+    case WalletAdapterNetwork.Devnet:
+      return addressesDevnet;
+    case WalletAdapterNetwork.Testnet:
+      return addressesTestnet;
+    default:
+      // default to mainnet
+      return addressesMainnet;
   }
-
-  return addresses;
 };
 
 export const addressConfig = getAddresses();
-
-export const getContractAddress = (
-  category: keyof AddressConfig["contracts"],
-): string => {
-  return addressConfig.contracts[category];
-};
 
 export const getTokenAddress = (
   token: keyof AddressConfig["tokens"],

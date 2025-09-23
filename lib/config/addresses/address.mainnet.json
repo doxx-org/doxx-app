@@ -1,11 +1,16 @@
 {
   "contracts": {
-    "pool": "0x0000000000000000000000000000000000000000"
+    "pools": {
+      "usdcSsol": {
+        "owner": "8BzWoVdJqi7fTE84WBvYsXtjYwf3ZeosqYWH7i6EYE2b",
+        "programId": "BRgEXNPkWvuYDTpGdpKPnyKvrv8wXrj55u13uaotmhGb"
+      }
+    }
   },
   "tokens": {
     "solayer": "LAYER4xPpTCb3QL8S9u41EAhAX7mhBn8Q6xMTwY2Yzc",
     "solayerUSD": "0x0000000000000000000000000000000000000000",
-    "usdc": "0x0000000000000000000000000000000000000000",
-    "ssol": "0x0000000000000000000000000000000000000000"
+    "usdc": "EAqRCe9xcQvfAfqCCzVhbu839ysxLawL8NPkngRweE6i",
+    "ssol": "HLaxJ13C7m6fKwrfnnzpmWXjdAH3ZL9sGR6mxZMA4tdk"
   }
 }

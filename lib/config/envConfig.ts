@@ -1,15 +1,10 @@
+import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { z } from "zod";
 
 export enum APP_ENV {
   PROD = "prod",
   STG = "stg",
   DEV = "dev",
-}
-
-export enum APP_NETWORK {
-  MAINNET = "mainnet",
-  TESTNET = "testnet",
-  DEVNET = "devnet",
 }
 
 const APP_ENV_VALUES: APP_ENV[] = Object.values(APP_ENV).reduce(
@@ -20,13 +15,12 @@ const APP_ENV_VALUES: APP_ENV[] = Object.values(APP_ENV).reduce(
   [] as APP_ENV[],
 );
 
-const APP_NETWORK_VALUES: APP_NETWORK[] = Object.values(APP_NETWORK).reduce(
-  (acc, value) => {
-    acc.push(value as APP_NETWORK);
-    return acc;
-  },
-  [] as APP_NETWORK[],
-);
+const APP_NETWORK_VALUES: WalletAdapterNetwork[] = Object.values(
+  WalletAdapterNetwork,
+).reduce((acc, value) => {
+  acc.push(value as WalletAdapterNetwork);
+  return acc;
+}, [] as WalletAdapterNetwork[]);
 
 const envSchema = z.object({
   NEXT_PUBLIC_APP_ENV: z.enum(APP_ENV_VALUES),
