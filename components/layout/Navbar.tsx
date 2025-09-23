@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 import DoxxIcon from "@/assets/icons/doxx-icon.svg";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 import TradingToggle from "../TradingToggle";
 
 const navigation = [

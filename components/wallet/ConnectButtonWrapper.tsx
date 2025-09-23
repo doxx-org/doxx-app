@@ -9,9 +9,7 @@ import { toast } from "sonner";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { copyToClipboard, text } from "@/lib/text";
-import { cn } from "@/lib/utils";
-import { simplifyErrorMessage } from "@/utils/error";
-import { ellipseAddress } from "@/utils/tokens";
+import { cn, ellipseAddress, simplifyErrorMessage } from "@/lib/utils/";
 import { Button } from "../ui/button";
 import {
   Dialog,

@@ -4,19 +4,6 @@ import addressesDevnet from "./address.devnet.json";
 import addressesMainnet from "./address.mainnet.json";
 import addressesTestnet from "./address.testnet.json";
 
-interface _Pool {
-  poolState: string;
-  ammConfig: string;
-  mintA: string;
-  mintB: string;
-  authority: string;
-  lpMint: string;
-  vaultA: string;
-  vaultB: string;
-  feeVault: string;
-  observation: string;
-}
-
 interface Pool {
   owner: string;
   programId: string;

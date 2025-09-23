@@ -3,13 +3,21 @@ interface KnownError {
   simplifiedMessage: string;
 }
 
-const USER_REJECTED_ERROR: KnownError = {
+export const USER_REJECTED_ERROR: KnownError = {
   message: "User rejected the request.",
   simplifiedMessage: "User rejected the request.",
 };
 
+export const PROGRAM_WALLET_UNAVAILABLE_ERROR: KnownError = {
+  message: "Program/wallet unavailable",
+  simplifiedMessage: "Program/wallet unavailable",
+};
+
 // NOTE: add more known errors here
-const KNOWN_ERRORS: KnownError[] = [USER_REJECTED_ERROR];
+const KNOWN_ERRORS: KnownError[] = [
+  USER_REJECTED_ERROR,
+  PROGRAM_WALLET_UNAVAILABLE_ERROR,
+];
 
 export const simplifyErrorMessage = (error: Error, defaultMessage?: string) => {
   const unhandledError = defaultMessage ?? "An unknown error occurred.";

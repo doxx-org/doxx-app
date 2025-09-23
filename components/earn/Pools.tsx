@@ -1,5 +1,5 @@
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
 import { Pool, columns } from "./PoolColumn";
