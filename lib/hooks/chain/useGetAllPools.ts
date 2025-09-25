@@ -14,6 +14,7 @@ export function useGetAllPools(
 
       // get all pool states
       const allPoolStates = await program.account.poolState.all();
+      console.log("🚀 ~ allPoolStates:", allPoolStates)
 
       // get all amm configs and observation states
       const allConfigs = await Promise.all(

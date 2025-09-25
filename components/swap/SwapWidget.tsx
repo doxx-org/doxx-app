@@ -4,10 +4,13 @@ import {
   Dispatch,
   SetStateAction,
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
+import { BN } from "@coral-xyz/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
@@ -24,15 +27,18 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
+import { useBestRoutes } from "@/lib/hooks/chain/useBestRoutes";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { copyToClipboard, text } from "@/lib/text";
 import {
   cn,
   ellipseAddress,
+  normalizeBN,
   parseDecimalsInput,
   simplifyErrorMessage,
 } from "@/lib/utils";
@@ -76,41 +82,60 @@ const SellActionButtons = ({
 };
 
 export function SwapWidget() {
-  const [sellToken, setSellToken] = useState(tokenProfiles[0]);
-  const [buyToken, setBuyToken] = useState(tokenProfiles[1]);
+  // states
+  const [sellToken, setSellToken] = useState(tokenProfiles[2]);
+  const [buyToken, setBuyToken] = useState(tokenProfiles[3]);
   const [sellAmount, setSellAmount] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
+  const [baseInput, setBaseInput] = useState("");
   const [selectedTokenType, setSelectedTokenType] = useState(
     SelectTokenType.SELL,
   );
   const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE);
+  const [isBaseExactIn, setIsBaseExactIn] = useState(true);
+  const [isTypingLoading, setIsTypingLoading] = useState(false);
 
+  // hooks
+  const debouncedSellAmount = useDebounce(sellAmount, 1000);
+  const debouncedBuyAmount = useDebounce(buyAmount, 1000);
   const { isOpen, setIsOpen } = useDialogState();
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
 
+  // get all spl balances
   const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
     connection,
     wallet?.publicKey ?? undefined,
     tokenProfiles,
   );
 
-  const token0Balance = useMemo(() => {
-    return splBalances?.[sellToken.symbol]?.amount;
-  }, [splBalances, sellToken.symbol]);
-
-  const token1Balance = useMemo(() => {
-    return splBalances?.[buyToken.symbol]?.amount;
-  }, [splBalances, buyToken.symbol]);
-
   const doxxAmmProgram = useDoxxAmmProgram({
     provider,
   });
 
+  const slippageBps = useMemo(() => {
+    return Number(slippage) * 100;
+  }, [slippage]);
+
   const { data: allPoolStates, refetch: refetchAllPoolStates } =
     useGetAllPools(doxxAmmProgram);
 
+  const {
+    data: bestRoute,
+    refetch: refetchBestRoute,
+    isLoading: isLoadingBestRoute,
+  } = useBestRoutes({
+    connection,
+    inputMint: new PublicKey(sellToken.address),
+    outputMint: new PublicKey(buyToken.address),
+    pools: allPoolStates,
+    baseInput,
+    isBaseExactIn,
+    slippageBps,
+  });
+
+  // Callbacks
   // callback when click switch token button
   const handleSelectSwitchToken = useCallback(() => {
     setSellToken(buyToken);
@@ -169,6 +194,18 @@ export function SwapWidget() {
     }
   }, [sellToken.symbol, splBalances]);
 
+  const handleSellInputChange = (value: string) => {
+    setSellAmount(parseDecimalsInput(value));
+    setIsBaseExactIn(true);
+    setIsTypingLoading(true);
+  };
+
+  const handleBuyInputChange = (value: string) => {
+    setBuyAmount(parseDecimalsInput(value));
+    setIsBaseExactIn(false);
+    setIsTypingLoading(true);
+  };
+
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
       if (txSignature) {
@@ -216,6 +253,76 @@ export function SwapWidget() {
     toast.error(simplifyErrorMessage(error, "Swap failed"));
   }, []);
 
+  // memo token balances
+  const [
+    displayToken0Balance,
+    displayToken1Balance,
+    token0BalanceBN,
+    token1BalanceBN,
+  ] = useMemo(() => {
+    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
+    const buyTokenBalance = splBalances?.[buyToken.symbol]?.amount;
+
+    const rawToken0Balance = splBalances?.[sellToken.symbol]?.rawAmount;
+    const rawToken1Balance = splBalances?.[buyToken.symbol]?.rawAmount;
+
+    const token0BalanceBN =
+      rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;
+    const token1BalanceBN =
+      rawToken1Balance !== undefined ? new BN(rawToken1Balance) : undefined;
+
+    return [
+      sellTokenBalance,
+      buyTokenBalance,
+      token0BalanceBN,
+      token1BalanceBN,
+    ];
+  }, [splBalances, sellToken.symbol, buyToken.symbol]);
+
+  const isFetchingBestRoute = useMemo(() => {
+    return isLoadingBestRoute || isTypingLoading;
+  }, [isLoadingBestRoute, isTypingLoading]);
+
+  useEffect(() => {
+    if (!bestRoute && isFetchingBestRoute) {
+      return;
+    }
+
+    if (!bestRoute) {
+      setBuyAmount("");
+      setSellAmount("");
+      setBaseInput("");
+      return;
+    }
+
+    if (isBaseExactIn) {
+      // normalize amount to human readable format
+      const normalizedAmountOut = normalizeBN(
+        bestRoute.token1Amount,
+        bestRoute.token1Decimals,
+      );
+      setBuyAmount(normalizedAmountOut);
+    } else {
+      // normalize amount to human readable format
+      const normalizedAmountIn = normalizeBN(
+        bestRoute.token0Amount,
+        bestRoute.token0Decimals,
+      );
+      setSellAmount(normalizedAmountIn);
+    }
+  }, [isBaseExactIn, bestRoute, isFetchingBestRoute]);
+
+  useEffect(() => {
+    if (isBaseExactIn) {
+      setBaseInput(debouncedSellAmount);
+    } else {
+      setBaseInput(debouncedBuyAmount);
+    }
+    // stop the immediate typing loading once we hand off to debounced fetch
+    setIsTypingLoading(false);
+    // @eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSellAmount, debouncedBuyAmount]);
+
   return (
     <Card className="flex flex-col rounded-2xl p-0">
       <CardHeader className="flex flex-1 flex-row items-center gap-2 border-b border-gray-800 p-6">
@@ -229,11 +336,11 @@ export function SwapWidget() {
             title="Selling"
             token={sellToken}
             amount={sellAmount}
-            onAmountChange={(value) => setSellAmount(parseDecimalsInput(value))}
+            onAmountChange={handleSellInputChange}
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.SELL);
             }}
-            tokenBalance={token0Balance}
+            tokenBalance={displayToken0Balance}
             actionButtons={
               <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
             }
@@ -251,29 +358,48 @@ export function SwapWidget() {
             title="Buying"
             token={buyToken}
             amount={buyAmount}
-            onAmountChange={(value) => setBuyAmount(parseDecimalsInput(value))}
+            onAmountChange={handleBuyInputChange}
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.BUY);
             }}
-            tokenBalance={token1Balance}
+            tokenBalance={displayToken1Balance}
           />
         </div>
         {/* details */}
         <div className={cn(text.sb3(), "flex flex-col gap-2 text-gray-600")}>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">
-              <p>1 SOL</p>
+              <p>1 {sellToken.symbol}</p>
               <ArrowRight />
-              <p>1000.00 USDC</p>
+              <p>
+                {isFetchingBestRoute
+                  ? "…"
+                  : bestRoute
+                    ? normalizeBN(
+                        bestRoute.amountOutPerOneTokenIn,
+                        bestRoute.token1Decimals,
+                      )
+                    : "-"}{" "}
+                {buyToken.symbol}
+              </p>
             </div>
-            <p>= 1000.00 USDC</p>
+            <p className="tabular-nums">
+              {isFetchingBestRoute
+                ? "Calculating…"
+                : bestRoute
+                  ? `= ${normalizeBN(
+                      bestRoute.token1Amount,
+                      bestRoute.token1Decimals,
+                    )} ${buyToken.symbol}`
+                  : "-"}
+            </p>
           </div>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">
               <p>Routing</p>
               <Info />
             </div>
-            <p>CLOB</p>
+            <p>Single-hop</p>
           </div>
           <Separator className="bg-gray-800" />
           <div className="flex flex-row items-center justify-between">
@@ -291,13 +417,11 @@ export function SwapWidget() {
         >
           <SwapButton
             program={doxxAmmProgram}
-            token0={sellToken}
-            token1={buyToken}
-            amount0={sellAmount}
-            amount1={buyAmount}
-            // TODO: find best routes instead of hardcode
-            poolState={allPoolStates?.[0].poolState}
+            bestRoute={bestRoute ?? undefined}
+            isQuotingRoute={isFetchingBestRoute}
             wallet={wallet}
+            token0Balance={token0BalanceBN}
+            token1Balance={token1BalanceBN}
             onSuccess={handleSuccess}
             onError={handleError}
           />

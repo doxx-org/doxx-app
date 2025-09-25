@@ -27,12 +27,34 @@ export function toBNWithDecimals(
   return toBN(v).mul(toBN(10 ** decimals));
 }
 
-export function parseAmountBN(
-  stringAmount: string,
-  decimals: number,
-): BN {
+export function parseAmountBN(stringAmount: string, decimals: number): BN {
   const [integerPart, fractionalPart = ""] = stringAmount.split(".");
-  const normalizedFractionalPart = fractionalPart.padEnd(decimals, "0").slice(0, decimals);
+  const normalizedFractionalPart = fractionalPart
+    .padEnd(decimals, "0")
+    .slice(0, decimals);
   const combined = integerPart + normalizedFractionalPart;
   return new BN(combined);
+}
+
+// normalize amount to human readable format
+export function normalizeBN(amount: BN, decimals: number): string {
+  console.log("🚀 ~ amount:", amount.toString());
+
+  // Convert to string and pad with zeros if needed
+  const amountStr = amount.toString().padStart(decimals + 1, "0");
+
+  // Split into integer and fractional parts
+  const integerPart = amountStr.slice(0, -decimals) || "0";
+  const fractionalPart = amountStr.slice(-decimals);
+
+  // Remove trailing zeros from fractional part
+  const trimmedFractional = fractionalPart.replace(/0+$/, "");
+
+  // Combine parts
+  const result = trimmedFractional
+    ? `${integerPart}.${trimmedFractional}`
+    : integerPart;
+
+  console.log("🚀 ~ normalized:", result);
+  return result;
 }

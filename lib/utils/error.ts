@@ -18,10 +18,16 @@ export const PROVIDER_UNAVAILABLE_ERROR: KnownError = {
   simplifiedMessage: "Provider unavailable",
 };
 
+export const SWAP_EXCEEDED_SLIPPAGE_ERROR: KnownError = {
+  message: "ExceededSlippage",
+  simplifiedMessage: "Swap failed due to slippage",
+};
+
 // NOTE: add more known errors here
 const KNOWN_ERRORS: KnownError[] = [
   USER_REJECTED_ERROR,
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
+  SWAP_EXCEEDED_SLIPPAGE_ERROR,
 ];
 
 export const simplifyErrorMessage = (error: Error, defaultMessage?: string) => {

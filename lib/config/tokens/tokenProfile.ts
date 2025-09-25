@@ -21,7 +21,7 @@ export const usdc: TokenProfile = {
   name: "USDC",
   symbol: TokenSymbol.USDC,
   address: addressConfig.tokens.usdc,
-  decimal: 6,
+  decimal: 9,
   image:
     "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
 };

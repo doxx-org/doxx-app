@@ -1,10 +1,9 @@
 import { useCallback, useMemo } from "react";
-import { Program } from "@coral-xyz/anchor";
+import { BN, Program } from "@coral-xyz/anchor";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
-import { TokenProfile } from "@/lib/config/tokens";
-import { PoolState } from "@/lib/hooks/chain/types";
-import { useDoxxSwap } from "@/lib/hooks/chain/useDoxxSwap";
+import { ZERO } from "@/lib/constants";
+import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoutes";
+import { useDoxxSwapV2 } from "@/lib/hooks/chain/useDoxxSwapV2";
 import { DoxxAmm } from "@/lib/idl/doxxIdl";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
@@ -12,56 +11,104 @@ import { Button } from "../ui/button";
 
 interface SwapButtonProps {
   program: Program<DoxxAmm> | undefined;
-  token0: TokenProfile;
-  token1: TokenProfile;
-  amount0: string;
-  amount1: string;
-  poolState: PoolState | undefined;
+  bestRoute: IUseBestRouteResponse | undefined;
+  isQuotingRoute: boolean;
   wallet: AnchorWallet | undefined;
+  token0Balance: BN | undefined;
+  token1Balance: BN | undefined;
   onSuccess: (txSignature: string | undefined) => void;
   onError: (error: Error) => void;
 }
 
 export function SwapButton({
   program,
-  token0,
-  token1,
-  amount0,
-  amount1,
-  poolState,
+  isQuotingRoute,
+  bestRoute,
   wallet,
+  token0Balance,
+  token1Balance,
   onSuccess,
   onError,
 }: SwapButtonProps) {
-  // TODO: handle swap base output
-  const { swapBaseInput, isSwapping } = useDoxxSwap(
+  // inside a React component
+  const { swapBaseInputV2, swapBaseOutputV2, isSwapping } = useDoxxSwapV2(
     program,
     wallet,
-    poolState,
     onSuccess,
     onError,
   );
 
   const handleSwap = useCallback(async () => {
-    return await swapBaseInput({
-      amountIn: amount0,
-      minOut: amount1,
-      inputMint: new PublicKey(token0.address),
-      outputMint: new PublicKey(token1.address),
-    });
-  }, [token0, token1, amount0, amount1, swapBaseInput]);
+    // no min out, return undefined
+    if (
+      !bestRoute ||
+      bestRoute.token0Amount.eq(ZERO) ||
+      bestRoute.token1Amount.eq(ZERO) ||
+      !token0Balance ||
+      !token1Balance ||
+      bestRoute.token0Amount.gt(token0Balance)
+    ) {
+      return undefined;
+    }
 
-  const label = useMemo(() => {
-    if (isSwapping) return "Swapping...";
+    if (bestRoute.isBaseExactIn) {
+      await swapBaseInputV2(bestRoute.pool, {
+        inputMint: bestRoute.token0,
+        outputMint: bestRoute.token1,
+        amountIn: bestRoute.token0Amount,
+        minOut: bestRoute.token1Amount,
+      });
+    } else {
+      await swapBaseOutputV2(bestRoute.pool, {
+        inputMint: bestRoute.token0,
+        outputMint: bestRoute.token1,
+        maxAmountIn: bestRoute.token0Amount,
+        amountOut: bestRoute.token1Amount,
+      });
+    }
+  }, [
+    swapBaseInputV2,
+    swapBaseOutputV2,
+    bestRoute,
+    token0Balance,
+    token1Balance,
+  ]);
 
-    return "Swap";
-  }, [isSwapping]);
+  // build button label and disabled state
+  const [label, disabled] = useMemo(() => {
+    if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
+
+    if (isQuotingRoute) return ["Quoting route...", true];
+
+    if (isSwapping) return ["Swapping...", true];
+    console.log(
+      "🚀 ~ bestRoute.token0Amount:",
+      bestRoute.token0Amount.toString(),
+    );
+    console.log(
+      "🚀 ~ bestRoute.token1Amount:",
+      bestRoute.token1Amount.toString(),
+    );
+    console.log("🚀 ~ token0Balance:", token0Balance.toString());
+    console.log("🚀 ~ token1Balance:", token1Balance.toString());
+    if (bestRoute.token0Amount.gt(token0Balance)) {
+      return ["Insufficient balance", true];
+    }
+
+    return ["Swap", false];
+  }, [
+    isSwapping,
+    isQuotingRoute,
+    bestRoute,
+    token1Balance?.toString(),
+    token0Balance?.toString(),
+  ]);
 
   return (
     <Button
       className={cn(text.hsb1(), "text-green h-16 w-full rounded-xl p-6")}
       onClick={handleSwap}
-      disabled={isSwapping}
+      disabled={disabled}
     >
       {label}
     </Button>

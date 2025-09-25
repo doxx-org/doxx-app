@@ -1,5 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import {
+  ORACLE_SEED,
   POOL_AUTH_SEED,
   POOL_LPMINT_SEED,
   POOL_SEED,
@@ -50,6 +51,17 @@ export function getPoolVaultAddress(
 export function getAuthAddress(programId: PublicKey): [PublicKey, number] {
   const [address, bump] = PublicKey.findProgramAddressSync(
     [POOL_AUTH_SEED],
+    programId,
+  );
+  return [address, bump];
+}
+
+export function getOrcleAccountAddress(
+  pool: PublicKey,
+  programId: PublicKey,
+): [PublicKey, number] {
+  const [address, bump] = PublicKey.findProgramAddressSync(
+    [ORACLE_SEED, pool.toBuffer()],
     programId,
   );
   return [address, bump];
