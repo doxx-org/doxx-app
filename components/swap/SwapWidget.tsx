@@ -167,7 +167,8 @@ export function SwapWidget() {
     setBuyToken(sellToken);
     setSellAmount(buyAmount);
     setBuyAmount(sellAmount);
-  }, [sellToken, buyToken, sellAmount, buyAmount]);
+    setIsBaseExactIn(!isBaseExactIn);
+  }, [sellToken, buyToken, sellAmount, buyAmount, isBaseExactIn]);
 
   // callback when select token inside token selector dialog
   const handleSelectToken = useCallback(

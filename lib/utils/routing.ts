@@ -213,9 +213,9 @@ export async function getBestQuoteSingleHopExactIn(
 
     // if new amount out is greater than previous best amount out, update best
     if (!best || newAmountOutWithSlippage.gt(best.token1Amount)) {
-      const amountOutPerOneTokenIn = newAmountOutWithSlippage
+      const amountOutPerOneTokenIn = amountInTokenDecimals
         .mul(ONE_E9)
-        .div(amountInTokenDecimals);
+        .div(newAmountOutWithSlippage);
       best = {
         token0: inputMint,
         token1: outputMint,
@@ -316,6 +316,7 @@ export async function getBestQuoteSingleHopExactOut(
       reserveToken0,
       reserveToken1,
     );
+    console.log("🚀 ~ newAmountIn:", newAmountIn.toString());
 
     // apply slippage on input (increase maxIn)
     const newAmountInWithSlippage = newAmountIn
