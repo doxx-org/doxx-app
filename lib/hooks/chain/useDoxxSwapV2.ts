@@ -176,11 +176,7 @@ export function useDoxxSwapV2(
             .instruction();
         } else {
           const maxInBN = (params as SwapBaseOutputParams).maxAmountIn;
-          console.log("🚀 ~ maxInBN:", maxInBN.toString());
           const amountOutBN = (params as SwapBaseOutputParams).amountOut;
-          console.log("🚀 ~ amountOutBN:", amountOutBN.toString());
-          console.log("🚀 ~ inputMint:", inputMint.toString());
-          console.log("🚀 ~ outputMint:", outputMint.toString());
           ix = await program.methods
             .swapBaseOutput(maxInBN, amountOutBN)
             .accounts({

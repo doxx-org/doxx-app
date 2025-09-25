@@ -76,25 +76,21 @@ export function SwapButton({
 
   // build button label and disabled state
   const [label, disabled] = useMemo(() => {
+    // validate best route
     if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
 
+    // validate quoting route
     if (isQuotingRoute) return ["Quoting route...", true];
 
+    // validate swapping
     if (isSwapping) return ["Swapping...", true];
-    console.log(
-      "🚀 ~ bestRoute.token0Amount:",
-      bestRoute.token0Amount.toString(),
-    );
-    console.log(
-      "🚀 ~ bestRoute.token1Amount:",
-      bestRoute.token1Amount.toString(),
-    );
-    console.log("🚀 ~ token0Balance:", token0Balance.toString());
-    console.log("🚀 ~ token1Balance:", token1Balance.toString());
+
+    // validate balance
     if (bestRoute.token0Amount.gt(token0Balance)) {
       return ["Insufficient balance", true];
     }
 
+    // happy case
     return ["Swap", false];
   }, [
     isSwapping,

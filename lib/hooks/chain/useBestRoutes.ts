@@ -50,11 +50,6 @@ export function useBestRoutes({
       isBaseExactIn,
     ],
     queryFn: async () => {
-      console.log("🚀 ~ uiAmountIn:", baseInput);
-      console.log("🚀 ~ pools:", pools?.length);
-      console.log("🚀 ~ inputMint:", inputMint.toString());
-      console.log("🚀 ~ outputMint:", outputMint.toString());
-
       if (
         !baseInput ||
         baseInput === "0" ||

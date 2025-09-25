@@ -11,7 +11,6 @@ import {
 import { BN } from "@coral-xyz/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
@@ -34,14 +33,14 @@ import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
-import { copyToClipboard, text } from "@/lib/text";
+import { text } from "@/lib/text";
 import {
   cn,
-  ellipseAddress,
   normalizeBN,
   parseDecimalsInput,
   simplifyErrorMessage,
 } from "@/lib/utils";
+import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { SwapButton } from "./SwapButton";
@@ -121,11 +120,7 @@ export function SwapWidget() {
   const { data: allPoolStates, refetch: refetchAllPoolStates } =
     useGetAllPools(doxxAmmProgram);
 
-  const {
-    data: bestRoute,
-    refetch: refetchBestRoute,
-    isLoading: isLoadingBestRoute,
-  } = useBestRoutes({
+  const { data: bestRoute, isLoading: isLoadingBestRoute } = useBestRoutes({
     connection,
     inputMint: new PublicKey(sellToken.address),
     outputMint: new PublicKey(buyToken.address),
@@ -134,6 +129,36 @@ export function SwapWidget() {
     isBaseExactIn,
     slippageBps,
   });
+
+  // memo token balances
+  const [
+    displayToken0Balance,
+    displayToken1Balance,
+    token0BalanceBN,
+    token1BalanceBN,
+  ] = useMemo(() => {
+    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
+    const buyTokenBalance = splBalances?.[buyToken.symbol]?.amount;
+
+    const rawToken0Balance = splBalances?.[sellToken.symbol]?.rawAmount;
+    const rawToken1Balance = splBalances?.[buyToken.symbol]?.rawAmount;
+
+    const token0BalanceBN =
+      rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;
+    const token1BalanceBN =
+      rawToken1Balance !== undefined ? new BN(rawToken1Balance) : undefined;
+
+    return [
+      sellTokenBalance,
+      buyTokenBalance,
+      token0BalanceBN,
+      token1BalanceBN,
+    ];
+  }, [splBalances, sellToken.symbol, buyToken.symbol]);
+
+  const isFetchingBestRoute = useMemo(() => {
+    return isLoadingBestRoute || isTypingLoading;
+  }, [isLoadingBestRoute, isTypingLoading]);
 
   // Callbacks
   // callback when click switch token button
@@ -178,64 +203,41 @@ export function SwapWidget() {
     setIsOpen(true);
   };
 
-  // Handler functions for HALF and MAX buttons - memoized with useCallback
-  const handleHalf = useCallback(() => {
-    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
-    if (sellTokenBalance) {
-      const halfAmount = (sellTokenBalance / 2).toString();
-      setSellAmount(parseDecimalsInput(halfAmount));
-    }
-  }, [sellToken.symbol, splBalances]);
-
-  const handleMax = useCallback(() => {
-    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
-    if (sellTokenBalance) {
-      setSellAmount(parseDecimalsInput(sellTokenBalance.toString()));
-    }
-  }, [sellToken.symbol, splBalances]);
-
-  const handleSellInputChange = (value: string) => {
+  const handleSellInputChange = useCallback((value: string) => {
     setSellAmount(parseDecimalsInput(value));
     setIsBaseExactIn(true);
     setIsTypingLoading(true);
-  };
+  }, []);
 
-  const handleBuyInputChange = (value: string) => {
+  const handleBuyInputChange = useCallback((value: string) => {
     setBuyAmount(parseDecimalsInput(value));
     setIsBaseExactIn(false);
     setIsTypingLoading(true);
-  };
+  }, []);
+
+  // Handler functions for HALF and MAX buttons - memoized with useCallback
+  const handleHalf = useCallback(() => {
+    if (displayToken0Balance === undefined) {
+      return;
+    }
+    const halfAmount = (displayToken0Balance / 2).toString();
+    handleSellInputChange(halfAmount);
+  }, [displayToken0Balance, handleSellInputChange]);
+
+  const handleMax = useCallback(() => {
+    if (displayToken0Balance === undefined) {
+      return;
+    }
+
+    handleSellInputChange(displayToken0Balance.toString());
+  }, [displayToken0Balance, handleSellInputChange]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
       if (txSignature) {
-        toast.success(
-          <div className="flex flex-col gap-0.5">
-            <span>Swap successful</span>
-            <div className="flex flex-row items-center gap-1">
-              <span>Transaction signature: </span>
-              <a
-                href={`https://solscan.io/tx/${txSignature}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 underline"
-              >
-                {ellipseAddress(txSignature, 4)}
-              </a>
-              <CopyIcon
-                className="h-4 w-4 cursor-pointer"
-                onClick={() => copyToClipboard(txSignature)}
-              />
-            </div>
-          </div>,
-        );
+        toast.success(<SwapSuccessToast txSignature={txSignature} />);
       } else {
-        toast.error(
-          <div className="flex flex-col gap-0.5">
-            <span>Swap failed with unknown reason.</span>
-            <span>Please try again</span>
-          </div>,
-        );
+        toast.error(<SwapUnknownErrorToast />);
       }
 
       // delay to refetch balances and pool states
@@ -249,39 +251,9 @@ export function SwapWidget() {
     [refetchSplBalances, refetchAllPoolStates],
   );
 
-  const handleError = useCallback((error: Error) => {
+  const handleError = (error: Error) => {
     toast.error(simplifyErrorMessage(error, "Swap failed"));
-  }, []);
-
-  // memo token balances
-  const [
-    displayToken0Balance,
-    displayToken1Balance,
-    token0BalanceBN,
-    token1BalanceBN,
-  ] = useMemo(() => {
-    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
-    const buyTokenBalance = splBalances?.[buyToken.symbol]?.amount;
-
-    const rawToken0Balance = splBalances?.[sellToken.symbol]?.rawAmount;
-    const rawToken1Balance = splBalances?.[buyToken.symbol]?.rawAmount;
-
-    const token0BalanceBN =
-      rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;
-    const token1BalanceBN =
-      rawToken1Balance !== undefined ? new BN(rawToken1Balance) : undefined;
-
-    return [
-      sellTokenBalance,
-      buyTokenBalance,
-      token0BalanceBN,
-      token1BalanceBN,
-    ];
-  }, [splBalances, sellToken.symbol, buyToken.symbol]);
-
-  const isFetchingBestRoute = useMemo(() => {
-    return isLoadingBestRoute || isTypingLoading;
-  }, [isLoadingBestRoute, isTypingLoading]);
+  };
 
   useEffect(() => {
     if (!bestRoute && isFetchingBestRoute) {
