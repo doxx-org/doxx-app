@@ -5,7 +5,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { BPS, MAX_UINT128, ONE_E9, ZERO } from "@/lib/constants";
 import { AmmConfig, PoolState } from "@/lib/hooks/chain/types";
 import { parseAmountBN } from "@/lib/utils";
-import { IUseBestRouteResponse } from "../hooks/chain/useBestRoutes";
+import { IUseBestRouteResponse } from "../hooks/chain/useBestRoute";
 
 const ONE_M = new BN(1_000_000); // ppm
 
@@ -316,7 +316,6 @@ export async function getBestQuoteSingleHopExactOut(
       reserveToken0,
       reserveToken1,
     );
-    console.log("🚀 ~ newAmountIn:", newAmountIn.toString());
 
     // apply slippage on input (increase maxIn)
     const newAmountInWithSlippage = newAmountIn

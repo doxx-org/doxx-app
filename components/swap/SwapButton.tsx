@@ -2,8 +2,8 @@ import { useCallback, useMemo } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { ZERO } from "@/lib/constants";
-import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoutes";
-import { useDoxxSwapV2 } from "@/lib/hooks/chain/useDoxxSwapV2";
+import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
+import { useDoxxSwap } from "@/lib/hooks/chain/useDoxxSwap";
 import { DoxxAmm } from "@/lib/idl/doxxIdl";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
@@ -31,7 +31,7 @@ export function SwapButton({
   onError,
 }: SwapButtonProps) {
   // inside a React component
-  const { swapBaseInputV2, swapBaseOutputV2, isSwapping } = useDoxxSwapV2(
+  const { swapBaseInput, swapBaseOutput, isSwapping } = useDoxxSwap(
     program,
     wallet,
     onSuccess,
@@ -52,27 +52,21 @@ export function SwapButton({
     }
 
     if (bestRoute.isBaseExactIn) {
-      await swapBaseInputV2(bestRoute.pool, {
+      await swapBaseInput(bestRoute.pool, {
         inputMint: bestRoute.token0,
         outputMint: bestRoute.token1,
         amountIn: bestRoute.token0Amount,
         minOut: bestRoute.token1Amount,
       });
     } else {
-      await swapBaseOutputV2(bestRoute.pool, {
+      await swapBaseOutput(bestRoute.pool, {
         inputMint: bestRoute.token0,
         outputMint: bestRoute.token1,
         maxAmountIn: bestRoute.token0Amount,
         amountOut: bestRoute.token1Amount,
       });
     }
-  }, [
-    swapBaseInputV2,
-    swapBaseOutputV2,
-    bestRoute,
-    token0Balance,
-    token1Balance,
-  ]);
+  }, [swapBaseInput, swapBaseOutput, bestRoute, token0Balance, token1Balance]);
 
   // build button label and disabled state
   const [label, disabled] = useMemo(() => {

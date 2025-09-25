@@ -26,7 +26,7 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
-import { useBestRoutes } from "@/lib/hooks/chain/useBestRoutes";
+import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
@@ -120,7 +120,7 @@ export function SwapWidget() {
   const { data: allPoolStates, refetch: refetchAllPoolStates } =
     useGetAllPools(doxxAmmProgram);
 
-  const { data: bestRoute, isLoading: isLoadingBestRoute } = useBestRoutes({
+  const { data: bestRoute, isLoading: isLoadingBestRoute } = useBestRoute({
     connection,
     inputMint: new PublicKey(sellToken.address),
     outputMint: new PublicKey(buyToken.address),

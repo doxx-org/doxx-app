@@ -38,8 +38,6 @@ export function parseAmountBN(stringAmount: string, decimals: number): BN {
 
 // normalize amount to human readable format
 export function normalizeBN(amount: BN, decimals: number): string {
-  console.log("🚀 ~ amount:", amount.toString());
-
   // Convert to string and pad with zeros if needed
   const amountStr = amount.toString().padStart(decimals + 1, "0");
 
@@ -55,6 +53,5 @@ export function normalizeBN(amount: BN, decimals: number): string {
     ? `${integerPart}.${trimmedFractional}`
     : integerPart;
 
-  console.log("🚀 ~ normalized:", result);
   return result;
 }

@@ -1,160 +1,62 @@
-import { useCallback, useMemo, useState } from "react";
-import { Program } from "@coral-xyz/anchor";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+// useDoxxSwapV2.ts
+import { useCallback, useState } from "react";
+import { BN, Program } from "@coral-xyz/anchor";
+import {
+  createAssociatedTokenAccountIdempotentInstruction,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
+import { PoolState } from "@/lib/hooks/chain/types";
 import { DoxxAmm } from "@/lib/idl/doxxIdl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   PROVIDER_UNAVAILABLE_ERROR,
-  parseAmountBN,
-  toBN,
 } from "@/lib/utils";
 import { getPoolAddress } from "@/lib/utils/instructions";
-import { PoolState } from "./types";
 
 type SwapBaseInputParams = {
   inputMint: PublicKey;
   outputMint: PublicKey;
-  // amounts
-  amountIn: string;
-  minOut: string;
+  amountIn: BN; // in token decimals format
+  minOut: BN; // in token decimals format
 };
 
-type SwapBaseOutputParams = Omit<SwapBaseInputParams, "amountIn" | "minOut"> & {
-  maxAmountIn: string;
-  amountOut: string;
+type SwapBaseOutputParams = {
+  inputMint: PublicKey;
+  outputMint: PublicKey;
+  maxAmountIn: BN; // human
+  amountOut: BN; // human
 };
 
-/** Compose and send swap txns */
 export function useDoxxSwap(
   program: Program<DoxxAmm> | undefined,
   wallet: AnchorWallet | undefined,
-  poolState: PoolState | undefined,
-  onSuccess: (txSignature: string | undefined) => void,
-  onError: (error: Error) => void,
+  onSuccess: (tx?: string) => void,
+  onError: (e: Error) => void,
 ) {
   const [isSwapping, setIsSwapping] = useState(false);
-  const [swapError, setSwapError] = useState<Error | undefined>(undefined);
+  const [swapError, setSwapError] = useState<Error | undefined>();
 
-  const poolAddress = useMemo(() => {
-    if (!poolState || !program) return undefined;
-
-    try {
-      const [address] = getPoolAddress(
-        poolState.ammConfig,
-        poolState.token0Mint,
-        poolState.token1Mint,
-        program.programId,
-      );
-      return address;
-    } catch (error) {
-      setSwapError(
-        new Error(error instanceof Error ? error.message : "Unknown error"),
-      );
-      return undefined;
-    }
-  }, [poolState, program]);
-
-  const swapBaseInput = useCallback(
-    async (swapBaseInputParams: SwapBaseInputParams) => {
+  // ---------- core builder (single-hop) ----------
+  const buildAndSendSwap = useCallback(
+    async ({
+      pool,
+      params,
+      kind, // "in" | "out"
+    }: {
+      pool: PoolState;
+      params: SwapBaseInputParams | SwapBaseOutputParams;
+      kind: "in" | "out";
+    }) => {
       setIsSwapping(true);
       setSwapError(undefined);
 
-      if (!program || !wallet?.publicKey || !poolState || !poolAddress) {
+      if (!program || !wallet?.publicKey) {
         setIsSwapping(false);
         setSwapError(new Error(PROGRAM_WALLET_UNAVAILABLE_ERROR.message));
         return undefined;
       }
-
-      const { provider } = program;
-      if (!provider) {
-        return undefined;
-      }
-
-      // Identify input/output mints & vaults
-      const inputMint = swapBaseInputParams.inputMint;
-      const outputMint = swapBaseInputParams.outputMint;
-
-      const inputVault = poolState.token0Vault;
-      const outputVault = poolState.token1Vault;
-      const inputTokenProgram = poolState.token0Program;
-      const outputTokenProgram = poolState.token1Program;
-
-      const ammConfigPk = poolState.ammConfig;
-      const observationPk = poolState.observationKey;
-
-      try {
-        const inputTokenAccount = getAssociatedTokenAddressSync(
-          inputMint,
-          wallet.publicKey,
-          false,
-          inputTokenProgram,
-        );
-
-        const outputTokenAccount = getAssociatedTokenAddressSync(
-          outputMint,
-          wallet.publicKey,
-          false,
-          outputTokenProgram,
-        );
-
-        const amountInBN = parseAmountBN(
-          swapBaseInputParams.amountIn,
-          poolState.mint0Decimals,
-        );
-
-        const ix = await program.methods
-          .swapBaseInput(amountInBN, toBN(0)) // TODO: add minOut
-          .accounts({
-            payer: wallet.publicKey,
-            ammConfig: ammConfigPk,
-            poolState: poolAddress,
-            inputTokenAccount,
-            outputTokenAccount,
-            inputVault,
-            outputVault,
-            inputTokenProgram,
-            outputTokenProgram,
-            inputTokenMint: inputMint,
-            outputTokenMint: outputMint,
-            observationState: observationPk,
-          })
-          .instruction();
-
-        const tx = new Transaction().add(ix);
-
-        // open wallet and get confirmation
-        const signature = await provider.sendAndConfirm?.(tx, []);
-
-        // swap success
-        onSuccess(signature);
-        setIsSwapping(false);
-
-        return signature;
-      } catch (error) {
-        onError(error as Error);
-        setSwapError(
-          new Error(error instanceof Error ? error.message : "Unknown error"),
-        );
-        setIsSwapping(false);
-        return undefined;
-      }
-    },
-    [program, wallet?.publicKey, poolState, poolAddress, onError, onSuccess],
-  );
-
-  const swapBaseOutput = useCallback(
-    async (swapBaseOutputParams: SwapBaseOutputParams) => {
-      setIsSwapping(true);
-      setSwapError(undefined);
-
-      if (!program || !wallet?.publicKey || !poolState || !poolAddress) {
-        setIsSwapping(false);
-        setSwapError(new Error(PROGRAM_WALLET_UNAVAILABLE_ERROR.message));
-        return undefined;
-      }
-
       const { provider } = program;
       if (!provider) {
         setIsSwapping(false);
@@ -162,25 +64,26 @@ export function useDoxxSwap(
         return undefined;
       }
 
-      const inputMint = swapBaseOutputParams.inputMint;
-      const outputMint = swapBaseOutputParams.outputMint;
-
-      const inputVault = poolState.token0Vault;
-      const outputVault = poolState.token1Vault;
-      const inputTokenProgram = poolState.token0Program;
-      const outputTokenProgram = poolState.token1Program;
-
-      const ammConfigPk = poolState.ammConfig;
-      const observationPk = poolState.observationKey;
-
       try {
+        const inputMint = (params as any).inputMint as PublicKey;
+        const outputMint = (params as any).outputMint as PublicKey;
+        const inIs0 = inputMint.equals(pool.token0Mint);
+
+        const inputVault = inIs0 ? pool.token0Vault : pool.token1Vault;
+        const outputVault = inIs0 ? pool.token1Vault : pool.token0Vault;
+        const inputTokenProgram = inIs0
+          ? pool.token0Program
+          : pool.token1Program;
+        const outputTokenProgram = inIs0
+          ? pool.token1Program
+          : pool.token0Program;
+
         const inputTokenAccount = getAssociatedTokenAddressSync(
           inputMint,
           wallet.publicKey,
           false,
           inputTokenProgram,
         );
-
         const outputTokenAccount = getAssociatedTokenAddressSync(
           outputMint,
           wallet.publicKey,
@@ -188,50 +91,123 @@ export function useDoxxSwap(
           outputTokenProgram,
         );
 
-        const amountOutBN = parseAmountBN(
-          swapBaseOutputParams.amountOut,
-          poolState.mint1Decimals,
-        );
-
-        const ix = await program.methods
-          .swapBaseOutput(
-            toBN(0), // TODO: add maxAmountIn
-            amountOutBN,
-          )
-          .accounts({
-            payer: wallet.publicKey,
-            ammConfig: ammConfigPk,
-            poolState: poolAddress,
-            inputTokenAccount: inputTokenAccount,
-            outputTokenAccount: outputTokenAccount,
-            inputVault,
-            outputVault,
+        // idempotent ATA creations if needed:
+        const ataIxs = [
+          createAssociatedTokenAccountIdempotentInstruction(
+            wallet.publicKey,
+            inputTokenAccount,
+            wallet.publicKey,
+            inputMint,
             inputTokenProgram,
+          ),
+          createAssociatedTokenAccountIdempotentInstruction(
+            wallet.publicKey,
+            outputTokenAccount,
+            wallet.publicKey,
+            outputMint,
             outputTokenProgram,
-            inputTokenMint: inputMint,
-            outputTokenMint: outputMint,
-            observationState: observationPk,
-          })
-          .instruction();
+          ),
+        ];
 
-        const tx = new Transaction().add(ix);
+        const cuIxs = [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 5_000 }),
+        ];
 
-        const signature = await provider.sendAndConfirm?.(tx, []);
+        const poolAddress = (() => {
+          // If your UI already has the PDA, you can pass it in; otherwise derive
+          try {
+            const [addr] = getPoolAddress(
+              pool.ammConfig,
+              pool.token0Mint,
+              pool.token1Mint,
+              program.programId,
+            );
+            return addr;
+          } catch {
+            setSwapError(new Error("Pool PDA unavailable"));
+            return undefined;
+          }
+        })();
+        if (!poolAddress) return undefined;
 
-        // swap success
-        onSuccess(signature);
+        let ix;
+        if (kind === "in") {
+          const amountInBN = (params as SwapBaseInputParams).amountIn;
+          const minOutBN = (params as SwapBaseInputParams).minOut;
+          ix = await program.methods
+            .swapBaseInput(amountInBN, minOutBN)
+            .accounts({
+              payer: wallet.publicKey,
+              ammConfig: pool.ammConfig,
+              poolState: poolAddress,
+              inputTokenAccount,
+              outputTokenAccount,
+              inputVault,
+              outputVault,
+              inputTokenProgram,
+              outputTokenProgram,
+              inputTokenMint: inputMint,
+              outputTokenMint: outputMint,
+              observationState: pool.observationKey,
+            })
+            .instruction();
+        } else {
+          const maxInBN = (params as SwapBaseOutputParams).maxAmountIn;
+          const amountOutBN = (params as SwapBaseOutputParams).amountOut;
+          ix = await program.methods
+            .swapBaseOutput(maxInBN, amountOutBN)
+            .accounts({
+              payer: wallet.publicKey,
+              ammConfig: pool.ammConfig,
+              poolState: poolAddress,
+              inputTokenAccount,
+              outputTokenAccount,
+              inputVault,
+              outputVault,
+              inputTokenProgram,
+              outputTokenProgram,
+              inputTokenMint: inputMint,
+              outputTokenMint: outputMint,
+              observationState: pool.observationKey,
+            })
+            .instruction();
+        }
+
+        const tx = new Transaction().add(...cuIxs, ...ataIxs, ix);
+        const sig = await provider.sendAndConfirm?.(tx, []);
+        onSuccess(sig);
         setIsSwapping(false);
-
-        return signature;
-      } catch (error) {
-        onError(error as Error);
-        setSwapError(error as Error);
+        return sig;
+      } catch (e) {
+        console.log("🚀 ~ e:", e);
+        onError(e as Error);
+        setSwapError(
+          new Error(e instanceof Error ? e.message : "Unknown error"),
+        );
         setIsSwapping(false);
         return undefined;
       }
     },
-    [program, wallet?.publicKey, poolState, poolAddress, onError, onSuccess],
+    [program, wallet?.publicKey, onSuccess, onError],
   );
 
-  return { swapBaseInput, swapBaseOutput, isSwapping, swapError };
+  const swapBaseInput = useCallback(
+    (pool: PoolState, params: SwapBaseInputParams) =>
+      buildAndSendSwap({ pool, params, kind: "in" }),
+    [buildAndSendSwap],
+  );
+
+  const swapBaseOutput = useCallback(
+    (pool: PoolState, params: SwapBaseOutputParams) =>
+      buildAndSendSwap({ pool, params, kind: "out" }),
+    [buildAndSendSwap],
+  );
+
+  return {
+    swapBaseInput,
+    swapBaseOutput,
+    isSwapping,
+    swapError,
+  };
 }

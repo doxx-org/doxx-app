@@ -31,7 +31,7 @@ export type IUseBestRouteParams = {
   slippageBps?: number; // e.g. 50 = 0.5%
 };
 
-export function useBestRoutes({
+export function useBestRoute({
   connection,
   inputMint,
   outputMint,
@@ -42,7 +42,7 @@ export function useBestRoutes({
 }: IUseBestRouteParams): UseQueryResult<IUseBestRouteResponse | null> {
   return useQuery({
     queryKey: [
-      "best-routes",
+      "best-route",
       inputMint.toString(),
       outputMint.toString(),
       baseInput,
