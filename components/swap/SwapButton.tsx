@@ -70,11 +70,11 @@ export function SwapButton({
 
   // build button label and disabled state
   const [label, disabled] = useMemo(() => {
-    // validate best route
-    if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
-
     // validate quoting route
     if (isQuotingRoute) return ["Quoting route...", true];
+
+    // validate best route
+    if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
 
     // validate swapping
     if (isSwapping) return ["Swapping...", true];
@@ -93,6 +93,7 @@ export function SwapButton({
     token1Balance?.toString(),
     token0Balance?.toString(),
   ]);
+  console.log("🚀 ~ label:", label);
 
   return (
     <Button

@@ -43,6 +43,7 @@ import {
 import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
+import { Skeleton } from "../ui/skeleton";
 import { SwapButton } from "./SwapButton";
 import { SwapInput } from "./SwapInput";
 import { SwapSetting } from "./SwapSetting";
@@ -92,7 +93,7 @@ export function SwapWidget() {
   );
   const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE);
   const [isBaseExactIn, setIsBaseExactIn] = useState(true);
-  const [isTypingLoading, setIsTypingLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   // hooks
   const debouncedSellAmount = useDebounce(sellAmount, 1000);
@@ -157,8 +158,15 @@ export function SwapWidget() {
   }, [splBalances, sellToken.symbol, buyToken.symbol]);
 
   const isFetchingBestRoute = useMemo(() => {
-    return isLoadingBestRoute || isTypingLoading;
-  }, [isLoadingBestRoute, isTypingLoading]);
+    const isEmptyInput =
+      (isBaseExactIn && sellAmount === "") ||
+      (!isBaseExactIn && buyAmount === "");
+    if (isEmptyInput) {
+      return false;
+    }
+
+    return isLoadingBestRoute || isTyping;
+  }, [isLoadingBestRoute, isTyping, isBaseExactIn, sellAmount, buyAmount]);
 
   // Callbacks
   // callback when click switch token button
@@ -207,13 +215,13 @@ export function SwapWidget() {
   const handleSellInputChange = useCallback((value: string) => {
     setSellAmount(parseDecimalsInput(value));
     setIsBaseExactIn(true);
-    setIsTypingLoading(true);
+    setIsTyping(true);
   }, []);
 
   const handleBuyInputChange = useCallback((value: string) => {
     setBuyAmount(parseDecimalsInput(value));
     setIsBaseExactIn(false);
-    setIsTypingLoading(true);
+    setIsTyping(true);
   }, []);
 
   // Handler functions for HALF and MAX buttons - memoized with useCallback
@@ -292,9 +300,18 @@ export function SwapWidget() {
       setBaseInput(debouncedBuyAmount);
     }
     // stop the immediate typing loading once we hand off to debounced fetch
-    setIsTypingLoading(false);
+    setIsTyping(false);
     // @eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSellAmount, debouncedBuyAmount]);
+
+  useEffect(() => {
+    if (
+      (isBaseExactIn && sellAmount === "") ||
+      (!isBaseExactIn && buyAmount === "")
+    ) {
+      setBaseInput("");
+    }
+  }, [isBaseExactIn, buyAmount, sellAmount]);
 
   return (
     <Card className="flex flex-col rounded-2xl p-0">
@@ -344,28 +361,37 @@ export function SwapWidget() {
             <div className="flex flex-row items-center justify-center gap-1">
               <p>1 {sellToken.symbol}</p>
               <ArrowRight />
-              <p>
-                {isFetchingBestRoute
-                  ? "…"
-                  : bestRoute
+
+              {isFetchingBestRoute ? (
+                <Skeleton />
+              ) : (
+                <p>
+                  {bestRoute
                     ? normalizeBN(
                         bestRoute.amountOutPerOneTokenIn,
                         bestRoute.token1Decimals,
                       )
-                    : "-"}{" "}
-                {buyToken.symbol}
-              </p>
+                    : "-"}
+                </p>
+              )}
+              {buyToken.symbol}
             </div>
-            <p className="tabular-nums">
-              {isFetchingBestRoute
-                ? "Calculating…"
-                : bestRoute
-                  ? `= ${normalizeBN(
-                      bestRoute.token1Amount,
-                      bestRoute.token1Decimals,
-                    )} ${buyToken.symbol}`
-                  : "-"}
-            </p>
+            <div className="flex gap-1">
+              {"="}
+              {isFetchingBestRoute ? (
+                <Skeleton />
+              ) : (
+                <p>
+                  {bestRoute
+                    ? normalizeBN(
+                        bestRoute.token1Amount,
+                        bestRoute.token1Decimals,
+                      )
+                    : "-"}
+                </p>
+              )}
+              {buyToken.symbol}
+            </div>
           </div>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">

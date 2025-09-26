@@ -80,7 +80,7 @@ export function SwapInput({
             onChange={(e) => onAmountChange?.(e.target.value)}
             className={cn(
               text.sh1(),
-              "flex-1 text-right text-gray-600 outline-none",
+              "flex-1 text-right text-white outline-none placeholder:text-gray-600",
             )}
             placeholder={placeholder}
             disabled={disabled}
