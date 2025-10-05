@@ -15,6 +15,8 @@ interface TokenSelectionRowProps {
   onTokenSelect: () => void;
   onAmountChange: (value: string) => void;
   disabled?: boolean;
+  balance?: number;
+  usdValue?: number;
 }
 
 export const TokenSelectionRow = ({
@@ -25,6 +27,8 @@ export const TokenSelectionRow = ({
   onTokenSelect,
   onAmountChange,
   disabled = false,
+  balance = 0,
+  usdValue = 0,
 }: TokenSelectionRowProps) => {
   return (
     <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -70,10 +74,20 @@ export const TokenSelectionRow = ({
         />
         <div className="flex w-full flex-row items-center justify-between gap-1">
           <div>
-            <span className={cn(text.sb3(), "text-gray-500")}>Balance:</span>
-            <span className={cn(text.sb3(), "text-gray-400")}>0</span>
+            <span className={cn(text.sb3(), "text-gray-500")}>Balance: </span>
+            <span className={cn(text.sb3(), "text-gray-400")}>
+              {balance.toLocaleString(undefined, { 
+                minimumFractionDigits: 0, 
+                maximumFractionDigits: 6 
+              })}
+            </span>
           </div>
-          <span className={cn(text.sb3(), "text-gray-500")}>$0</span>
+          <span className={cn(text.sb3(), "text-gray-500")}>
+            ${usdValue.toLocaleString(undefined, { 
+              minimumFractionDigits: 2, 
+              maximumFractionDigits: 2 
+            })}
+          </span>
         </div>
       </div>
     </div>

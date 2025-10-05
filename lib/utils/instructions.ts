@@ -1,3 +1,4 @@
+import { utils } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import {
   ORACLE_SEED,
@@ -62,6 +63,20 @@ export function getOrcleAccountAddress(
 ): [PublicKey, number] {
   const [address, bump] = PublicKey.findProgramAddressSync(
     [ORACLE_SEED, pool.toBuffer()],
+    programId,
+  );
+  return [address, bump];
+}
+
+export function getAmmConfigAddress(
+  index: number,
+  programId: PublicKey,
+): [PublicKey, number] {
+  const indexBuffer = Buffer.alloc(2);
+  indexBuffer.writeUInt16LE(index, 0);
+
+  const [address, bump] = PublicKey.findProgramAddressSync(
+    [Buffer.from(utils.bytes.utf8.encode("amm_config")), indexBuffer],
     programId,
   );
   return [address, bump];

@@ -16,6 +16,7 @@ interface AllPools {
 export interface AddressConfig {
   contracts: {
     pools: AllPools;
+    createPoolFee: string;
   };
   tokens: {
     solayer: string;
