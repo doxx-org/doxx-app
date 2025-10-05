@@ -17,6 +17,7 @@ interface TokenSelectionRowProps {
   disabled?: boolean;
   balance?: number;
   usdValue?: number;
+  disableTokenSelect?: boolean;
 }
 
 export const TokenSelectionRow = ({
@@ -29,6 +30,7 @@ export const TokenSelectionRow = ({
   disabled = false,
   balance = 0,
   usdValue = 0,
+  disableTokenSelect = false,
 }: TokenSelectionRowProps) => {
   return (
     <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -37,6 +39,7 @@ export const TokenSelectionRow = ({
           variant="outline"
           className="h-12 min-w-40 gap-2 rounded-xl border border-gray-700 bg-gray-800/50 p-2 hover:bg-gray-700/50"
           onClick={onTokenSelect}
+          disabled={disableTokenSelect}
         >
           {token ? (
             <div className="flex flex-row items-center gap-2">

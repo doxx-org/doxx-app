@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
+import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useProvider } from "@/lib/hooks/chain/useProvider";
+import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { PoolState } from "@/lib/hooks/chain/types";
+import { tokenProfiles } from "@/lib/config/tokens";
+import { getPoolAddress } from "@/lib/utils/instructions";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
 import { CreatePoolDialog } from "./CreatePoolDialog";
-import { Pool, columns } from "./PoolColumn";
+import { DepositDialog } from "./DepositDialog";
+import { Pool, createColumns } from "./PoolColumn";
 
 const data: Pool[] = [
   {
@@ -70,6 +78,75 @@ const data: Pool[] = [
 
 export function Pools() {
   const [isCreatePoolOpen, setIsCreatePoolOpen] = useState(false);
+  const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
+  const [selectedPool, setSelectedPool] = useState<PoolState | null>(null);
+  const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(null);
+
+  // Hooks
+  const { connection } = useConnection();
+  const wallet = useAnchorWallet();
+  const provider = useProvider({ connection, wallet });
+  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  
+  // Fetch all pools
+  const { data: poolsData, isLoading } = useGetAllPools(doxxAmmProgram);
+
+  // Transform pool data from chain to table format
+  const transformedPools = useMemo<Pool[]>(() => {
+    if (!poolsData || !doxxAmmProgram) return data; // Fallback to mock data
+
+    return poolsData.map((poolData, index) => {
+      const { poolState, ammConfig } = poolData;
+      
+      // Find token profiles
+      const token0Profile = tokenProfiles.find(
+        (t) => t.address === poolState.token0Mint.toBase58()
+      );
+      const token1Profile = tokenProfiles.find(
+        (t) => t.address === poolState.token1Mint.toBase58()
+      );
+
+      // Calculate pool address
+      const [poolAddress] = getPoolAddress(
+        poolState.ammConfig,
+        poolState.token0Mint,
+        poolState.token1Mint,
+        doxxAmmProgram.programId
+      );
+
+      // Calculate fee percentage from tradeFeeRate (basis points)
+      const feePercent = (Number(ammConfig.tradeFeeRate) / 10000).toFixed(2);
+
+      return {
+        id: index.toString(),
+        account: poolAddress.toBase58(),
+        fee: feePercent,
+        lpToken: {
+          token1: {
+            name: token0Profile?.symbol || "Unknown",
+            image: token0Profile?.image || "/coins/usdc.svg",
+          },
+          token2: {
+            name: token1Profile?.symbol || "Unknown",
+            image: token1Profile?.image || "/coins/usdc.svg",
+          },
+        },
+        apr: "10", // Placeholder - calculate from fees/TVL
+        tvl: "0.00", // Placeholder - fetch from vault balances
+        dailyVol: "0.00", // Placeholder - fetch from analytics
+        dailyVolperTvl: "0", // Placeholder
+        poolState, // IMPORTANT: Include the actual pool state for deposit
+      };
+    });
+  }, [poolsData, doxxAmmProgram]);
+
+  const handleOpenDeposit = (poolState: PoolState, poolAddress: string) => {
+    setSelectedPool(poolState);
+    setSelectedPoolAddress(poolAddress);
+    setIsDepositDialogOpen(true);
+  };
+
+  const poolColumns = createColumns(handleOpenDeposit);
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,7 +163,13 @@ export function Pools() {
         </Button>
       </div>
       <div className="h-full min-h-[660px] w-full">
-        <DataTable columns={columns} data={data} />
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <span className="text-gray-400">Loading pools...</span>
+          </div>
+        ) : (
+          <DataTable columns={poolColumns} data={transformedPools} />
+        )}
       </div>
 
       {/* Create Pool Dialog */}
@@ -94,6 +177,16 @@ export function Pools() {
         <CreatePoolDialog
           isOpen={isCreatePoolOpen}
           onOpenChange={setIsCreatePoolOpen}
+        />
+      )}
+
+      {/* Deposit Dialog */}
+      {isDepositDialogOpen && (
+        <DepositDialog
+          isOpen={isDepositDialogOpen}
+          onOpenChange={setIsDepositDialogOpen}
+          poolState={selectedPool}
+          poolStateAddress={selectedPoolAddress}
         />
       )}
     </div>

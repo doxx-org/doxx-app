@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import Link from "next/link";
+import { PoolState } from "@/lib/hooks/chain/types";
 import { Button } from "../ui/button";
 import { SortColumn } from "./cols/sortColomn";
 import { PoolRow } from "./rows/";
@@ -25,17 +25,29 @@ export type Pool = {
   tvl: string;
   dailyVol: string;
   dailyVolperTvl: string;
+  poolState?: PoolState; // Optional: actual pool state from chain
 };
 
-const depositButton = (poolAccount: string) => {
+// Callback type for deposit action
+export type OnDepositCallback = (poolState: PoolState, poolAddress: string) => void;
+
+const depositButton = (pool: Pool, onDeposit?: OnDepositCallback) => {
   return (
-    <Button className="bg-gray-800 text-gray-400 hover:bg-gray-800">
-      <Link href={`/deposit/${poolAccount}`}>Deposit</Link>
+    <Button 
+      className="bg-gray-800 text-gray-400 hover:bg-gray-700"
+      onClick={() => {
+        if (pool.poolState && onDeposit) {
+          onDeposit(pool.poolState, pool.account);
+        }
+      }}
+      disabled={!pool.poolState}
+    >
+      Deposit
     </Button>
   );
 };
 
-export const columns: ColumnDef<Pool>[] = [
+export const createColumns = (onDeposit?: OnDepositCallback): ColumnDef<Pool>[] => [
   {
     id: "poolName",
     accessorKey: "pool",
@@ -77,6 +89,9 @@ export const columns: ColumnDef<Pool>[] = [
   {
     id: "action",
     enableHiding: false,
-    cell: ({ row }) => depositButton(row.original.account),
+    cell: ({ row }) => depositButton(row.original, onDeposit),
   },
 ];
+
+// Default columns for backwards compatibility
+export const columns = createColumns();
