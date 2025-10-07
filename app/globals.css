@@ -76,6 +76,14 @@
       transform: translateY(calc(-100% - var(--gap)));
     }
   }
+  @keyframes skeleton-pulse {
+    0% {
+      background-position: 0px 0px;
+    }
+    100% {
+      background-position: 460px 0px;
+    }
+  }
 }
 
 :root {
@@ -169,4 +177,16 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@utility bg-skeleton-loading {
+  background: linear-gradient(
+    135deg,
+    var(--color-gray-500) 5%,
+    var(--color-gray-600) 40%,
+    var(--color-gray-600) 60%,
+    var(--color-gray-500) 95%
+  );
+  background-size: 460px 100%;
+  animation: skeleton-pulse 3s linear infinite;
 }

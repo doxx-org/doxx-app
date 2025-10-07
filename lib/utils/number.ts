@@ -16,6 +16,42 @@ export function parseDecimalsInput(value: string): string {
   return "0";
 }
 
-export function toBN(v: BN | number | string) {
+export function toBN(v: BN | number | string): BN {
   return BN.isBN(v) ? (v as BN) : new BN(v);
+}
+
+export function toBNWithDecimals(
+  v: BN | number | string,
+  decimals: number,
+): BN {
+  return toBN(v).mul(toBN(10 ** decimals));
+}
+
+export function parseAmountBN(stringAmount: string, decimals: number): BN {
+  const [integerPart, fractionalPart = ""] = stringAmount.split(".");
+  const normalizedFractionalPart = fractionalPart
+    .padEnd(decimals, "0")
+    .slice(0, decimals);
+  const combined = integerPart + normalizedFractionalPart;
+  return new BN(combined);
+}
+
+// normalize amount to human readable format
+export function normalizeBN(amount: BN, decimals: number): string {
+  // Convert to string and pad with zeros if needed
+  const amountStr = amount.toString().padStart(decimals + 1, "0");
+
+  // Split into integer and fractional parts
+  const integerPart = amountStr.slice(0, -decimals) || "0";
+  const fractionalPart = amountStr.slice(-decimals);
+
+  // Remove trailing zeros from fractional part
+  const trimmedFractional = fractionalPart.replace(/0+$/, "");
+
+  // Combine parts
+  const result = trimmedFractional
+    ? `${integerPart}.${trimmedFractional}`
+    : integerPart;
+
+  return result;
 }

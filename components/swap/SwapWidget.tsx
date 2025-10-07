@@ -1,7 +1,17 @@
 "use client";
 
-import { Dispatch, SetStateAction, useCallback, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { BN } from "@coral-xyz/anchor";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
+import { toast } from "sonner";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
@@ -16,13 +26,24 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
+import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
+import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
+import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
-import { parseDecimalsInput } from "@/lib/utils";
+import {
+  cn,
+  normalizeBN,
+  parseDecimalsInput,
+  simplifyErrorMessage,
+} from "@/lib/utils";
+import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
+import { Skeleton } from "../ui/skeleton";
 import { SwapButton } from "./SwapButton";
 import { SwapInput } from "./SwapInput";
 import { SwapSetting } from "./SwapSetting";
@@ -61,32 +82,101 @@ const SellActionButtons = ({
 };
 
 export function SwapWidget() {
-  const [sellToken, setSellToken] = useState(tokenProfiles[0]);
-  const [buyToken, setBuyToken] = useState(tokenProfiles[1]);
+  // states
+  const [sellToken, setSellToken] = useState(tokenProfiles[2]);
+  const [buyToken, setBuyToken] = useState(tokenProfiles[3]);
   const [sellAmount, setSellAmount] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
+  const [baseInput, setBaseInput] = useState("");
   const [selectedTokenType, setSelectedTokenType] = useState(
     SelectTokenType.SELL,
   );
   const [slippage, setSlippage] = useState(DEFAULT_SLIPPAGE);
+  const [isBaseExactIn, setIsBaseExactIn] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
 
+  // hooks
+  const debouncedSellAmount = useDebounce(sellAmount, 1000);
+  const debouncedBuyAmount = useDebounce(buyAmount, 1000);
   const { isOpen, setIsOpen } = useDialogState();
   const { connection } = useConnection();
-  const { wallet } = useWallet();
+  const wallet = useAnchorWallet();
+  const provider = useProvider({ connection, wallet });
 
+  // get all spl balances
+  const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
+    connection,
+    wallet?.publicKey ?? undefined,
+    tokenProfiles,
+  );
+
+  const doxxAmmProgram = useDoxxAmmProgram({
+    provider,
+  });
+
+  const slippageBps = useMemo(() => {
+    return Number(slippage) * 100;
+  }, [slippage]);
+
+  const { data: allPoolStates, refetch: refetchAllPoolStates } =
+    useGetAllPools(doxxAmmProgram);
+
+  const { data: bestRoute, isLoading: isLoadingBestRoute } = useBestRoute({
+    connection,
+    inputMint: new PublicKey(sellToken.address),
+    outputMint: new PublicKey(buyToken.address),
+    pools: allPoolStates,
+    baseInput,
+    isBaseExactIn,
+    slippageBps,
+  });
+
+  // memo token balances
+  const [
+    displayToken0Balance,
+    displayToken1Balance,
+    token0BalanceBN,
+    token1BalanceBN,
+  ] = useMemo(() => {
+    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
+    const buyTokenBalance = splBalances?.[buyToken.symbol]?.amount;
+
+    const rawToken0Balance = splBalances?.[sellToken.symbol]?.rawAmount;
+    const rawToken1Balance = splBalances?.[buyToken.symbol]?.rawAmount;
+
+    const token0BalanceBN =
+      rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;
+    const token1BalanceBN =
+      rawToken1Balance !== undefined ? new BN(rawToken1Balance) : undefined;
+
+    return [
+      sellTokenBalance,
+      buyTokenBalance,
+      token0BalanceBN,
+      token1BalanceBN,
+    ];
+  }, [splBalances, sellToken.symbol, buyToken.symbol]);
+
+  const isFetchingBestRoute = useMemo(() => {
+    const isEmptyInput =
+      (isBaseExactIn && sellAmount === "") ||
+      (!isBaseExactIn && buyAmount === "");
+    if (isEmptyInput) {
+      return false;
+    }
+
+    return isLoadingBestRoute || isTyping;
+  }, [isLoadingBestRoute, isTyping, isBaseExactIn, sellAmount, buyAmount]);
+
+  // Callbacks
   // callback when click switch token button
   const handleSelectSwitchToken = useCallback(() => {
     setSellToken(buyToken);
     setBuyToken(sellToken);
     setSellAmount(buyAmount);
     setBuyAmount(sellAmount);
-  }, [sellToken, buyToken, sellAmount, buyAmount]);
-
-  const { data: splBalances } = useAllSplBalances(
-    connection,
-    wallet?.adapter.publicKey ?? undefined,
-    tokenProfiles,
-  );
+    setIsBaseExactIn(!isBaseExactIn);
+  }, [sellToken, buyToken, sellAmount, buyAmount, isBaseExactIn]);
 
   // callback when select token inside token selector dialog
   const handleSelectToken = useCallback(
@@ -122,21 +212,106 @@ export function SwapWidget() {
     setIsOpen(true);
   };
 
+  const handleSellInputChange = useCallback((value: string) => {
+    setSellAmount(parseDecimalsInput(value));
+    setIsBaseExactIn(true);
+    setIsTyping(true);
+  }, []);
+
+  const handleBuyInputChange = useCallback((value: string) => {
+    setBuyAmount(parseDecimalsInput(value));
+    setIsBaseExactIn(false);
+    setIsTyping(true);
+  }, []);
+
   // Handler functions for HALF and MAX buttons - memoized with useCallback
   const handleHalf = useCallback(() => {
-    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
-    if (sellTokenBalance) {
-      const halfAmount = (sellTokenBalance / 2).toString();
-      setSellAmount(parseDecimalsInput(halfAmount));
+    if (displayToken0Balance === undefined) {
+      return;
     }
-  }, [sellToken.symbol, splBalances]);
+    const halfAmount = (displayToken0Balance / 2).toString();
+    handleSellInputChange(halfAmount);
+  }, [displayToken0Balance, handleSellInputChange]);
 
   const handleMax = useCallback(() => {
-    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
-    if (sellTokenBalance) {
-      setSellAmount(parseDecimalsInput(sellTokenBalance.toString()));
+    if (displayToken0Balance === undefined) {
+      return;
     }
-  }, [sellToken.symbol, splBalances]);
+
+    handleSellInputChange(displayToken0Balance.toString());
+  }, [displayToken0Balance, handleSellInputChange]);
+
+  const handleSuccess = useCallback(
+    (txSignature: string | undefined) => {
+      if (txSignature) {
+        toast.success(<SwapSuccessToast txSignature={txSignature} />);
+      } else {
+        toast.error(<SwapUnknownErrorToast />);
+      }
+
+      // delay to refetch balances and pool states
+      setTimeout(() => {
+        refetchSplBalances();
+        refetchAllPoolStates();
+        setSellAmount("");
+        setBuyAmount("");
+      }, 2000);
+    },
+    [refetchSplBalances, refetchAllPoolStates],
+  );
+
+  const handleError = (error: Error) => {
+    toast.error(simplifyErrorMessage(error, "Swap failed"));
+  };
+
+  useEffect(() => {
+    if (!bestRoute && isFetchingBestRoute) {
+      return;
+    }
+
+    if (!bestRoute) {
+      setBuyAmount("");
+      setSellAmount("");
+      setBaseInput("");
+      return;
+    }
+
+    if (isBaseExactIn) {
+      // normalize amount to human readable format
+      const normalizedAmountOut = normalizeBN(
+        bestRoute.token1Amount,
+        bestRoute.token1Decimals,
+      );
+      setBuyAmount(normalizedAmountOut);
+    } else {
+      // normalize amount to human readable format
+      const normalizedAmountIn = normalizeBN(
+        bestRoute.token0Amount,
+        bestRoute.token0Decimals,
+      );
+      setSellAmount(normalizedAmountIn);
+    }
+  }, [isBaseExactIn, bestRoute, isFetchingBestRoute]);
+
+  useEffect(() => {
+    if (isBaseExactIn) {
+      setBaseInput(debouncedSellAmount);
+    } else {
+      setBaseInput(debouncedBuyAmount);
+    }
+    // stop the immediate typing loading once we hand off to debounced fetch
+    setIsTyping(false);
+    // @eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSellAmount, debouncedBuyAmount]);
+
+  useEffect(() => {
+    if (
+      (isBaseExactIn && sellAmount === "") ||
+      (!isBaseExactIn && buyAmount === "")
+    ) {
+      setBaseInput("");
+    }
+  }, [isBaseExactIn, buyAmount, sellAmount]);
 
   return (
     <Card className="flex flex-col rounded-2xl p-0">
@@ -151,11 +326,11 @@ export function SwapWidget() {
             title="Selling"
             token={sellToken}
             amount={sellAmount}
-            onAmountChange={(value) => setSellAmount(parseDecimalsInput(value))}
+            onAmountChange={handleSellInputChange}
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.SELL);
             }}
-            tokenBalance={splBalances?.[sellToken.symbol]?.amount}
+            tokenBalance={displayToken0Balance}
             actionButtons={
               <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
             }
@@ -173,29 +348,57 @@ export function SwapWidget() {
             title="Buying"
             token={buyToken}
             amount={buyAmount}
-            onAmountChange={(value) => setBuyAmount(parseDecimalsInput(value))}
+            onAmountChange={handleBuyInputChange}
             onOpenTokenSelector={() => {
               handleOpenTokenSelector(SelectTokenType.BUY);
             }}
-            tokenBalance={splBalances?.[buyToken.symbol]?.amount}
+            tokenBalance={displayToken1Balance}
           />
         </div>
         {/* details */}
         <div className={cn(text.sb3(), "flex flex-col gap-2 text-gray-600")}>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">
-              <p>1 SOL</p>
+              <p>1 {sellToken.symbol}</p>
               <ArrowRight />
-              <p>1000.00 USDC</p>
+
+              {isFetchingBestRoute ? (
+                <Skeleton />
+              ) : (
+                <p>
+                  {bestRoute
+                    ? normalizeBN(
+                        bestRoute.amountOutPerOneTokenIn,
+                        bestRoute.token1Decimals,
+                      )
+                    : "-"}
+                </p>
+              )}
+              {buyToken.symbol}
             </div>
-            <p>= 1000.00 USDC</p>
+            <div className="flex gap-1">
+              {"="}
+              {isFetchingBestRoute ? (
+                <Skeleton />
+              ) : (
+                <p>
+                  {bestRoute
+                    ? normalizeBN(
+                        bestRoute.token1Amount,
+                        bestRoute.token1Decimals,
+                      )
+                    : "-"}
+                </p>
+              )}
+              {buyToken.symbol}
+            </div>
           </div>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">
               <p>Routing</p>
               <Info />
             </div>
-            <p>CLOB</p>
+            <p>Single-hop</p>
           </div>
           <Separator className="bg-gray-800" />
           <div className="flex flex-row items-center justify-between">
@@ -211,7 +414,16 @@ export function SwapWidget() {
         <ConnectButtonWrapper
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
         >
-          <SwapButton />
+          <SwapButton
+            program={doxxAmmProgram}
+            bestRoute={bestRoute ?? undefined}
+            isQuotingRoute={isFetchingBestRoute}
+            wallet={wallet}
+            token0Balance={token0BalanceBN}
+            token1Balance={token1BalanceBN}
+            onSuccess={handleSuccess}
+            onError={handleError}
+          />
         </ConnectButtonWrapper>
       </CardFooter>
       {isOpen && (
