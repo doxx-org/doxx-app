@@ -3,9 +3,10 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { PoolState } from "@/lib/hooks/chain/types";
 import { Button } from "../ui/button";
-import { SortColumn } from "./cols/sortColomn";
+import { SortHeader } from "./cols/sortColomn";
 import { PoolRow } from "./rows/";
 import { NumberRows } from "./rows/NumberRow";
+import { numericSort } from "@/lib/utils/table";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -50,41 +51,47 @@ const depositButton = (pool: Pool, onDeposit?: OnDepositCallback) => {
 export const createColumns = (onDeposit?: OnDepositCallback): ColumnDef<Pool>[] => [
   {
     id: "poolName",
-    accessorKey: "pool",
     header: "Pool",
     cell: ({ row }) => <PoolRow pool={row.original} />,
+    accessorFn: (row) =>
+      `${row.lpToken.token1.name}/${row.lpToken.token2.name}`,
+    enableGlobalFilter: true,
   },
   {
     id: "apr",
     accessorKey: "apr",
-    header: () => <SortColumn header="APR" />,
+    header: ({ column }) => <SortHeader column={column} header="APR" />,
     cell: ({ row }) => (
       <NumberRows value={row.original.apr} displayValue="percent" />
     ),
+    sortingFn: numericSort,
   },
   {
     id: "tvl",
     accessorKey: "tvl",
-    header: () => <SortColumn header="TVL" />,
+    header: ({ column }) => <SortHeader column={column} header="TVL" />,
     cell: ({ row }) => (
       <NumberRows value={row.original.tvl} displayValue="dollar" />
     ),
+    sortingFn: numericSort,
   },
   {
     id: "dailyVol",
     accessorKey: "dailyVol",
-    header: () => <SortColumn header="Volume 24h" />,
+    header: ({ column }) => <SortHeader column={column} header="Volume 24h" />,
     cell: ({ row }) => (
       <NumberRows value={row.original.dailyVol} displayValue="dollar" />
     ),
+    sortingFn: numericSort,
   },
   {
     id: "dailyVolperTvl",
     accessorKey: "dailyVolperTvl",
-    header: () => <SortColumn header="1D Vol/TVL" />,
+    header: ({ column }) => <SortHeader column={column} header="1D Vol/TVL" />,
     cell: ({ row }) => (
       <NumberRows value={row.original.dailyVolperTvl} displayValue="percent" />
     ),
+    sortingFn: numericSort,
   },
   {
     id: "action",

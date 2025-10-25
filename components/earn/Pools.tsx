@@ -1,109 +1,56 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
-import { text } from "@/lib/text";
-import { cn } from "@/lib/utils/style";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
-import { useProvider } from "@/lib/hooks/chain/useProvider";
-import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
-import { PoolState } from "@/lib/hooks/chain/types";
+import { useMemo, useState } from "react";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import Plus from "@/assets/icons/table/plus.svg";
 import { tokenProfiles } from "@/lib/config/tokens";
+import { PoolState } from "@/lib/hooks/chain/types";
+import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { useProvider } from "@/lib/hooks/chain/useProvider";
+import { text } from "@/lib/text";
 import { getPoolAddress } from "@/lib/utils/instructions";
+import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
+import { SearchInput } from "../ui/search-input";
 import { CreatePoolDialog } from "./CreatePoolDialog";
 import { DepositDialog } from "./DepositDialog";
 import { Pool, createColumns } from "./PoolColumn";
-
-const data: Pool[] = [
-  {
-    id: "1",
-    account: "5w1cUnWz2edZW8g4YWrFejNDqChKYuWpy6B8okBYkkh2",
-    fee: "0.04",
-    lpToken: {
-      token1: {
-        name: "LAYER",
-        image: "/coins/layer.svg",
-      },
-      token2: {
-        name: "sUSD",
-        image: "/coins/susd.svg",
-      },
-    },
-    apr: "10",
-    tvl: "200000000.00",
-    dailyVol: "200000000.00",
-    dailyVolperTvl: "10",
-  },
-  {
-    id: "2",
-    account: "5w1cUnWz2edZW8g4YWrFejNDqChKYuWpy6B8okBYkkh2",
-    fee: "0.04",
-    lpToken: {
-      token1: {
-        name: "sSOL",
-        image: "/coins/ssol.svg",
-      },
-      token2: {
-        name: "sUSD",
-        image: "/coins/susd.svg",
-      },
-    },
-    apr: "10",
-    tvl: "200000000.00",
-    dailyVol: "200000000.00",
-    dailyVolperTvl: "10",
-  },
-  {
-    id: "3",
-    account: "5w1cUnWz2edZW8g4YWrFejNDqChKYuWpy6B8okBYkkh2",
-    fee: "0.04",
-    lpToken: {
-      token1: {
-        name: "LAYER",
-        image: "/coins/layer.svg",
-      },
-      token2: {
-        name: "USDC",
-        image: "/coins/usdc.svg",
-      },
-    },
-    apr: "10",
-    tvl: "200000000.00",
-    dailyVol: "200000000.00",
-    dailyVolperTvl: "10",
-  },
-];
+import { columns } from "./PoolColumn";
+import { mockPoolsData } from "./mock-pools-data";
 
 export function Pools() {
+  const [searchValue, setSearchValue] = useState("");
   const [isCreatePoolOpen, setIsCreatePoolOpen] = useState(false);
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
   const [selectedPool, setSelectedPool] = useState<PoolState | null>(null);
-  const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(null);
+  const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(
+    null,
+  );
 
   // Hooks
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
   const doxxAmmProgram = useDoxxAmmProgram({ provider });
-  
+
   // Fetch all pools
   const { data: poolsData, isLoading } = useGetAllPools(doxxAmmProgram);
 
   // Transform pool data from chain to table format
   const transformedPools = useMemo<Pool[]>(() => {
-    if (!poolsData || !doxxAmmProgram) return data; // Fallback to mock data
+    if (!poolsData || !doxxAmmProgram) return mockPoolsData; // Fallback to mock data
 
     return poolsData.map((poolData, index) => {
       const { poolState, ammConfig } = poolData;
-      
+
       // Find token profiles
       const token0Profile = tokenProfiles.find(
-        (t) => t.address === poolState.token0Mint.toBase58()
+        (t) => t.address === poolState.token0Mint.toBase58(),
       );
       const token1Profile = tokenProfiles.find(
-        (t) => t.address === poolState.token1Mint.toBase58()
+        (t) => t.address === poolState.token1Mint.toBase58(),
       );
 
       // Calculate pool address
@@ -111,7 +58,7 @@ export function Pools() {
         poolState.ammConfig,
         poolState.token0Mint,
         poolState.token1Mint,
-        doxxAmmProgram.programId
+        doxxAmmProgram.programId,
       );
 
       // Calculate fee percentage from tradeFeeRate (basis points)
@@ -155,20 +102,33 @@ export function Pools() {
         <Button
           className={cn(
             text.hsb2(),
-            "text-green flex flex-row items-center justify-center",
+            "text-green flex flex-row items-center justify-center gap-2 rounded-2xl",
           )}
           onClick={() => setIsCreatePoolOpen(true)}
         >
+          <Plus className="mt-1" />
           Create Pool
         </Button>
       </div>
       <div className="h-full min-h-[660px] w-full">
         {isLoading ? (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex h-full items-center justify-center">
             <span className="text-gray-400">Loading pools...</span>
           </div>
         ) : (
-          <DataTable columns={poolColumns} data={transformedPools} />
+          <DataTable
+            columns={columns}
+            data={mockPoolsData} // seems like real data didn't work.
+            globalFilter={searchValue}
+            pageSize={10}
+            searchInput={
+              <SearchInput
+                value={searchValue}
+                onChange={setSearchValue}
+                placeholder="Search pool or token"
+              />
+            }
+          />
         )}
       </div>
 
