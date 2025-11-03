@@ -1,35 +1,66 @@
 "use client";
 
+import { ReactNode, useState } from "react";
 import {
   ColumnDef,
+  PaginationState,
+  SortingState,
   flexRender,
   getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table";
 import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
+import { DataTablePagination } from "./data-table-pagination";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  searchInput?: ReactNode;
+  globalFilter?: string;
+  pageSize?: number;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  searchInput,
+  globalFilter,
+  pageSize = 10,
 }: DataTableProps<TData, TValue>) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize,
+  });
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    onGlobalFilterChange: () => {},
+    state: {
+      sorting,
+      globalFilter,
+      pagination,
+    },
   });
 
   const isEmpty = table.getRowModel().rows?.length === 0;
@@ -43,28 +74,36 @@ export function DataTable<TData, TValue>({
     >
       <Table className={cn(isEmpty && "h-full", "w-full")}>
         <TableHeader>
+          {searchInput && (
+            <TableRow className="border-b border-gray-800 hover:bg-transparent">
+              <TableHead colSpan={columns.length} className="px-4 py-4">
+                <div className="w-[360px]">{searchInput}</div>
+              </TableHead>
+            </TableRow>
+          )}
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => {
-                // console.log(header);
-                return (
-                  <TableHead
-                    key={header.id}
-                    className={cn(
-                      text.sb3(),
-                      "px-4 text-gray-500",
-                      header.index === 0 ? "text-left" : "text-right",
-                    )}
-                  >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
-                  </TableHead>
-                );
-              })}
+              {headerGroup.headers.map((header) => (
+                <TableHead
+                  key={header.id}
+                  style={{
+                    flex: header.getSize(),
+                    width: header.getSize(),
+                  }}
+                  className={cn(
+                    text.sb3(),
+                    "px-4 text-gray-500",
+                    header.index === 0 ? "text-left" : "text-right",
+                  )}
+                >
+                  {header.isPlaceholder
+                    ? null
+                    : flexRender(
+                        header.column.columnDef.header,
+                        header.getContext(),
+                      )}
+                </TableHead>
+              ))}
             </TableRow>
           ))}
         </TableHeader>
@@ -102,6 +141,15 @@ export function DataTable<TData, TValue>({
             </TableRow>
           )}
         </TableBody>
+        {table.getPageCount() > 1 && (
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={columns.length} className="p-0">
+                <DataTablePagination table={table} />
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        )}
       </Table>
     </div>
   );

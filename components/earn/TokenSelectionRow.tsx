@@ -15,6 +15,9 @@ interface TokenSelectionRowProps {
   onTokenSelect: () => void;
   onAmountChange: (value: string) => void;
   disabled?: boolean;
+  balance?: number;
+  usdValue?: number;
+  disableTokenSelect?: boolean;
 }
 
 export const TokenSelectionRow = ({
@@ -25,6 +28,9 @@ export const TokenSelectionRow = ({
   onTokenSelect,
   onAmountChange,
   disabled = false,
+  balance = 0,
+  usdValue = 0,
+  disableTokenSelect = false,
 }: TokenSelectionRowProps) => {
   return (
     <div className="flex w-full flex-row items-center justify-between gap-4">
@@ -33,6 +39,7 @@ export const TokenSelectionRow = ({
           variant="outline"
           className="h-12 min-w-40 gap-2 rounded-xl border border-gray-700 bg-gray-800/50 p-2 hover:bg-gray-700/50"
           onClick={onTokenSelect}
+          disabled={disableTokenSelect}
         >
           {token ? (
             <div className="flex flex-row items-center gap-2">
@@ -70,10 +77,20 @@ export const TokenSelectionRow = ({
         />
         <div className="flex w-full flex-row items-center justify-between gap-1">
           <div>
-            <span className={cn(text.sb3(), "text-gray-500")}>Balance:</span>
-            <span className={cn(text.sb3(), "text-gray-400")}>0</span>
+            <span className={cn(text.sb3(), "text-gray-500")}>Balance: </span>
+            <span className={cn(text.sb3(), "text-gray-400")}>
+              {balance.toLocaleString(undefined, { 
+                minimumFractionDigits: 0, 
+                maximumFractionDigits: 6 
+              })}
+            </span>
           </div>
-          <span className={cn(text.sb3(), "text-gray-500")}>$0</span>
+          <span className={cn(text.sb3(), "text-gray-500")}>
+            ${usdValue.toLocaleString(undefined, { 
+              minimumFractionDigits: 2, 
+              maximumFractionDigits: 2 
+            })}
+          </span>
         </div>
       </div>
     </div>
