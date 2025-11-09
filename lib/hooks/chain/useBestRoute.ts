@@ -1,7 +1,7 @@
 import { BN } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
-import { DEFAULT_SLIPPAGE_BPS } from "@/lib/constants";
+import { DEFAULT_SLIPPAGE_BPS, ZERO } from "@/lib/constants";
 import {
   IGetBestQuoteResult,
   getBestQuoteSingleHopExactIn,
@@ -65,6 +65,7 @@ export function useBestRoute({
       for (const pool of pools) {
         ammByPk.set(pool.poolState.ammConfig.toString(), pool.ammConfig);
       }
+      console.log("🚀 ~ ammByPk:", ammByPk);
 
       if (ammByPk.size === 0) {
         return null;
@@ -73,7 +74,7 @@ export function useBestRoute({
       let bestRoute: IGetBestQuoteResult | undefined = undefined;
       // Calculate based on base input or base output
       if (isBaseExactIn) {
-        bestRoute = await getBestQuoteSingleHopExactIn({
+        const exactInBestRoute = await getBestQuoteSingleHopExactIn({
           connection,
           pools: poolStates,
           ammByPk,
@@ -82,8 +83,15 @@ export function useBestRoute({
           amountIn: baseInput,
           slippageBps,
         });
+
+        if (exactInBestRoute) {
+          bestRoute = {
+            ...exactInBestRoute,
+            minMaxAmount: exactInBestRoute.minAmountOut ?? ZERO,
+          };
+        }
       } else {
-        bestRoute = await getBestQuoteSingleHopExactOut({
+        const exactOutBestRoute = await getBestQuoteSingleHopExactOut({
           connection,
           pools: poolStates,
           ammByPk,
@@ -92,9 +100,16 @@ export function useBestRoute({
           amountOut: baseInput,
           slippageBps,
         });
+
+        if (exactOutBestRoute) {
+          bestRoute = {
+            ...exactOutBestRoute,
+            minMaxAmount: exactOutBestRoute.maxAmountIn ?? ZERO,
+          };
+        }
       }
 
-      return bestRoute ? { ...bestRoute, isBaseExactIn: isBaseExactIn } : null;
+      return bestRoute ? { ...bestRoute, isBaseExactIn } : null;
     },
     enabled:
       !!baseInput &&

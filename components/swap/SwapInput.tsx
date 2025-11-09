@@ -20,6 +20,7 @@ interface SwapInputProps {
   className?: string;
   tokenBalance: number | undefined;
   actionButtons?: ReactNode;
+  isActionable: boolean;
 }
 
 export function SwapInput({
@@ -33,6 +34,7 @@ export function SwapInput({
   className,
   tokenBalance,
   actionButtons,
+  isActionable,
 }: SwapInputProps) {
   return (
     <div
@@ -56,8 +58,8 @@ export function SwapInput({
           <Button
             variant="outline"
             className="h-fit w-fit gap-2 rounded-2xl border border-white/10 bg-white/5 p-[6px]"
-            disabled={!onOpenTokenSelector}
-            onClick={onOpenTokenSelector}
+            disabled={!onOpenTokenSelector || !isActionable}
+            onClick={isActionable ? onOpenTokenSelector : undefined}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
               <Avatar>
@@ -79,13 +81,15 @@ export function SwapInput({
           <input
             type="text"
             value={amount}
-            onChange={(e) => onAmountChange?.(e.target.value)}
+            onChange={(e) =>
+              isActionable ? onAmountChange?.(e.target.value) : undefined
+            }
             className={cn(
               text.sh1(),
               "flex-1 text-right text-white outline-none placeholder:text-gray-600",
             )}
             placeholder={placeholder}
-            disabled={disabled}
+            disabled={disabled || !isActionable}
           />
           <p className="text-right text-gray-600">$0.00</p>
         </div>

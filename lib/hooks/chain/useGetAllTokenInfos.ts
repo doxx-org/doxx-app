@@ -28,30 +28,35 @@ export function useGetAllTokenInfos(
         .join(","),
     ], // stable key
     queryFn: async () => {
-      if (!allTokenProfiles || allTokenProfiles.length === 0) return undefined;
+      try {
+        if (!allTokenProfiles || allTokenProfiles.length === 0)
+          return undefined;
 
-      const params: GetAllTokenInfosPayload[] = allTokenProfiles.map((p) => {
-        return { address: p.address, decimals: p.decimals };
-      });
+        const params: GetAllTokenInfosPayload[] = allTokenProfiles.map((p) => {
+          return { address: p.address, decimals: p.decimals };
+        });
 
-      const res = await fetch("/api/token-infos", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ params }),
-      });
+        const res = await fetch("/api/token-infos", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ params }),
+        });
 
-      if (!res.ok) throw new Error("Failed to resolve token displays");
-      const json = (await res.json()) as { data: TokenDisplay[] };
+        if (!res.ok) throw new Error("Failed to fetch");
+        const json = (await res.json()) as { data: TokenProfile[] };
 
-      const displays = json.data.map((d) => ({
-        address: d.mint,
-        name: d.name,
-        symbol: d.symbol as TokenSymbol | undefined,
-        decimals: d.decimals,
-        image: d.image,
-      }));
+        const displays = json.data.map((d) => ({
+          address: d.address,
+          name: d.name,
+          symbol: d.symbol,
+          decimals: d.decimals,
+          image: d.image,
+        }));
 
-      return displays;
+        return displays;
+      } catch (_) {
+        throw new Error("Failed to fetch");
+      }
     },
     enabled: !!allTokenProfiles && allTokenProfiles.length > 0,
     staleTime: 120_000, // align with s-maxage

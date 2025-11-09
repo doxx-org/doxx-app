@@ -16,6 +16,8 @@ interface SwapButtonProps {
   wallet: AnchorWallet | undefined;
   token0Balance: BN | undefined;
   token1Balance: BN | undefined;
+  errorAllTokenProfiles: string | undefined;
+  isActionable: boolean;
   onSuccess: (txSignature: string | undefined) => void;
   onError: (error: Error) => void;
 }
@@ -27,6 +29,8 @@ export function SwapButton({
   wallet,
   token0Balance,
   token1Balance,
+  errorAllTokenProfiles,
+  isActionable,
   onSuccess,
   onError,
 }: SwapButtonProps) {
@@ -70,6 +74,8 @@ export function SwapButton({
 
   // build button label and disabled state
   const [label, disabled] = useMemo(() => {
+    if (errorAllTokenProfiles) return ["Failed to fetch tokens", true];
+
     // validate quoting route
     if (isQuotingRoute) return ["Quoting route...", true];
 
@@ -84,15 +90,30 @@ export function SwapButton({
       return ["Insufficient balance", true];
     }
 
+    if (!isActionable) return ["Loading...", true];
+
     // happy case
     return ["Swap", false];
-  }, [isSwapping, isQuotingRoute, bestRoute, token1Balance, token0Balance]);
+  }, [
+    isSwapping,
+    isQuotingRoute,
+    bestRoute,
+    token1Balance,
+    token0Balance,
+    errorAllTokenProfiles,
+    isActionable,
+  ]);
+
+  const isLoading = useMemo(() => {
+    return isSwapping || isQuotingRoute;
+  }, [isSwapping, isQuotingRoute]);
 
   return (
     <Button
       className={cn(text.hsb1(), "text-green h-16 w-full rounded-xl p-6")}
       onClick={handleSwap}
       disabled={disabled}
+      loading={isLoading}
     >
       {label}
     </Button>

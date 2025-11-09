@@ -18,7 +18,18 @@ interface IGetBestQuoteParams {
   slippageBps: number; // e.g. 50 = 0.5%; Max = 10_000 = 100%
 }
 
-export type IGetBestQuoteResult = Omit<IUseBestRouteResponse, "isBaseExactIn">;
+type IGetBestQuoteResultBase = Omit<IUseBestRouteResponse, "isBaseExactIn">;
+
+export type IGetBestQuoteResult = IGetBestQuoteResultBase & {
+  minMaxAmount: BN;
+};
+
+export type IGetBestQuoteInResult = IGetBestQuoteResultBase & {
+  maxAmountIn: BN;
+};
+export type IGetBestQuoteOutResult = IGetBestQuoteResultBase & {
+  minAmountOut: BN;
+};
 
 // ---------- fee helpers (ppm) ----------
 const inIs0 = (pool: PoolState, inMint: PublicKey) => {
@@ -119,7 +130,7 @@ export async function getBestQuoteSingleHopExactIn(
   opts: IGetBestQuoteParams & {
     amountIn: string; // human readable format
   },
-): Promise<IGetBestQuoteResult | undefined> {
+): Promise<IGetBestQuoteOutResult | undefined> {
   const {
     connection,
     pools,
@@ -129,7 +140,7 @@ export async function getBestQuoteSingleHopExactIn(
     amountIn,
     slippageBps,
   } = opts;
-  let best: IGetBestQuoteResult | undefined = undefined;
+  let best: IGetBestQuoteOutResult | undefined = undefined;
 
   for (const pool of pools) {
     // skip if swap disabled: status bit2 (value 4)
@@ -202,27 +213,28 @@ export async function getBestQuoteSingleHopExactIn(
     );
 
     // apply slippage on output (decrease minOut)
-    const newAmountOutWithSlippage = newAmountOut
-      .muln(BPS - slippageBps)
-      .divn(BPS);
+    const minAmountOut = newAmountOut.muln(BPS - slippageBps).divn(BPS);
 
     // if new amount out is 0, skip
-    if (newAmountOutWithSlippage.lte(ZERO)) {
+    if (minAmountOut.lte(ZERO)) {
       continue;
     }
 
     // if new amount out is greater than previous best amount out, update best
-    if (!best || newAmountOutWithSlippage.gt(best.token1Amount)) {
-      const amountOutPerOneTokenIn = amountInTokenDecimals
-        .mul(ONE_E9)
-        .div(newAmountOutWithSlippage);
+    if (
+      !best ||
+      newAmountOut.lt(best.token1Amount) ||
+      minAmountOut.gt(best.minAmountOut)
+    ) {
+      const amountOutPerOneTokenIn = newAmountOut.mul(ONE_E9).div(minAmountOut);
       best = {
         token0: inputMint,
         token1: outputMint,
         token0Amount: amountInTokenDecimals,
-        token1Amount: newAmountOutWithSlippage,
+        token1Amount: newAmountOut,
         token0Decimals: pool.mint0Decimals,
         token1Decimals: pool.mint1Decimals,
+        minAmountOut,
         amountOutPerOneTokenIn,
         pool,
       };
@@ -236,7 +248,7 @@ export async function getBestQuoteSingleHopExactOut(
   opts: IGetBestQuoteParams & {
     amountOut: string; // human readable format
   },
-): Promise<IGetBestQuoteResult | undefined> {
+): Promise<IGetBestQuoteInResult | undefined> {
   const {
     connection,
     pools,
@@ -246,7 +258,7 @@ export async function getBestQuoteSingleHopExactOut(
     amountOut,
     slippageBps,
   } = opts;
-  let best: IGetBestQuoteResult | undefined = undefined;
+  let best: IGetBestQuoteInResult | undefined = undefined;
 
   for (const pool of pools) {
     if ((pool.status & 0b100) !== 0) {
@@ -318,27 +330,30 @@ export async function getBestQuoteSingleHopExactOut(
     );
 
     // apply slippage on input (increase maxIn)
-    const newAmountInWithSlippage = newAmountIn
-      .muln(BPS + slippageBps)
-      .divn(BPS);
+    const maxAmountIn = newAmountIn.muln(BPS + slippageBps).divn(BPS);
 
     // if new amount in is 0, skip
-    if (newAmountInWithSlippage.lte(ZERO)) {
+    if (maxAmountIn.lte(ZERO) || maxAmountIn.lte(ZERO)) {
       continue;
     }
 
     // if new amount in is less than previous best amount in, update best
-    if (!best || newAmountInWithSlippage.lt(best.token0Amount)) {
-      const amountOutPerOneTokenIn = newAmountInWithSlippage
+    if (
+      !best ||
+      newAmountIn.lt(best.token0Amount) ||
+      maxAmountIn.lt(best.maxAmountIn)
+    ) {
+      const amountOutPerOneTokenIn = maxAmountIn
         .mul(ONE_E9)
         .div(amountOutTokenDecimals);
       best = {
-        token0Amount: newAmountInWithSlippage,
+        token0Amount: newAmountIn,
         token1Amount: amountOutTokenDecimals,
         token0: inputMint,
         token1: outputMint,
         token0Decimals: pool.mint0Decimals,
         token1Decimals: pool.mint1Decimals,
+        maxAmountIn,
         amountOutPerOneTokenIn,
         pool,
       };

@@ -113,21 +113,34 @@ export function SwapWidget() {
     return Number(slippage) * 100;
   }, [slippage]);
 
-  const { data: allPoolStates, refetch: refetchAllPoolStates } =
-    useGetAllPools(doxxAmmProgram);
-  console.log("🚀 ~ allPoolStates:", allPoolStates);
+  const {
+    data: allPoolStates,
+    isLoading: isLoadingAllPoolStates,
+    refetch: refetchAllPoolStates,
+  } = useGetAllPools(doxxAmmProgram);
 
-  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
-    useGetAllTokenInfos(allPoolStates, knownTokenProfiles);
+  const {
+    data: allTokenProfiles,
+    isLoading: isLoadingAllTokenProfiles,
+    error: errorAllTokenProfiles,
+  } = useGetAllTokenInfos(allPoolStates, knownTokenProfiles);
 
   // get all spl balances
-  const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
+  const {
+    data: splBalances,
+    isLoading: isLoadingSplBalances,
+    refetch: refetchSplBalances,
+  } = useAllSplBalances(
     connection,
     wallet?.publicKey ?? undefined,
     allTokenProfiles,
   );
 
-  const { data: bestRoute, isLoading: isLoadingBestRoute } = useBestRoute({
+  const {
+    data: bestRoute,
+    isLoading: isLoadingBestRoute,
+    isFetched,
+  } = useBestRoute({
     connection,
     inputMint: new PublicKey(sellToken.address),
     outputMint: new PublicKey(buyToken.address),
@@ -174,6 +187,22 @@ export function SwapWidget() {
     return isLoadingBestRoute || isTyping;
   }, [isLoadingBestRoute, isTyping, isBaseExactIn, sellAmount, buyAmount]);
 
+  const isActionable = useMemo(() => {
+    return (
+      !isLoadingAllTokenProfiles &&
+      !errorAllTokenProfiles &&
+      !isFetchingBestRoute &&
+      !isLoadingSplBalances &&
+      !isLoadingAllPoolStates
+    );
+  }, [
+    isLoadingAllTokenProfiles,
+    errorAllTokenProfiles,
+    isFetchingBestRoute,
+    isLoadingSplBalances,
+    isLoadingAllPoolStates,
+  ]);
+
   // Callbacks
   // callback when click switch token button
   const handleSelectSwitchToken = useCallback(() => {
@@ -193,7 +222,9 @@ export function SwapWidget() {
         oppositeToken: TokenProfile,
         setOppositeToken: Dispatch<SetStateAction<TokenProfile>>,
       ) {
-        if (oppositeToken.symbol === newToken.symbol) {
+        if (
+          oppositeToken.address.toLowerCase() === newToken.address.toLowerCase()
+        ) {
           setOppositeToken(currentToken);
         }
       }
@@ -213,13 +244,12 @@ export function SwapWidget() {
   );
 
   // callback when open token selector dialog
-
-  const handleOpenTokenSelector = isLoadingAllTokenProfiles
-    ? undefined
-    : (selectTokenType: SelectTokenType) => {
+  const handleOpenTokenSelector = isActionable
+    ? (selectTokenType: SelectTokenType) => {
         setSelectedTokenType(selectTokenType);
         setIsOpen(true);
-      };
+      }
+    : undefined;
 
   const handleSellInputChange = useCallback((value: string) => {
     setSellAmount(parseDecimalsInput(value));
@@ -347,6 +377,7 @@ export function SwapWidget() {
             actionButtons={
               <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
             }
+            isActionable={isActionable}
           />
           <button
             type="button"
@@ -370,6 +401,7 @@ export function SwapWidget() {
                 : undefined
             }
             tokenBalance={displayToken1Balance}
+            isActionable={isActionable}
           />
         </div>
         {/* details */}
@@ -432,8 +464,10 @@ export function SwapWidget() {
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
         >
           <SwapButton
+            errorAllTokenProfiles={errorAllTokenProfiles?.message}
             program={doxxAmmProgram}
             bestRoute={bestRoute ?? undefined}
+            isActionable={isActionable}
             isQuotingRoute={isFetchingBestRoute}
             wallet={wallet}
             token0Balance={token0BalanceBN}

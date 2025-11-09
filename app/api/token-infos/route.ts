@@ -5,7 +5,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { NextRequest, NextResponse } from "next/server";
 import pLimit from "p-limit";
 import QuickLRU from "quick-lru";
-import { knownTokenProfilesMap } from "@/lib/config/tokens";
+import { TokenProfile, knownTokenProfilesMap } from "@/lib/config/tokens";
 import { apiEnvConfig } from "../configs/apiEnvConfig";
 import {
   GetAllTokenInfosPayload,
@@ -243,16 +243,18 @@ async function resolveFromToken2022Throttled(
 }
 
 // ---------- Route ----------
-export async function POST(req: NextRequest) {
+export async function POST(
+  req: NextRequest,
+): Promise<NextResponse<{ data: TokenProfile[] }>> {
   const body = await req.json().catch(() => null);
   if (!body || !body.params) {
-    return NextResponse.json({ error: "params[] required" }, { status: 400 });
+    return NextResponse.json({ data: [] }, { status: 400 });
   }
 
   // 0) Deduplicate
   const params = body.params as GetAllTokenInfosPayload[];
   if (params.length === 0) {
-    return NextResponse.json({ error: "params[] is empty" }, { status: 400 });
+    return NextResponse.json({ data: [] }, { status: 400 });
   }
 
   // 1) cache
@@ -336,35 +338,32 @@ export async function POST(req: NextRequest) {
   //   }
   // }
 
-  // 5) Final fallback (short address) for anything still empty
+  // 5) Final fallback (make it an unknown token) for anything still empty
+  const allTokenProfiles: TokenProfile[] = [];
   for (const p of params) {
     const td = results[p.address];
-    if (!td) {
-      const short = `${p.address.slice(0, 4)}…${p.address.slice(-4)}`;
-      const out: TokenDisplay = {
-        mint: p.address,
-        name: short,
-        symbol: short,
-        // source: "fallback",
+    if (td && td.name && td.symbol) {
+      allTokenProfiles.push({
+        address: td.mint,
+        name: td.name,
+        symbol: td.symbol,
+        decimals: td.decimals,
+        image: td.image,
+      });
+    } else {
+      // Token not found, make it an unknown token
+      allTokenProfiles.push({
+        address: p.address,
+        name: "UNKNOWN",
+        symbol: "UNK",
         decimals: p.decimals,
-      };
-      lru.set(p.address, out);
-      results[p.address] = out;
-    } else if (!td.name && !td.symbol && !td.image) {
-      const short = `${p.address.slice(0, 4)}…${p.address.slice(-4)}`;
-      results[p.address] = {
-        ...td,
-        name: short,
-        symbol: short,
-        // source: "fallback",
-      };
+        image: undefined,
+      });
     }
   }
 
-  const mintsArray = Object.values(results);
-
   return NextResponse.json(
-    { data: mintsArray },
+    { data: allTokenProfiles },
     {
       headers: { "Cache-Control": "s-maxage=120, stale-while-revalidate=600" },
     },

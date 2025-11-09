@@ -24,7 +24,7 @@ export function TokenList({
         {filteredTokenProfiles.length > 0 ? (
           filteredTokenProfiles.map((token) => (
             <div
-              key={token.name}
+              key={`${token.symbol}-${token.address}`}
               onClick={() => onSelectToken(token)}
               className="flex items-center gap-4 px-6 py-4 hover:cursor-pointer hover:bg-gray-800"
             >
