@@ -65,8 +65,8 @@ export function useDoxxSwap(
       }
 
       try {
-        const inputMint = (params as any).inputMint as PublicKey;
-        const outputMint = (params as any).outputMint as PublicKey;
+        const inputMint = params.inputMint as PublicKey;
+        const outputMint = params.outputMint as PublicKey;
         const inIs0 = inputMint.equals(pool.token0Mint);
 
         const inputVault = inIs0 ? pool.token0Vault : pool.token1Vault;

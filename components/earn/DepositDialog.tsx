@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
-import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
+import {
+  TokenProfile,
+  TokenSymbol,
+  knownTokenProfiles,
+} from "@/lib/config/tokens";
+import { PoolState } from "@/lib/hooks/chain/types";
 import { useDeposit } from "@/lib/hooks/chain/useDeposit";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { usePoolLpSupply } from "@/lib/hooks/chain/usePoolLpSupply";
+import { usePoolVaultBalances } from "@/lib/hooks/chain/usePoolVaultBalances";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
-import { usePoolVaultBalances } from "@/lib/hooks/chain/usePoolVaultBalances";
-import { usePoolLpSupply } from "@/lib/hooks/chain/usePoolLpSupply";
-import { PoolState } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";
 import { cn, simplifyErrorMessage } from "@/lib/utils";
-import { parseAmountBN, formatTokenAmount } from "@/lib/utils/number";
-import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
+import { parseAmountBN } from "@/lib/utils/number";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -57,7 +60,7 @@ export const DepositDialog = ({
   const tokenA = useMemo(() => {
     if (!poolState) return null;
     return (
-      tokenProfiles.find(
+      knownTokenProfiles.find(
         (t) => t.address === poolState.token0Mint.toBase58(),
       ) ?? null
     );
@@ -66,7 +69,7 @@ export const DepositDialog = ({
   const tokenB = useMemo(() => {
     if (!poolState) return null;
     return (
-      tokenProfiles.find(
+      knownTokenProfiles.find(
         (t) => t.address === poolState.token1Mint.toBase58(),
       ) ?? null
     );
@@ -76,7 +79,7 @@ export const DepositDialog = ({
   const { data: splBalances } = useAllSplBalances(
     connection,
     wallet?.publicKey ?? undefined,
-    tokenProfiles,
+    knownTokenProfiles,
   );
 
   // Fetch pool vault balances
@@ -87,10 +90,7 @@ export const DepositDialog = ({
   );
 
   // Fetch LP token supply
-  const { data: lpSupply } = usePoolLpSupply(
-    connection,
-    poolState?.lpMint,
-  );
+  const { data: lpSupply } = usePoolLpSupply(connection, poolState?.lpMint);
 
   // Calculate LP tokens to receive based on pool reserves and deposit amounts
   const lpTokenAmount = useMemo((): string => {
@@ -120,34 +120,34 @@ export const DepositDialog = ({
 
     // If we have vault balances and LP supply, calculate properly
     if (
-      vaultBalances && 
+      vaultBalances &&
       lpSupply &&
-      vaultBalances.token0Balance > 0n && 
+      vaultBalances.token0Balance > 0n &&
       vaultBalances.token1Balance > 0n &&
       lpSupply > 0n
     ) {
       // CRITICAL: Map UI amounts to pool token order
       // tokenA is always poolState.token0Mint, tokenB is always poolState.token1Mint
       // So numAmountA corresponds to token0, numAmountB corresponds to token1
-      
+
       // Convert user amounts to base units (already in correct order)
-      const amount0Base = numAmountA * Math.pow(10, tokenA.decimal);
-      const amount1Base = numAmountB * Math.pow(10, tokenB.decimal);
-      
+      const amount0Base = numAmountA * Math.pow(10, tokenA.decimals);
+      const amount1Base = numAmountB * Math.pow(10, tokenB.decimals);
+
       // Get reserves in base units
       const reserve0 = Number(vaultBalances.token0Balance);
       const reserve1 = Number(vaultBalances.token1Balance);
       const totalLpSupply = Number(lpSupply);
-      
+
       // For existing pools: LP = min(amount0/reserve0, amount1/reserve1) * totalSupply
       // This ensures we deposit at the current pool ratio
       const ratio0 = amount0Base / reserve0;
       const ratio1 = amount1Base / reserve1;
       const minRatio = Math.min(ratio0, ratio1);
-      
+
       // Calculate LP tokens to mint
       const lpToMint = minRatio * totalLpSupply;
-      
+
       console.log("LP Calculation:", {
         tokenA_symbol: tokenA.symbol,
         tokenB_symbol: tokenB.symbol,
@@ -168,7 +168,7 @@ export const DepositDialog = ({
         lpToMint,
         lpTokensHumanReadable: (lpToMint / Math.pow(10, 9)).toFixed(6),
       });
-      
+
       return (lpToMint / Math.pow(10, 9)).toFixed(6);
     }
 
@@ -182,16 +182,16 @@ export const DepositDialog = ({
     if (!lpTokenAmount || lpTokenAmount === "" || !lpSupply) {
       return 0;
     }
-    
+
     const lpAmount = parseFloat(lpTokenAmount);
     if (isNaN(lpAmount) || lpAmount <= 0) return 0;
-    
+
     const lpAmountBase = lpAmount * Math.pow(10, 9);
     const currentSupply = Number(lpSupply);
-    
+
     // Calculate percentage: newLp / (currentSupply + newLp) * 100
     const percentage = (lpAmountBase / (currentSupply + lpAmountBase)) * 100;
-    
+
     return percentage;
   }, [lpTokenAmount, lpSupply]);
 
@@ -205,22 +205,22 @@ export const DepositDialog = ({
   const tokenBalances = useMemo(
     () => ({
       tokenA:
-        tokenA && splBalances ? splBalances[tokenA.symbol]?.amount ?? 0 : 0,
+        tokenA && splBalances ? (splBalances[tokenA.address]?.amount ?? 0) : 0,
       tokenB:
-        tokenB && splBalances ? splBalances[tokenB.symbol]?.amount ?? 0 : 0,
+        tokenB && splBalances ? (splBalances[tokenB.address]?.amount ?? 0) : 0,
     }),
     [tokenA, tokenB, splBalances],
   );
 
   const usdValues = useMemo(() => {
     const getTokenPrice = (token: TokenProfile | null): number => {
-      if (!token) return 0;
+      if (!token || !token.symbol) return 0;
       // Placeholder prices - in a real app, these would come from a price API
-      const mockPrices: Record<string, number> = {
-        USDC: 1.0,
-        sUSD: 1.0,
-        LAYER: 0.05,
-        sSOL: 180.0,
+      const mockPrices: Record<TokenSymbol, number> = {
+        [TokenSymbol.USDC]: 1.0,
+        [TokenSymbol.sUSD]: 1.0,
+        [TokenSymbol.LAYER]: 0.05,
+        [TokenSymbol.sSOL]: 180.0,
       };
       return mockPrices[token.symbol] ?? 0;
     };
@@ -260,17 +260,17 @@ export const DepositDialog = ({
       const explorerUrl = `https://solscan.io/tx/${txSignature}?cluster=testnet`;
       toast.success(
         <div>
-          Deposit successful! 
-          <a 
-            href={explorerUrl} 
-            target="_blank" 
+          Deposit successful!
+          <a
+            href={explorerUrl}
+            target="_blank"
             rel="noopener noreferrer"
-            className="underline ml-2"
+            className="ml-2 underline"
           >
             View on Solscan
           </a>
         </div>,
-        { duration: 10000 }
+        { duration: 10000 },
       );
     } else {
       toast.success("Deposit successful!");
@@ -311,25 +311,33 @@ export const DepositDialog = ({
       // IMPORTANT: tokenA/tokenB in UI might not match token0/token1 in pool
       // poolState.token0Mint is always < token1Mint (sorted by public key)
       // We need to map our UI amounts to the correct pool tokens
-      
+
       // Check which UI token corresponds to which pool token
       const isTokenAToken0 = poolState.token0Mint.toBase58() === tokenA.address;
-      
+
       // Map amounts correctly
       const actualAmount0 = isTokenAToken0 ? amountA : amountB;
       const actualAmount1 = isTokenAToken0 ? amountB : amountA;
-      const actualToken0Decimal = isTokenAToken0 ? tokenA.decimal : tokenB.decimal;
-      const actualToken1Decimal = isTokenAToken0 ? tokenB.decimal : tokenA.decimal;
-      
+      const actualToken0Decimal = isTokenAToken0
+        ? tokenA.decimals
+        : tokenB.decimals;
+      const actualToken1Decimal = isTokenAToken0
+        ? tokenB.decimals
+        : tokenA.decimals;
+
       // Convert amounts to BN with proper decimals
       const amount0 = parseAmountBN(actualAmount0, actualToken0Decimal);
       const amount1 = parseAmountBN(actualAmount1, actualToken1Decimal);
       const lpAmount = parseAmountBN(lpTokenAmount, 9); // LP tokens typically use 9 decimals
 
       // Use higher slippage tolerance (10%) for safety
-      const slippageTolerance = 0.10;
-      const maxAmount0 = amount0.muln(Math.floor(100 * (1 + slippageTolerance))).divn(100);
-      const maxAmount1 = amount1.muln(Math.floor(100 * (1 + slippageTolerance))).divn(100);
+      const slippageTolerance = 0.1;
+      const maxAmount0 = amount0
+        .muln(Math.floor(100 * (1 + slippageTolerance)))
+        .divn(100);
+      const maxAmount1 = amount1
+        .muln(Math.floor(100 * (1 + slippageTolerance)))
+        .divn(100);
 
       console.log("Depositing to pool:", {
         poolStateAddress,
@@ -422,7 +430,7 @@ export const DepositDialog = ({
 
               <div className="h-full w-full rounded-b-xl bg-gray-800 p-4">
                 <div className="relative flex items-center justify-center">
-                  <div className="absolute -top-8 flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 border border-gray-700">
+                  <div className="absolute -top-8 flex h-8 w-8 items-center justify-center rounded-full border border-gray-700 bg-gray-900">
                     <svg
                       width="16"
                       height="16"
@@ -469,7 +477,7 @@ export const DepositDialog = ({
             {/* Overview Section */}
             <div className="flex flex-col gap-2 pt-4">
               <h3 className={cn(text.sb2(), "text-gray-400")}>Overview</h3>
-              
+
               <div className="flex items-center justify-between">
                 <span className={cn(text.sb3(), "text-gray-400")}>
                   Share of pool
@@ -511,4 +519,3 @@ export const DepositDialog = ({
     </>
   );
 };
-

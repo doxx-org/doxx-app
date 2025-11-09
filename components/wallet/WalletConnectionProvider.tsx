@@ -13,7 +13,6 @@ import {
   SolflareWalletAdapter,
   WalletConnectWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
 import { toast } from "sonner";
 import { clientEnvConfig } from "@/lib/config/envConfig";
 import { simplifyErrorMessage } from "@/lib/utils/error";
@@ -22,12 +21,8 @@ interface WalletConnectionProviderProps {
   children: ReactNode;
 }
 
-// The network can be set to 'devnet', 'testnet', or 'mainnet-beta'
-// TODO: use value from .env?
 const network = clientEnvConfig.NEXT_PUBLIC_NETWORK;
-
-// NOTE: provide a custom RPC endpoint if needed
-const endpoint = clusterApiUrl(network);
+const endpoint = clientEnvConfig.NEXT_PUBLIC_RPC_URL;
 
 export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
   children,

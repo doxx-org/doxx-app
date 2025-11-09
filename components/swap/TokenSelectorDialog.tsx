@@ -27,12 +27,12 @@ export const TokenSelectorDialog = ({
 }: TokenSelectorDialogProps) => {
   const [search, setSearch] = useState("");
 
-  const filteredTokenProfiles = useMemo(
+  const filteredTokenProfiles: TokenProfile[] | undefined = useMemo(
     () =>
       tokenProfiles.filter(
-        (token) =>
-          token.symbol.toLowerCase().includes(search.toLowerCase()) ||
-          token.name.toLowerCase().includes(search.toLowerCase()) ||
+        (token: TokenProfile) =>
+          token.symbol?.toLowerCase().includes(search.toLowerCase()) ||
+          token.name?.toLowerCase().includes(search.toLowerCase()) ||
           token.address.toLowerCase().includes(search.toLowerCase()),
       ),
     [tokenProfiles, search],

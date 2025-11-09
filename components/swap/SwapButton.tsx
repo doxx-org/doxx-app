@@ -86,14 +86,7 @@ export function SwapButton({
 
     // happy case
     return ["Swap", false];
-  }, [
-    isSwapping,
-    isQuotingRoute,
-    bestRoute,
-    token1Balance?.toString(),
-    token0Balance?.toString(),
-  ]);
-  console.log("🚀 ~ label:", label);
+  }, [isSwapping, isQuotingRoute, bestRoute, token1Balance, token0Balance]);
 
   return (
     <Button

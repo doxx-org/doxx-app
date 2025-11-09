@@ -6,11 +6,7 @@ import {
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
-import {
-  ComputeBudgetProgram,
-  PublicKey,
-  Transaction,
-} from "@solana/web3.js";
+import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID } from "@/lib/constants";
 import { DoxxAmm } from "@/lib/idl/doxxIdl";
 import {
@@ -151,33 +147,42 @@ export function useDeposit(
           .instruction();
 
         const tx = new Transaction().add(...cuIxs, ...ataIxs, depositIx);
-        
+
         // Get recent blockhash for transaction
-        const { blockhash, lastValidBlockHeight } = await provider.connection.getLatestBlockhash('confirmed');
+        const { blockhash, lastValidBlockHeight } =
+          await provider.connection.getLatestBlockhash("confirmed");
         tx.recentBlockhash = blockhash;
         tx.feePayer = wallet.publicKey;
 
         // Sign and send transaction
         const signedTx = await wallet.signTransaction(tx);
-        const sig = await provider.connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
-          preflightCommitment: 'confirmed',
-        });
+        const sig = await provider.connection.sendRawTransaction(
+          signedTx.serialize(),
+          {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          },
+        );
 
-        console.log('Transaction sent:', sig);
+        console.log("Transaction sent:", sig);
 
         // Wait for confirmation
-        const confirmation = await provider.connection.confirmTransaction({
-          signature: sig,
-          blockhash,
-          lastValidBlockHeight,
-        }, 'confirmed');
+        const confirmation = await provider.connection.confirmTransaction(
+          {
+            signature: sig,
+            blockhash,
+            lastValidBlockHeight,
+          },
+          "confirmed",
+        );
 
         if (confirmation.value.err) {
-          throw new Error(`Transaction failed: ${JSON.stringify(confirmation.value.err)}`);
+          throw new Error(
+            `Transaction failed: ${JSON.stringify(confirmation.value.err)}`,
+          );
         }
 
-        console.log('Transaction confirmed:', sig);
+        console.log("Transaction confirmed:", sig);
         onSuccess(sig);
         setIsDepositing(false);
         return {
@@ -193,7 +198,7 @@ export function useDeposit(
         return undefined;
       }
     },
-    [program, wallet?.publicKey, onSuccess, onError],
+    [program, wallet?.publicKey, onSuccess, onError, wallet],
   );
 
   return {
@@ -202,4 +207,3 @@ export function useDeposit(
     depositError,
   };
 }
-

@@ -1,11 +1,5 @@
 {
   "contracts": {
-    "pools": {
-      "usdcSsol": {
-        "owner": "8BzWoVdJqi7fTE84WBvYsXtjYwf3ZeosqYWH7i6EYE2b",
-        "programId": "BRgEXNPkWvuYDTpGdpKPnyKvrv8wXrj55u13uaotmhGb"
-      }
-    },
     "createPoolFee": "3oE58BKVt8KuYkGxx8zBojugnymWmBiyafWgMrnb6eYy"
   },
   "tokens": {

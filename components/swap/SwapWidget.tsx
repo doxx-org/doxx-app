@@ -24,11 +24,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
-import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
+import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
+import { knownTokenProfiles } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
 import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDebounce } from "@/lib/hooks/useDebounce";
@@ -83,8 +85,8 @@ const SellActionButtons = ({
 
 export function SwapWidget() {
   // states
-  const [sellToken, setSellToken] = useState(tokenProfiles[2]);
-  const [buyToken, setBuyToken] = useState(tokenProfiles[3]);
+  const [sellToken, setSellToken] = useState(defaultSwapTokens[0]);
+  const [buyToken, setBuyToken] = useState(defaultSwapTokens[1]);
   const [sellAmount, setSellAmount] = useState("");
   const [buyAmount, setBuyAmount] = useState("");
   const [baseInput, setBaseInput] = useState("");
@@ -103,13 +105,6 @@ export function SwapWidget() {
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
 
-  // get all spl balances
-  const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
-    connection,
-    wallet?.publicKey ?? undefined,
-    tokenProfiles,
-  );
-
   const doxxAmmProgram = useDoxxAmmProgram({
     provider,
   });
@@ -120,6 +115,17 @@ export function SwapWidget() {
 
   const { data: allPoolStates, refetch: refetchAllPoolStates } =
     useGetAllPools(doxxAmmProgram);
+  console.log("🚀 ~ allPoolStates:", allPoolStates);
+
+  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
+    useGetAllTokenInfos(allPoolStates, knownTokenProfiles);
+
+  // get all spl balances
+  const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
+    connection,
+    wallet?.publicKey ?? undefined,
+    allTokenProfiles,
+  );
 
   const { data: bestRoute, isLoading: isLoadingBestRoute } = useBestRoute({
     connection,
@@ -138,11 +144,11 @@ export function SwapWidget() {
     token0BalanceBN,
     token1BalanceBN,
   ] = useMemo(() => {
-    const sellTokenBalance = splBalances?.[sellToken.symbol]?.amount;
-    const buyTokenBalance = splBalances?.[buyToken.symbol]?.amount;
+    const sellTokenBalance = splBalances?.[sellToken.address]?.amount;
+    const buyTokenBalance = splBalances?.[buyToken.address]?.amount;
 
-    const rawToken0Balance = splBalances?.[sellToken.symbol]?.rawAmount;
-    const rawToken1Balance = splBalances?.[buyToken.symbol]?.rawAmount;
+    const rawToken0Balance = splBalances?.[sellToken.address]?.rawAmount;
+    const rawToken1Balance = splBalances?.[buyToken.address]?.rawAmount;
 
     const token0BalanceBN =
       rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;
@@ -155,7 +161,7 @@ export function SwapWidget() {
       token0BalanceBN,
       token1BalanceBN,
     ];
-  }, [splBalances, sellToken.symbol, buyToken.symbol]);
+  }, [splBalances, sellToken.address, buyToken.address]);
 
   const isFetchingBestRoute = useMemo(() => {
     const isEmptyInput =
@@ -207,10 +213,13 @@ export function SwapWidget() {
   );
 
   // callback when open token selector dialog
-  const handleOpenTokenSelector = (selectTokenType: SelectTokenType) => {
-    setSelectedTokenType(selectTokenType);
-    setIsOpen(true);
-  };
+
+  const handleOpenTokenSelector = isLoadingAllTokenProfiles
+    ? undefined
+    : (selectTokenType: SelectTokenType) => {
+        setSelectedTokenType(selectTokenType);
+        setIsOpen(true);
+      };
 
   const handleSellInputChange = useCallback((value: string) => {
     setSellAmount(parseDecimalsInput(value));
@@ -327,9 +336,13 @@ export function SwapWidget() {
             token={sellToken}
             amount={sellAmount}
             onAmountChange={handleSellInputChange}
-            onOpenTokenSelector={() => {
-              handleOpenTokenSelector(SelectTokenType.SELL);
-            }}
+            onOpenTokenSelector={
+              handleOpenTokenSelector
+                ? () => {
+                    handleOpenTokenSelector(SelectTokenType.SELL);
+                  }
+                : undefined
+            }
             tokenBalance={displayToken0Balance}
             actionButtons={
               <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
@@ -349,9 +362,13 @@ export function SwapWidget() {
             token={buyToken}
             amount={buyAmount}
             onAmountChange={handleBuyInputChange}
-            onOpenTokenSelector={() => {
-              handleOpenTokenSelector(SelectTokenType.BUY);
-            }}
+            onOpenTokenSelector={
+              handleOpenTokenSelector
+                ? () => {
+                    handleOpenTokenSelector(SelectTokenType.BUY);
+                  }
+                : undefined
+            }
             tokenBalance={displayToken1Balance}
           />
         </div>
@@ -426,11 +443,11 @@ export function SwapWidget() {
           />
         </ConnectButtonWrapper>
       </CardFooter>
-      {isOpen && (
+      {isOpen && allTokenProfiles && !isLoadingAllTokenProfiles && (
         <TokenSelectorDialog
           isOpen={isOpen}
           onOpenChange={setIsOpen}
-          tokenProfiles={tokenProfiles}
+          tokenProfiles={allTokenProfiles}
           onSelectToken={handleSelectToken}
         />
       )}

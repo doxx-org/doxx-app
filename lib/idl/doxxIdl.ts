@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/doxx_amm.json`.
  */
 export type DoxxAmm = {
-  address: "BRgEXNPkWvuYDTpGdpKPnyKvrv8wXrj55u13uaotmhGb";
+  address: "23oegsZ5GSa6r4vnHoHxSoBC7H1hdbDL6CZiwybJfgBW";
   metadata: {
     name: "doxxAmm";
     version: "0.2.0";

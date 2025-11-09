@@ -1,9 +1,9 @@
 import { CopyIcon } from "lucide-react";
-import Image from "next/image";
 import { TokenProfile } from "@/lib/config/tokens";
 import { copyToClipboard, text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
 import { ellipseAddress } from "@/lib/utils/tokens";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 interface TokenListProps {
   filteredTokenProfiles: TokenProfile[];
@@ -28,13 +28,10 @@ export function TokenList({
               onClick={() => onSelectToken(token)}
               className="flex items-center gap-4 px-6 py-4 hover:cursor-pointer hover:bg-gray-800"
             >
-              <Image
-                src={token.image}
-                alt={token.symbol}
-                width={32}
-                height={32}
-                className="rounded-full"
-              />
+              <Avatar className="z-10 size-7 bg-gray-800">
+                <AvatarImage src={token.image} alt={token.symbol} />
+                <AvatarFallback>{"?"}</AvatarFallback>
+              </Avatar>
 
               {/* Token details */}
               <div className="flex flex-col gap-2">

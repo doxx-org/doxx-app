@@ -10,3 +10,14 @@ export interface PoolStateWithConfig {
   ammConfig: AmmConfig;
   observationState: ObservationState;
 }
+
+export type SplBalance = {
+  mint: string;
+  rawAmount: bigint; // raw amount onchain
+  amount: number; // simplified amount in human readable format
+  decimals: number;
+  tokenAccounts: string[]; // token account addresses used in the sum
+};
+
+// Token balance map by token address
+export type BalanceMapByMint = Partial<Record<string, SplBalance>>;

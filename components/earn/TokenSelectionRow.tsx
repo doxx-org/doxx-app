@@ -47,8 +47,8 @@ export const TokenSelectionRow = ({
                 <Image
                   width={20}
                   height={20}
-                  src={token.image}
-                  alt={token.symbol}
+                  src={token.image ?? ""}
+                  alt={token.symbol ?? ""}
                   className="rounded-full"
                 />
               </div>
@@ -79,16 +79,17 @@ export const TokenSelectionRow = ({
           <div>
             <span className={cn(text.sb3(), "text-gray-500")}>Balance: </span>
             <span className={cn(text.sb3(), "text-gray-400")}>
-              {balance.toLocaleString(undefined, { 
-                minimumFractionDigits: 0, 
-                maximumFractionDigits: 6 
+              {balance.toLocaleString(undefined, {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 6,
               })}
             </span>
           </div>
           <span className={cn(text.sb3(), "text-gray-500")}>
-            ${usdValue.toLocaleString(undefined, { 
-              minimumFractionDigits: 2, 
-              maximumFractionDigits: 2 
+            $
+            {usdValue.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
             })}
           </span>
         </div>

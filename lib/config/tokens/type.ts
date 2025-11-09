@@ -6,9 +6,9 @@ export enum TokenSymbol {
 }
 
 export interface TokenProfile {
-  name: string;
-  symbol: TokenSymbol;
+  name?: string;
   address: string;
-  decimal: number;
-  image: string;
+  symbol?: TokenSymbol;
+  decimals: number;
+  image?: string;
 }

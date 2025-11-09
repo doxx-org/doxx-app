@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { TokenProfile, tokenProfiles } from "@/lib/config/tokens";
 import { addressConfig } from "@/lib/config/addresses";
+import { TokenProfile, knownTokenProfiles } from "@/lib/config/tokens";
 import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
@@ -38,10 +38,25 @@ enum SelectTokenType {
 
 // Fee tier configuration matching the AMM program's config indexes
 const FEE_TIERS = [
-  { index: 0, fee: 0.01, label: "0.01% fee", description: "Best for very stable pairs" },
-  { index: 1, fee: 0.05, label: "0.05% fee", description: "Best for stable pairs" },
+  {
+    index: 0,
+    fee: 0.01,
+    label: "0.01% fee",
+    description: "Best for very stable pairs",
+  },
+  {
+    index: 1,
+    fee: 0.05,
+    label: "0.05% fee",
+    description: "Best for stable pairs",
+  },
   { index: 2, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
-  { index: 3, fee: 1.0, label: "1.0% fee", description: "Best for exotic pairs" },
+  {
+    index: 3,
+    fee: 1.0,
+    label: "1.0% fee",
+    description: "Best for exotic pairs",
+  },
 ];
 
 export const CreatePoolDialog = ({
@@ -69,36 +84,52 @@ export const CreatePoolDialog = ({
   const { data: splBalances } = useAllSplBalances(
     connection,
     wallet?.publicKey ?? undefined,
-    tokenProfiles,
+    knownTokenProfiles,
   );
-
 
   // Memoized calculations
   const lpTokenAmount = useMemo((): string => {
-    if (!tokenA || !tokenB || !amountA || !amountB || amountA === "" || amountB === "") {
+    if (
+      !tokenA ||
+      !tokenB ||
+      !amountA ||
+      !amountB ||
+      amountA === "" ||
+      amountB === ""
+    ) {
       return "";
     }
-    
+
     const numAmountA = parseFloat(amountA);
     const numAmountB = parseFloat(amountB);
-    
-    if (isNaN(numAmountA) || isNaN(numAmountB) || numAmountA <= 0 || numAmountB <= 0) {
+
+    if (
+      isNaN(numAmountA) ||
+      isNaN(numAmountB) ||
+      numAmountA <= 0 ||
+      numAmountB <= 0
+    ) {
       return "";
     }
-    
+
     // For initial liquidity provision, LP tokens = sqrt(amount0 * amount1)
     // This is the Uniswap V2 constant product formula
     // Note: amounts are already in human-readable format, so we use them directly
     const lpAmount = Math.sqrt(numAmountA * numAmountB);
-    
+
     // Format to 6 decimal places for display
     return lpAmount.toFixed(6);
   }, [tokenA, tokenB, amountA, amountB]);
 
-  const tokenBalances = useMemo(() => ({
-    tokenA: tokenA && splBalances ? splBalances[tokenA.symbol]?.amount ?? 0 : 0,
-    tokenB: tokenB && splBalances ? splBalances[tokenB.symbol]?.amount ?? 0 : 0,
-  }), [tokenA, tokenB, splBalances]);
+  const tokenBalances = useMemo(
+    () => ({
+      tokenA:
+        tokenA && splBalances ? (splBalances[tokenA.address]?.amount ?? 0) : 0,
+      tokenB:
+        tokenB && splBalances ? (splBalances[tokenB.address]?.amount ?? 0) : 0,
+    }),
+    [tokenA, tokenB, splBalances],
+  );
 
   const usdValues = useMemo(() => {
     const getTokenPrice = (token: TokenProfile | null): number => {
@@ -110,10 +141,13 @@ export const CreatePoolDialog = ({
         LAYER: 0.05, // Example price
         sSOL: 180.0, // Example price
       };
-      return mockPrices[token.symbol] ?? 0;
+      return mockPrices[token.address] ?? 0;
     };
 
-    const calculateValue = (token: TokenProfile | null, amount: string): number => {
+    const calculateValue = (
+      token: TokenProfile | null,
+      amount: string,
+    ): number => {
       if (!token || !amount || amount === "") return 0;
       const price = getTokenPrice(token);
       const numericAmount = parseFloat(amount);
@@ -200,12 +234,21 @@ export const CreatePoolDialog = ({
 
     try {
       // Get AMM config for selected fee tier
-      const [ammConfig] = getAmmConfigAddress(selectedFeeIndex, doxxAmmProgram.programId);
-      console.log("Using AMM config index:", selectedFeeIndex, "Address:", ammConfig.toBase58());
+      const [ammConfig] = getAmmConfigAddress(
+        selectedFeeIndex,
+        doxxAmmProgram.programId,
+      );
+      console.log(
+        "Using AMM config index:",
+        selectedFeeIndex,
+        "Address:",
+        ammConfig.toBase58(),
+      );
 
       // Verify AMM config exists
       try {
-        const configAccount = await doxxAmmProgram.account.ammConfig.fetch(ammConfig);
+        const configAccount =
+          await doxxAmmProgram.account.ammConfig.fetch(ammConfig);
         console.log("AMM Config found:", {
           index: configAccount.index,
           tradeFeeRate: configAccount.tradeFeeRate.toString(),
@@ -218,7 +261,9 @@ export const CreatePoolDialog = ({
         }
       } catch (configError) {
         console.error("AMM Config fetch error:", configError);
-        toast.error(`AMM Config for fee tier ${FEE_TIERS[selectedFeeIndex].fee}% does not exist on-chain. Please select a different fee tier.`);
+        toast.error(
+          `AMM Config for fee tier ${FEE_TIERS[selectedFeeIndex].fee}% does not exist on-chain. Please select a different fee tier.`,
+        );
         return;
       }
 
@@ -226,8 +271,8 @@ export const CreatePoolDialog = ({
       console.log("Using fee account:", addressConfig.contracts.createPoolFee);
 
       // Convert amounts to BN with proper decimals
-      const initAmount0 = parseAmountBN(amountA, tokenA.decimal);
-      const initAmount1 = parseAmountBN(amountB, tokenB.decimal);
+      const initAmount0 = parseAmountBN(amountA, tokenA.decimals);
+      const initAmount1 = parseAmountBN(amountB, tokenB.decimals);
 
       console.log("Creating pool with:", {
         tokenA: tokenA.symbol,
@@ -335,9 +380,10 @@ export const CreatePoolDialog = ({
                       Total Value
                     </span>
                     <span className={cn(text.sb3(), "text-gray-500")}>
-                      ${usdValues.total.toLocaleString(undefined, { 
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 2 
+                      $
+                      {usdValues.total.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
                       })}
                     </span>
                   </div>
@@ -351,7 +397,8 @@ export const CreatePoolDialog = ({
                 <h3 className={cn(text.sb2(), "text-gray-400")}>Select Pool</h3>
               </div>
               <p className={cn(text.sb3(), "text-gray-500")}>
-                Select a pool type based on your preferred liquidity provider fee.
+                Select a pool type based on your preferred liquidity provider
+                fee.
               </p>
 
               {/* Fee Tier Selector */}
@@ -366,7 +413,9 @@ export const CreatePoolDialog = ({
                 </span>
                 <div className="flex items-center gap-2">
                   {isFeeSelectionOpen && (
-                    <span className={cn(text.sb3(), "text-gray-400")}>Hide</span>
+                    <span className={cn(text.sb3(), "text-gray-400")}>
+                      Hide
+                    </span>
                   )}
                   {isFeeSelectionOpen ? (
                     <ChevronUp className="h-5 w-5 text-gray-400" />
@@ -394,23 +443,27 @@ export const CreatePoolDialog = ({
                       )}
                     >
                       <div className="flex w-full items-center justify-between">
-                        <span className={cn(text.b3(), "font-semibold text-white")}>
+                        <span
+                          className={cn(text.b3(), "font-semibold text-white")}
+                        >
                           {tier.label}
                         </span>
                         <div
                           className={cn(
-                            "h-5 w-5 rounded-full border-2 flex items-center justify-center",
+                            "flex h-5 w-5 items-center justify-center rounded-full border-2",
                             selectedFeeIndex === tier.index
                               ? "border-green"
                               : "border-gray-600",
                           )}
                         >
                           {selectedFeeIndex === tier.index && (
-                            <div className="h-3 w-3 rounded-full bg-green" />
+                            <div className="bg-green h-3 w-3 rounded-full" />
                           )}
                         </div>
                       </div>
-                      <span className={cn(text.sb3(), "text-left text-gray-500")}>
+                      <span
+                        className={cn(text.sb3(), "text-left text-gray-500")}
+                      >
                         {tier.description}
                       </span>
                     </button>
@@ -443,7 +496,7 @@ export const CreatePoolDialog = ({
       <TokenSelectorDialog
         isOpen={isTokenSelectorOpen}
         onOpenChange={setIsTokenSelectorOpen}
-        tokenProfiles={tokenProfiles}
+        tokenProfiles={knownTokenProfiles}
         onSelectToken={handleSelectToken}
       />
     </>

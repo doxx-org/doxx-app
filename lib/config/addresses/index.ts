@@ -4,18 +4,8 @@ import addressesDevnet from "./address.devnet.json";
 import addressesMainnet from "./address.mainnet.json";
 import addressesTestnet from "./address.testnet.json";
 
-interface Pool {
-  owner: string;
-  programId: string;
-}
-
-interface AllPools {
-  usdcSsol: Pool;
-}
-
 export interface AddressConfig {
   contracts: {
-    pools: AllPools;
     createPoolFee: string;
   };
   tokens: {

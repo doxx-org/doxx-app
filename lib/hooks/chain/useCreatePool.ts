@@ -14,7 +14,6 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { addressConfig } from "@/lib/config/addresses";
-import { TOKEN_2022_PROGRAM_ID } from "@/lib/constants";
 import { DoxxAmm } from "@/lib/idl/doxxIdl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
@@ -79,8 +78,9 @@ export function useCreatePool(
         } = params;
 
         // Ensure token0 < token1 (required by the program)
-        const shouldSwap = token0Mint.toBuffer().compare(token1Mint.toBuffer()) >= 0;
-        
+        const shouldSwap =
+          token0Mint.toBuffer().compare(token1Mint.toBuffer()) >= 0;
+
         const [
           actualToken0Mint,
           actualToken1Mint,
@@ -89,8 +89,22 @@ export function useCreatePool(
           actualInitAmount0,
           actualInitAmount1,
         ] = shouldSwap
-          ? [token1Mint, token0Mint, token1Program, token0Program, initAmount1, initAmount0]
-          : [token0Mint, token1Mint, token0Program, token1Program, initAmount0, initAmount1];
+          ? [
+              token1Mint,
+              token0Mint,
+              token1Program,
+              token0Program,
+              initAmount1,
+              initAmount0,
+            ]
+          : [
+              token0Mint,
+              token1Mint,
+              token0Program,
+              token1Program,
+              initAmount0,
+              initAmount1,
+            ];
 
         // Derive all required PDAs
         const [poolState] = getPoolAddress(
@@ -140,7 +154,9 @@ export function useCreatePool(
         );
 
         // Create pool fee account address (network-specific)
-        const createPoolFee = new PublicKey(addressConfig.contracts.createPoolFee);
+        const createPoolFee = new PublicKey(
+          addressConfig.contracts.createPoolFee,
+        );
 
         // Create ATA instructions if needed
         const ataIxs = [

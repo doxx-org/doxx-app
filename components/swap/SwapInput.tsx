@@ -1,19 +1,19 @@
 "use client";
 
 import { ReactNode } from "react";
-import Image from "next/image";
 import ChevronDown from "@/assets/icons/chevron-down.svg";
 import Wallet from "@/assets/icons/wallet.svg";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 
 interface SwapInputProps {
   title: string;
   token: TokenProfile;
   amount: string;
-  onOpenTokenSelector: () => void;
+  onOpenTokenSelector?: () => void;
   onAmountChange?: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -55,17 +55,19 @@ export function SwapInput({
         <div className="flex">
           <Button
             variant="outline"
-            className="h-fit w-fit gap-2 rounded-2xl border-1 border-white/10 bg-white/5 p-[6px]"
+            className="h-fit w-fit gap-2 rounded-2xl border border-white/10 bg-white/5 p-[6px]"
+            disabled={!onOpenTokenSelector}
             onClick={onOpenTokenSelector}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
-              <Image
-                width={24}
-                height={24}
-                src={token.image}
-                alt={token.symbol}
-                className="rounded-full"
-              />
+              <Avatar>
+                <AvatarImage
+                  src={token.image}
+                  alt={token.symbol}
+                  className="rounded-full"
+                />
+                <AvatarFallback>{"?"}</AvatarFallback>
+              </Avatar>
             </div>
             <span className={cn(text.b3(), "text-gray-300")}>
               {token.symbol}

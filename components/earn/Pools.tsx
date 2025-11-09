@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import Plus from "@/assets/icons/table/plus.svg";
-import { tokenProfiles } from "@/lib/config/tokens";
+import { knownTokenProfiles } from "@/lib/config/tokens";
 import { PoolState } from "@/lib/hooks/chain/types";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
@@ -46,10 +46,10 @@ export function Pools() {
       const { poolState, ammConfig } = poolData;
 
       // Find token profiles
-      const token0Profile = tokenProfiles.find(
+      const token0Profile = knownTokenProfiles.find(
         (t) => t.address === poolState.token0Mint.toBase58(),
       );
-      const token1Profile = tokenProfiles.find(
+      const token1Profile = knownTokenProfiles.find(
         (t) => t.address === poolState.token1Mint.toBase58(),
       );
 

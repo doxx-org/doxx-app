@@ -3,7 +3,8 @@
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
-import { TokenProfile, TokenSymbol } from "@/lib/config/tokens";
+import { TokenProfile } from "@/lib/config/tokens";
+import { BalanceMapByMint, SplBalance } from "./types";
 
 interface AccountDataParsedInfoTokenAmount {
   amount: string;
@@ -24,16 +25,6 @@ interface AccountDataParsed {
   info: AccountDataParsedInfo;
   type: string;
 }
-
-type SplBalance = {
-  mint: string;
-  rawAmount: bigint; // raw amount onchain
-  amount: number; // simplified amount in human readable format
-  decimals: number;
-  tokenAccounts: string[]; // token account addresses used in the sum
-};
-
-export type BalanceMap = Record<TokenSymbol, SplBalance | undefined>;
 
 // Fetch balance for a single mint
 export function useSplBalanceByMint(
@@ -91,24 +82,25 @@ export function useSplBalanceByMint(
 export function useAllSplBalances(
   connection: Connection,
   owner: PublicKey | undefined,
-  tokenProfiles: TokenProfile[],
-): UseQueryResult<BalanceMap | undefined, Error> {
+  tokenProfiles: TokenProfile[] | undefined,
+): UseQueryResult<BalanceMapByMint | undefined, Error> {
   return useQuery({
     queryKey: [
       "allSplBalances",
       owner?.toBase58(),
-      tokenProfiles.map((t) => t.address).sort(),
+      tokenProfiles?.map((t) => t.address).sort(),
     ],
-    queryFn: async (): Promise<BalanceMap | undefined> => {
-      if (!owner) return undefined;
+    queryFn: async (): Promise<BalanceMapByMint | undefined> => {
+      if (!owner || !tokenProfiles || tokenProfiles.length === 0)
+        return undefined;
 
       const resp = await connection.getParsedTokenAccountsByOwner(owner, {
         programId: TOKEN_PROGRAM_ID,
       });
 
       // get each token balance
-      const balanceMap: BalanceMap = {} as BalanceMap;
-      for (const tokenProfile of tokenProfiles) {
+      const balanceMap: BalanceMapByMint = {} as BalanceMapByMint;
+      for (const tokenProfile of tokenProfiles ?? []) {
         // find the token balance that matches the token profile
         const respValue = resp.value.find((c) => {
           const info = (c.account.data.parsed as AccountDataParsed | undefined)
@@ -124,7 +116,7 @@ export function useAllSplBalances(
           const info = (account.data.parsed as AccountDataParsed).info;
           const tokenAmount = info.tokenAmount;
 
-          const prev = balanceMap[tokenProfile.symbol] ?? {
+          const prev = balanceMap[tokenProfile.address] ?? {
             mint: info.mint,
             rawAmount: 0n,
             amount: 0,
@@ -141,14 +133,14 @@ export function useAllSplBalances(
           prev.amount += ui;
           prev.decimals = tokenAmount.decimals ?? prev.decimals;
           prev.tokenAccounts.push(pubkey.toBase58());
-          balanceMap[tokenProfile.symbol] = prev;
+          balanceMap[tokenProfile.address] = prev;
         } else {
           // use config from token profile
-          balanceMap[tokenProfile.symbol] = {
+          balanceMap[tokenProfile.address] = {
             mint: tokenProfile.address,
             rawAmount: 0n,
             amount: 0,
-            decimals: tokenProfile.decimal ?? 0,
+            decimals: tokenProfile.decimals ?? 0,
             tokenAccounts: [] as string[],
           };
         }
@@ -156,7 +148,7 @@ export function useAllSplBalances(
 
       return balanceMap;
     },
-    enabled: !!owner,
+    enabled: !!owner && !!tokenProfiles && tokenProfiles.length > 0,
     staleTime: 2 * 60 * 1000, // 2 minutes - token balances don't change frequently
     gcTime: 5 * 60 * 1000, // 5 minutes cache
     refetchOnWindowFocus: false,
