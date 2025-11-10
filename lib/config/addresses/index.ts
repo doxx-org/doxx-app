@@ -13,6 +13,8 @@ export interface AddressConfig {
     solayerUSD: string;
     usdc: string;
     ssol: string;
+    token1: string;
+    token2: string;
   };
 }
 

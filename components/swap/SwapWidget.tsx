@@ -36,12 +36,8 @@ import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
-import {
-  cn,
-  normalizeBN,
-  parseDecimalsInput,
-  simplifyErrorMessage,
-} from "@/lib/utils";
+import { cn, normalizeBN, parseDecimalsInput } from "@/lib/utils";
+import { simplifyErrorMessage } from "@/lib/utils/errors/error";
 import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
@@ -139,7 +135,7 @@ export function SwapWidget() {
   const {
     data: bestRoute,
     isLoading: isLoadingBestRoute,
-    isFetched,
+    error: errorBestRoute,
   } = useBestRoute({
     connection,
     inputMint: new PublicKey(sellToken.address),
@@ -191,7 +187,6 @@ export function SwapWidget() {
     return (
       !isLoadingAllTokenProfiles &&
       !errorAllTokenProfiles &&
-      !isFetchingBestRoute &&
       !isLoadingSplBalances &&
       !isLoadingAllPoolStates
     );
@@ -304,6 +299,15 @@ export function SwapWidget() {
   };
 
   useEffect(() => {
+    if (!!errorBestRoute) {
+      if (isBaseExactIn) {
+        setBuyAmount("");
+      } else {
+        setSellAmount("");
+      }
+      return;
+    }
+
     if (!bestRoute && isFetchingBestRoute) {
       return;
     }
@@ -318,15 +322,15 @@ export function SwapWidget() {
     if (isBaseExactIn) {
       // normalize amount to human readable format
       const normalizedAmountOut = normalizeBN(
-        bestRoute.token1Amount,
-        bestRoute.token1Decimals,
+        bestRoute.swapState.token1Amount,
+        bestRoute.swapState.token1Decimals,
       );
       setBuyAmount(normalizedAmountOut);
     } else {
       // normalize amount to human readable format
       const normalizedAmountIn = normalizeBN(
-        bestRoute.token0Amount,
-        bestRoute.token0Decimals,
+        bestRoute.swapState.token0Amount,
+        bestRoute.swapState.token0Decimals,
       );
       setSellAmount(normalizedAmountIn);
     }
@@ -417,8 +421,9 @@ export function SwapWidget() {
                 <p>
                   {bestRoute
                     ? normalizeBN(
-                        bestRoute.amountOutPerOneTokenIn,
-                        bestRoute.token1Decimals,
+                        bestRoute.swapState.amountOutPerOneTokenIn,
+                        bestRoute.swapState.token1Decimals,
+                        { displayDecimals: buyToken.displayDecimals },
                       )
                     : "-"}
                 </p>
@@ -433,8 +438,9 @@ export function SwapWidget() {
                 <p>
                   {bestRoute
                     ? normalizeBN(
-                        bestRoute.token1Amount,
-                        bestRoute.token1Decimals,
+                        bestRoute.swapState.token1Amount,
+                        bestRoute.swapState.token1Decimals,
+                        { displayDecimals: buyToken.displayDecimals },
                       )
                     : "-"}
                 </p>
@@ -444,12 +450,45 @@ export function SwapWidget() {
           </div>
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">
+              <p>{isBaseExactIn ? "Minimum Received" : "Maximum Spent"}</p>
+              <Info />
+            </div>
+            <p>
+              {bestRoute
+                ? normalizeBN(bestRoute.swapState.minMaxAmount, 9, {
+                    displayDecimals: buyToken.displayDecimals,
+                  })
+                : "-"}
+            </p>
+          </div>
+          <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row items-center justify-center gap-1">
+              <p>Price Impact</p>
+              <Info />
+            </div>
+            <p>
+              {bestRoute
+                ? "N/A"
+                : // ? `${normalizeBN(bestRoute.swapState.priceImpact, 4)}%`
+                  "-"}
+            </p>
+          </div>
+          <Separator className="bg-gray-800" />
+          <div className="flex flex-row items-center justify-between">
+            <div className="flex flex-row items-center justify-center gap-1">
               <p>Routing</p>
               <Info />
             </div>
-            <p>Single-hop</p>
+            <div className="flex flex-row items-center justify-center gap-1">
+              <p>
+                {bestRoute
+                  ? normalizeBN(bestRoute.pool.ammConfig.tradeFeeRate, 2)
+                  : "-"}
+                %
+              </p>
+              <Info />
+            </div>
           </div>
-          <Separator className="bg-gray-800" />
           <div className="flex flex-row items-center justify-between">
             <div className="flex flex-row items-center justify-center gap-1">
               <p>Slippage</p>
@@ -464,7 +503,10 @@ export function SwapWidget() {
           className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
         >
           <SwapButton
-            errorAllTokenProfiles={errorAllTokenProfiles?.message}
+            errors={{
+              errorAllTokenProfiles,
+              errorBestRoute,
+            }}
             program={doxxAmmProgram}
             bestRoute={bestRoute ?? undefined}
             isActionable={isActionable}

@@ -6,6 +6,8 @@ import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
 import { useDoxxSwap } from "@/lib/hooks/chain/useDoxxSwap";
 import { DoxxAmm } from "@/lib/idl/doxxIdl";
 import { text } from "@/lib/text";
+import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
+import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
 import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
 
@@ -16,7 +18,10 @@ interface SwapButtonProps {
   wallet: AnchorWallet | undefined;
   token0Balance: BN | undefined;
   token1Balance: BN | undefined;
-  errorAllTokenProfiles: string | undefined;
+  errors: {
+    errorBestRoute: Error | null | undefined;
+    errorAllTokenProfiles: Error | null | undefined;
+  };
   isActionable: boolean;
   onSuccess: (txSignature: string | undefined) => void;
   onError: (error: Error) => void;
@@ -29,7 +34,7 @@ export function SwapButton({
   wallet,
   token0Balance,
   token1Balance,
-  errorAllTokenProfiles,
+  errors: { errorBestRoute, errorAllTokenProfiles },
   isActionable,
   onSuccess,
   onError,
@@ -46,38 +51,43 @@ export function SwapButton({
     // no min out, return undefined
     if (
       !bestRoute ||
-      bestRoute.token0Amount.eq(ZERO) ||
-      bestRoute.token1Amount.eq(ZERO) ||
+      bestRoute.swapState.token0Amount.eq(ZERO) ||
+      bestRoute.swapState.token1Amount.eq(ZERO) ||
       !token0Balance ||
       !token1Balance ||
-      bestRoute.token0Amount.gt(token0Balance)
+      bestRoute.swapState.token0Amount.gt(token0Balance)
     ) {
       return undefined;
     }
 
-    if (bestRoute.isBaseExactIn) {
-      await swapBaseInput(bestRoute.pool, {
-        inputMint: bestRoute.token0,
-        outputMint: bestRoute.token1,
-        amountIn: bestRoute.token0Amount,
-        minOut: bestRoute.token1Amount,
+    if (bestRoute.swapState.isBaseExactIn) {
+      await swapBaseInput(bestRoute.pool.poolState, {
+        inputMint: bestRoute.swapState.token0,
+        outputMint: bestRoute.swapState.token1,
+        amountIn: bestRoute.swapState.token0Amount,
+        minOut: bestRoute.swapState.token1Amount,
       });
     } else {
-      await swapBaseOutput(bestRoute.pool, {
-        inputMint: bestRoute.token0,
-        outputMint: bestRoute.token1,
-        maxAmountIn: bestRoute.token0Amount,
-        amountOut: bestRoute.token1Amount,
+      await swapBaseOutput(bestRoute.pool.poolState, {
+        inputMint: bestRoute.swapState.token0,
+        outputMint: bestRoute.swapState.token1,
+        maxAmountIn: bestRoute.swapState.token0Amount,
+        amountOut: bestRoute.swapState.token1Amount,
       });
     }
   }, [swapBaseInput, swapBaseOutput, bestRoute, token0Balance, token1Balance]);
 
   // build button label and disabled state
+  // Order matters
   const [label, disabled] = useMemo(() => {
-    if (errorAllTokenProfiles) return ["Failed to fetch tokens", true];
+    if (errorAllTokenProfiles !== null)
+      return [simplifyGetAllTokenInfosErrorMsg(errorAllTokenProfiles), true];
 
     // validate quoting route
     if (isQuotingRoute) return ["Quoting route...", true];
+
+    if (!!errorBestRoute)
+      return [simplifyRoutingErrorMsg(errorBestRoute), true];
 
     // validate best route
     if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
@@ -86,7 +96,7 @@ export function SwapButton({
     if (isSwapping) return ["Swapping...", true];
 
     // validate balance
-    if (bestRoute.token0Amount.gt(token0Balance)) {
+    if (bestRoute.swapState.token0Amount.gt(token0Balance)) {
       return ["Insufficient balance", true];
     }
 
@@ -102,6 +112,7 @@ export function SwapButton({
     token0Balance,
     errorAllTokenProfiles,
     isActionable,
+    errorBestRoute,
   ]);
 
   const isLoading = useMemo(() => {

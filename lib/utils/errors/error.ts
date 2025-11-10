@@ -1,6 +1,8 @@
+import { ReactNode } from "react";
+
 interface KnownError {
   message: string;
-  simplifiedMessage: string;
+  simplifiedMessage: ReactNode;
 }
 
 export const USER_REJECTED_ERROR: KnownError = {
@@ -20,7 +22,8 @@ export const PROVIDER_UNAVAILABLE_ERROR: KnownError = {
 
 export const SWAP_EXCEEDED_SLIPPAGE_ERROR: KnownError = {
   message: "ExceededSlippage",
-  simplifiedMessage: "Swap failed due to slippage",
+  simplifiedMessage:
+    "Swap failed due to slippage.\nPlease try adjusting slippage",
 };
 
 // NOTE: add more known errors here
@@ -34,9 +37,11 @@ export const simplifyErrorMessage = (error: Error, defaultMessage?: string) => {
   const unhandledError = defaultMessage ?? "An unknown error occurred.";
   // try to simplify the error message
   try {
-    const index = KNOWN_ERRORS.findIndex((knownError) =>
-      knownError.message.toLowerCase().includes(error.message.toLowerCase()),
-    );
+    const index = KNOWN_ERRORS.findIndex((knownError) => {
+      return error.message
+        .toLowerCase()
+        .includes(knownError.message.toLowerCase());
+    });
 
     if (index !== -1) {
       return KNOWN_ERRORS[index].simplifiedMessage;

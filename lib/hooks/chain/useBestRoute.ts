@@ -1,24 +1,18 @@
-import { BN } from "@coral-xyz/anchor";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
-import { DEFAULT_SLIPPAGE_BPS, ZERO } from "@/lib/constants";
+import { DEFAULT_SLIPPAGE_BPS } from "@/lib/constants";
+import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
 import {
   IGetBestQuoteResult,
+  SwapState,
   getBestQuoteSingleHopExactIn,
   getBestQuoteSingleHopExactOut,
 } from "../../utils/routing";
-import { AmmConfig, PoolState, PoolStateWithConfig } from "./types";
+import { PoolStateWithConfig } from "./types";
 
 export type IUseBestRouteResponse = {
-  pool: PoolState;
-  token0: PublicKey;
-  token1: PublicKey;
-  token0Amount: BN;
-  token1Amount: BN;
-  token0Decimals: number;
-  token1Decimals: number;
-  isBaseExactIn: boolean;
-  amountOutPerOneTokenIn: BN;
+  pool: PoolStateWithConfig;
+  swapState: SwapState;
 };
 
 export type IUseBestRouteParams = {
@@ -50,66 +44,70 @@ export function useBestRoute({
       isBaseExactIn,
     ],
     queryFn: async () => {
-      if (
-        !baseInput ||
-        baseInput === "0" ||
-        !pools ||
-        pools.length === 0 ||
-        inputMint.toString() === "" ||
-        outputMint.toString() === ""
-      )
-        return null;
+      try {
+        if (
+          !baseInput ||
+          baseInput === "0" ||
+          !pools ||
+          pools.length === 0 ||
+          inputMint.toString() === "" ||
+          outputMint.toString() === ""
+        )
+          return null;
 
-      const poolStates = pools.map((pool) => pool.poolState);
-      const ammByPk = new Map<string, AmmConfig>();
-      for (const pool of pools) {
-        ammByPk.set(pool.poolState.ammConfig.toString(), pool.ammConfig);
-      }
-      console.log("🚀 ~ ammByPk:", ammByPk);
+        let bestRoute: IGetBestQuoteResult | undefined = undefined;
+        // Calculate based on base input or base output
+        if (isBaseExactIn) {
+          const exactInBestRoute = await getBestQuoteSingleHopExactIn({
+            connection,
+            pools,
+            // ammByPk,
+            inputMint,
+            outputMint,
+            amountIn: baseInput,
+            slippageBps,
+          });
 
-      if (ammByPk.size === 0) {
-        return null;
-      }
+          if (exactInBestRoute) {
+            bestRoute = {
+              ...exactInBestRoute,
+              swapState: {
+                ...exactInBestRoute.swapState,
+                minMaxAmount: exactInBestRoute.swapState.minAmountOut,
+              },
+            };
+          }
+        } else {
+          const exactOutBestRoute = await getBestQuoteSingleHopExactOut({
+            connection,
+            pools,
+            // ammByPk,
+            inputMint,
+            outputMint,
+            amountOut: baseInput,
+            slippageBps,
+          });
 
-      let bestRoute: IGetBestQuoteResult | undefined = undefined;
-      // Calculate based on base input or base output
-      if (isBaseExactIn) {
-        const exactInBestRoute = await getBestQuoteSingleHopExactIn({
-          connection,
-          pools: poolStates,
-          ammByPk,
-          inputMint,
-          outputMint,
-          amountIn: baseInput,
-          slippageBps,
-        });
-
-        if (exactInBestRoute) {
-          bestRoute = {
-            ...exactInBestRoute,
-            minMaxAmount: exactInBestRoute.minAmountOut ?? ZERO,
-          };
+          if (exactOutBestRoute) {
+            bestRoute = {
+              ...exactOutBestRoute,
+              swapState: {
+                ...exactOutBestRoute.swapState,
+                minMaxAmount: exactOutBestRoute.swapState.maxAmountIn,
+              },
+            };
+          }
         }
-      } else {
-        const exactOutBestRoute = await getBestQuoteSingleHopExactOut({
-          connection,
-          pools: poolStates,
-          ammByPk,
-          inputMint,
-          outputMint,
-          amountOut: baseInput,
-          slippageBps,
-        });
 
-        if (exactOutBestRoute) {
-          bestRoute = {
-            ...exactOutBestRoute,
-            minMaxAmount: exactOutBestRoute.maxAmountIn ?? ZERO,
-          };
-        }
+        return bestRoute
+          ? {
+              pool: bestRoute.pool,
+              swapState: { ...bestRoute.swapState, isBaseExactIn },
+            }
+          : null;
+      } catch (error) {
+        throw new Error(simplifyRoutingErrorMsg(error));
       }
-
-      return bestRoute ? { ...bestRoute, isBaseExactIn } : null;
     },
     enabled:
       !!baseInput &&

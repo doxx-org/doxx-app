@@ -19,5 +19,6 @@ export interface TokenProfile {
   address: string;
   symbol: string;
   decimals: number;
+  displayDecimals: number;
   image?: string;
 }

@@ -6,6 +6,7 @@ import type {
   TokenDisplay,
 } from "@/app/api/token-infos/type";
 import { TokenProfile, TokenSymbol } from "@/lib/config/tokens";
+import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
 import { mapPoolTokenToProfiles } from "@/lib/utils/tokens";
 import { PoolStateWithConfig } from "./types";
 
@@ -50,12 +51,13 @@ export function useGetAllTokenInfos(
           name: d.name,
           symbol: d.symbol,
           decimals: d.decimals,
+          displayDecimals: d.displayDecimals,
           image: d.image,
         }));
 
         return displays;
-      } catch (_) {
-        throw new Error("Failed to fetch");
+      } catch (error) {
+        throw new Error(simplifyGetAllTokenInfosErrorMsg(error));
       }
     },
     enabled: !!allTokenProfiles && allTokenProfiles.length > 0,

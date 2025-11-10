@@ -216,7 +216,7 @@ export const DepositDialog = ({
     const getTokenPrice = (token: TokenProfile | null): number => {
       if (!token || !token.symbol) return 0;
       // Placeholder prices - in a real app, these would come from a price API
-      const mockPrices: Record<TokenSymbol, number> = {
+      const mockPrices: Record<string, number> = {
         [TokenSymbol.USDC]: 1.0,
         [TokenSymbol.sUSD]: 1.0,
         [TokenSymbol.LAYER]: 0.05,

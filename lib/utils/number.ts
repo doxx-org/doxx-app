@@ -36,8 +36,20 @@ export function parseAmountBN(stringAmount: string, decimals: number): BN {
   return new BN(combined);
 }
 
+interface NormalizeBNOptions {
+  displayDecimals?: number;
+}
+
 // normalize amount to human readable format
-export function normalizeBN(amount: BN, decimals: number): string {
+export function normalizeBN(
+  amount: BN,
+  decimals: number,
+  options: NormalizeBNOptions = {
+    displayDecimals: decimals,
+  },
+): string {
+  const { displayDecimals } = options;
+
   // Convert to string and pad with zeros if needed
   const amountStr = amount.toString().padStart(decimals + 1, "0");
 
@@ -46,7 +58,9 @@ export function normalizeBN(amount: BN, decimals: number): string {
   const fractionalPart = amountStr.slice(-decimals);
 
   // Remove trailing zeros from fractional part
-  const trimmedFractional = fractionalPart.replace(/0+$/, "");
+  const trimmedFractional = fractionalPart
+    .replace(/0+$/, "")
+    .slice(0, displayDecimals);
 
   // Combine parts
   const result = trimmedFractional

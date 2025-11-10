@@ -3,32 +3,59 @@ import { BN } from "@coral-xyz/anchor";
 import { getAccount } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { BPS, MAX_UINT128, ONE_E9, ZERO } from "@/lib/constants";
-import { AmmConfig, PoolState } from "@/lib/hooks/chain/types";
+import {
+  AmmConfig,
+  PoolState,
+  PoolStateWithConfig,
+} from "@/lib/hooks/chain/types";
 import { parseAmountBN } from "@/lib/utils";
 import { IUseBestRouteResponse } from "../hooks/chain/useBestRoute";
+import { RoutingError } from "./errors/routing-error";
 
 const ONE_M = new BN(1_000_000); // ppm
 
 interface IGetBestQuoteParams {
   connection: Connection;
-  pools: PoolState[];
-  ammByPk: Map<string, AmmConfig>;
+  pools: PoolStateWithConfig[];
   inputMint: PublicKey;
   outputMint: PublicKey;
   slippageBps: number; // e.g. 50 = 0.5%; Max = 10_000 = 100%
 }
 
-type IGetBestQuoteResultBase = Omit<IUseBestRouteResponse, "isBaseExactIn">;
-
-export type IGetBestQuoteResult = IGetBestQuoteResultBase & {
+export interface SwapState {
+  token0: PublicKey;
+  token1: PublicKey;
+  token0Amount: BN;
+  token1Amount: BN;
+  token0Decimals: number;
+  token1Decimals: number;
+  isBaseExactIn: boolean;
+  amountOutPerOneTokenIn: BN;
   minMaxAmount: BN;
+  priceImpact: BN;
+}
+
+type GetBestQuotePool = Pick<IUseBestRouteResponse, "pool">;
+
+type GetBestQuoteSwapStateBase = Omit<
+  SwapState,
+  "isBaseExactIn" | "minMaxAmount"
+>;
+
+type GetBestQuoteExactInResult = GetBestQuotePool & {
+  swapState: GetBestQuoteSwapStateBase & {
+    minAmountOut: BN;
+  };
 };
 
-export type IGetBestQuoteInResult = IGetBestQuoteResultBase & {
-  maxAmountIn: BN;
+type GetBestQuoteExactOutResult = GetBestQuotePool & {
+  swapState: GetBestQuoteSwapStateBase & {
+    maxAmountIn: BN;
+  };
 };
-export type IGetBestQuoteOutResult = IGetBestQuoteResultBase & {
-  minAmountOut: BN;
+
+export type IGetBestQuoteResult = GetBestQuotePool & {
+  swapState: GetBestQuoteSwapStateBase & { minMaxAmount: BN };
 };
 
 // ---------- fee helpers (ppm) ----------
@@ -130,27 +157,22 @@ export async function getBestQuoteSingleHopExactIn(
   opts: IGetBestQuoteParams & {
     amountIn: string; // human readable format
   },
-): Promise<IGetBestQuoteOutResult | undefined> {
-  const {
-    connection,
-    pools,
-    ammByPk,
-    inputMint,
-    outputMint,
-    amountIn,
-    slippageBps,
-  } = opts;
-  let best: IGetBestQuoteOutResult | undefined = undefined;
+): Promise<GetBestQuoteExactInResult | undefined> {
+  const { connection, pools, inputMint, outputMint, amountIn, slippageBps } =
+    opts;
+  let best: GetBestQuoteExactInResult | undefined = undefined;
 
   for (const pool of pools) {
+    const poolState = pool.poolState;
+
     // skip if swap disabled: status bit2 (value 4)
-    if ((pool.status & 0b100) !== 0) {
+    if ((poolState.status & 0b100) !== 0) {
       continue;
     }
 
     // get token mint from pool
-    const token0Mint = pool.token0Mint;
-    const token1Mint = pool.token1Mint;
+    const token0Mint = poolState.token0Mint;
+    const token1Mint = poolState.token1Mint;
 
     // check if the pool matches the input and output mints
     const matchesPair =
@@ -160,34 +182,28 @@ export async function getBestQuoteSingleHopExactIn(
       continue;
     }
 
-    // get amm config from pool
-    const ammConfig = ammByPk.get(pool.ammConfig.toString());
-    if (!ammConfig) {
-      continue;
-    }
-
     // get vaults from pool
     const [vault0Account, vault1Account] = await Promise.all([
-      getAccount(connection, pool.token0Vault),
-      getAccount(connection, pool.token1Vault),
+      getAccount(connection, poolState.token0Vault),
+      getAccount(connection, poolState.token1Vault),
     ]);
 
     // calculate reserve of token 0
     const reserveToken0 = reserves(
       new BN(vault0Account.amount.toString()),
-      pool.protocolFeesToken0,
-      pool.fundFeesToken0,
-      pool.creatorFeesToken0,
-      pool.enableCreatorFee,
+      poolState.protocolFeesToken0,
+      poolState.fundFeesToken0,
+      poolState.creatorFeesToken0,
+      poolState.enableCreatorFee,
     );
 
     // calculate reserve of token 1
     const reserveToken1 = reserves(
       new BN(vault1Account.amount.toString()),
-      pool.protocolFeesToken1,
-      pool.fundFeesToken1,
-      pool.creatorFeesToken1,
-      pool.enableCreatorFee,
+      poolState.protocolFeesToken1,
+      poolState.fundFeesToken1,
+      poolState.creatorFeesToken1,
+      poolState.enableCreatorFee,
     );
 
     // quick guard
@@ -197,15 +213,18 @@ export async function getBestQuoteSingleHopExactIn(
     }
 
     // format amount into token decimals
-    const amountInTokenDecimals = parseAmountBN(amountIn, pool.mint0Decimals);
+    const amountInTokenDecimals = parseAmountBN(
+      amountIn,
+      poolState.mint0Decimals,
+    );
     if (amountInTokenDecimals.lte(ZERO)) {
       continue;
     }
 
     // quote new amount out
     const newAmountOut = quoteOutSingle(
-      pool,
-      ammConfig,
+      poolState,
+      pool.ammConfig,
       inputMint,
       amountInTokenDecimals,
       reserveToken0,
@@ -223,22 +242,41 @@ export async function getBestQuoteSingleHopExactIn(
     // if new amount out is greater than previous best amount out, update best
     if (
       !best ||
-      newAmountOut.lt(best.token1Amount) ||
-      minAmountOut.gt(best.minAmountOut)
+      newAmountOut.lt(best.swapState.token1Amount) ||
+      minAmountOut.gt(best.swapState.minAmountOut)
     ) {
-      const amountOutPerOneTokenIn = newAmountOut.mul(ONE_E9).div(minAmountOut);
-      best = {
+      const amountOutPerOneTokenIn = newAmountOut
+        .mul(ONE_E9)
+        .div(amountInTokenDecimals);
+      // TODO: handle this
+      const priceImpact = newAmountOut
+        .sub(minAmountOut)
+        .mul(ONE_E9)
+        .div(newAmountOut);
+      const swapState: GetBestQuoteSwapStateBase = {
         token0: inputMint,
         token1: outputMint,
         token0Amount: amountInTokenDecimals,
         token1Amount: newAmountOut,
-        token0Decimals: pool.mint0Decimals,
-        token1Decimals: pool.mint1Decimals,
-        minAmountOut,
+        token0Decimals: poolState.mint0Decimals,
+        token1Decimals: poolState.mint1Decimals,
         amountOutPerOneTokenIn,
-        pool,
+        priceImpact,
+      };
+
+      best = {
+        swapState: { ...swapState, minAmountOut },
+        pool: pool,
       };
     }
+  }
+
+  if (
+    !best ||
+    best.swapState.minAmountOut.lte(ZERO) ||
+    best.swapState.minAmountOut.gte(MAX_UINT128)
+  ) {
+    throw new Error(RoutingError.NO_BEST_QUOTE_FOUND);
   }
 
   return best;
@@ -248,26 +286,21 @@ export async function getBestQuoteSingleHopExactOut(
   opts: IGetBestQuoteParams & {
     amountOut: string; // human readable format
   },
-): Promise<IGetBestQuoteInResult | undefined> {
-  const {
-    connection,
-    pools,
-    ammByPk,
-    inputMint,
-    outputMint,
-    amountOut,
-    slippageBps,
-  } = opts;
-  let best: IGetBestQuoteInResult | undefined = undefined;
+): Promise<GetBestQuoteExactOutResult | undefined> {
+  const { connection, pools, inputMint, outputMint, amountOut, slippageBps } =
+    opts;
+  let best: GetBestQuoteExactOutResult | undefined = undefined;
 
   for (const pool of pools) {
-    if ((pool.status & 0b100) !== 0) {
+    const poolState = pool.poolState;
+
+    if ((poolState.status & 0b100) !== 0) {
       continue;
     }
 
     // get token mint from pool
-    const token0Mint = pool.token0Mint;
-    const token1Mint = pool.token1Mint;
+    const token0Mint = poolState.token0Mint;
+    const token1Mint = poolState.token1Mint;
 
     // check if the pool matches the input and output mints
     const matchesPair =
@@ -277,34 +310,28 @@ export async function getBestQuoteSingleHopExactOut(
       continue;
     }
 
-    // get amm config from pool
-    const ammConfig = ammByPk.get(pool.ammConfig.toString());
-    if (!ammConfig) {
-      continue;
-    }
-
     // get vaults from pool
     const [vault0Account, vault1Account] = await Promise.all([
-      getAccount(connection, pool.token0Vault),
-      getAccount(connection, pool.token1Vault),
+      getAccount(connection, poolState.token0Vault),
+      getAccount(connection, poolState.token1Vault),
     ]);
 
     // calculate reserve of token 0
     const reserveToken0 = reserves(
       new BN(vault0Account.amount.toString()),
-      pool.protocolFeesToken0,
-      pool.fundFeesToken0,
-      pool.creatorFeesToken0,
-      pool.enableCreatorFee,
+      poolState.protocolFeesToken0,
+      poolState.fundFeesToken0,
+      poolState.creatorFeesToken0,
+      poolState.enableCreatorFee,
     );
 
     // calculate reserve of token 1
     const reserveToken1 = reserves(
       new BN(vault1Account.amount.toString()),
-      pool.protocolFeesToken1,
-      pool.fundFeesToken1,
-      pool.creatorFeesToken1,
-      pool.enableCreatorFee,
+      poolState.protocolFeesToken1,
+      poolState.fundFeesToken1,
+      poolState.creatorFeesToken1,
+      poolState.enableCreatorFee,
     );
 
     // quick guard
@@ -314,15 +341,18 @@ export async function getBestQuoteSingleHopExactOut(
     }
 
     // format amount into token decimals
-    const amountOutTokenDecimals = parseAmountBN(amountOut, pool.mint1Decimals);
+    const amountOutTokenDecimals = parseAmountBN(
+      amountOut,
+      poolState.mint1Decimals,
+    );
     if (amountOutTokenDecimals.lte(ZERO)) {
       continue;
     }
 
     // quote new amount in
     const newAmountIn = quoteInSingle(
-      pool,
-      ammConfig,
+      poolState,
+      pool.ammConfig,
       outputMint,
       amountOutTokenDecimals,
       reserveToken0,
@@ -340,24 +370,42 @@ export async function getBestQuoteSingleHopExactOut(
     // if new amount in is less than previous best amount in, update best
     if (
       !best ||
-      newAmountIn.lt(best.token0Amount) ||
-      maxAmountIn.lt(best.maxAmountIn)
+      newAmountIn.lt(best.swapState.token0Amount) ||
+      maxAmountIn.lt(best.swapState.maxAmountIn)
     ) {
       const amountOutPerOneTokenIn = maxAmountIn
         .mul(ONE_E9)
         .div(amountOutTokenDecimals);
-      best = {
-        token0Amount: newAmountIn,
-        token1Amount: amountOutTokenDecimals,
+      // TODO: handle this
+      const priceImpact = newAmountIn
+        .sub(maxAmountIn)
+        .mul(ONE_E9)
+        .div(newAmountIn);
+      const swapState: GetBestQuoteSwapStateBase = {
         token0: inputMint,
         token1: outputMint,
-        token0Decimals: pool.mint0Decimals,
-        token1Decimals: pool.mint1Decimals,
-        maxAmountIn,
+        token0Amount: newAmountIn,
+        token1Amount: amountOutTokenDecimals,
+        token0Decimals: poolState.mint0Decimals,
+        token1Decimals: poolState.mint1Decimals,
         amountOutPerOneTokenIn,
-        pool,
+        priceImpact,
+      };
+
+      best = {
+        swapState: { ...swapState, maxAmountIn },
+        pool: pool,
       };
     }
   }
+
+  if (
+    !best ||
+    best.swapState.maxAmountIn.lte(ZERO) ||
+    best.swapState.maxAmountIn.gte(MAX_UINT128)
+  ) {
+    throw new Error(RoutingError.NO_BEST_QUOTE_FOUND);
+  }
+
   return best;
 }

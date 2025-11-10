@@ -348,15 +348,17 @@ export async function POST(
         name: td.name,
         symbol: td.symbol,
         decimals: td.decimals,
+        displayDecimals: 4,
         image: td.image,
       });
-    } else {
+    } else {  
       // Token not found, make it an unknown token
       allTokenProfiles.push({
         address: p.address,
         name: "UNKNOWN",
         symbol: "UNK",
         decimals: p.decimals,
+        displayDecimals: 4,
         image: undefined,
       });
     }

@@ -1,7 +1,11 @@
-import { solayer } from "./tokenProfile";
-import { solayerUSD } from "./tokenProfile";
-import { usdc } from "./tokenProfile";
-import { ssol } from "./tokenProfile";
+import {
+  solayer,
+  solayerUSD,
+  ssol,
+  token1,
+  token2,
+  usdc,
+} from "./tokenProfile";
 import { TokenProfile } from "./type";
 
 export * from "./tokenProfile";
@@ -12,9 +16,11 @@ export const knownTokenProfiles: TokenProfile[] = [
   solayer,
   solayerUSD,
   ssol,
+  token1,
+  token2,
 ];
 
-export const defaultSwapTokens: TokenProfile[] = [solayer, usdc];
+export const defaultSwapTokens: TokenProfile[] = [token1, token2];
 
 export const knownTokenProfilesMap: Record<string, TokenProfile> =
   knownTokenProfiles.reduce(

@@ -15,7 +15,7 @@ import {
 } from "@solana/wallet-adapter-wallets";
 import { toast } from "sonner";
 import { clientEnvConfig } from "@/lib/config/envConfig";
-import { simplifyErrorMessage } from "@/lib/utils/error";
+import { simplifyErrorMessage } from "@/lib/utils";
 
 interface WalletConnectionProviderProps {
   children: ReactNode;
