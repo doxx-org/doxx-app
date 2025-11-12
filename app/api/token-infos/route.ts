@@ -1,6 +1,5 @@
 // existing:
 import { Metaplex } from "@metaplex-foundation/js";
-import { TOKEN_2022_PROGRAM_ID, getTokenMetadata } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { NextRequest, NextResponse } from "next/server";
 import pLimit from "p-limit";
@@ -207,40 +206,40 @@ async function hydrateImagesFromUris(
 }
 
 // Token-2022 fallback (throttled; one RPC per mint via spl-token helper)
-async function resolveFromToken2022Throttled(
-  params: GetAllTokenInfosPayload[],
-  concurrency = 6,
-) {
-  const limit = pLimit(concurrency);
-  const tasks = params.map((p) =>
-    limit(async () => {
-      try {
-        const meta = await getTokenMetadata(
-          connection,
-          new PublicKey(p.address),
-          "confirmed",
-          TOKEN_2022_PROGRAM_ID,
-        );
-        // may have name/symbol/uri; uri->JSON->image (optional)
-        let image: string | undefined;
-        if (meta?.uri) {
-          const json = await fetchJson(meta.uri);
-          image = json?.image;
-        }
-        return {
-          address: p.address,
-          name: meta?.name?.trim() || undefined,
-          symbol: meta?.symbol?.trim() || undefined,
-          image,
-          decimals: p.decimals,
-        };
-      } catch {
-        return { address: p.address, decimals: p.decimals };
-      }
-    }),
-  );
-  return Promise.all(tasks);
-}
+// async function resolveFromToken2022Throttled(
+//   params: GetAllTokenInfosPayload[],
+//   concurrency = 6,
+// ) {
+//   const limit = pLimit(concurrency);
+//   const tasks = params.map((p) =>
+//     limit(async () => {
+//       try {
+//         const meta = await getTokenMetadata(
+//           connection,
+//           new PublicKey(p.address),
+//           "confirmed",
+//           TOKEN_2022_PROGRAM_ID,
+//         );
+//         // may have name/symbol/uri; uri->JSON->image (optional)
+//         let image: string | undefined;
+//         if (meta?.uri) {
+//           const json = await fetchJson(meta.uri);
+//           image = json?.image;
+//         }
+//         return {
+//           address: p.address,
+//           name: meta?.name?.trim() || undefined,
+//           symbol: meta?.symbol?.trim() || undefined,
+//           image,
+//           decimals: p.decimals,
+//         };
+//       } catch {
+//         return { address: p.address, decimals: p.decimals };
+//       }
+//     }),
+//   );
+//   return Promise.all(tasks);
+// }
 
 // ---------- Route ----------
 export async function POST(
@@ -270,7 +269,7 @@ export async function POST(
   }
 
   // 2) token list fast path
-  let stillMissing: GetAllTokenInfosPayload[] = [];
+  const stillMissing: GetAllTokenInfosPayload[] = [];
   if (toFetch.length) {
     for (const p of toFetch) {
       const t = knownTokenProfilesMap[p.address];
@@ -293,7 +292,7 @@ export async function POST(
   }
 
   // 3) Metaplex on-chain (batched)
-  let unresolved: GetAllTokenInfosPayload[] = [];
+  // let unresolved: GetAllTokenInfosPayload[] = [];
   if (stillMissing.length) {
     const tokenMetadata = await batchGetTokenMetadataMetaplex(
       connection,
@@ -351,7 +350,7 @@ export async function POST(
         displayDecimals: 4,
         image: td.image,
       });
-    } else {  
+    } else {
       // Token not found, make it an unknown token
       allTokenProfiles.push({
         address: p.address,

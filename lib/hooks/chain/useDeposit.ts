@@ -198,7 +198,7 @@ export function useDeposit(
         return undefined;
       }
     },
-    [program, wallet?.publicKey, onSuccess, onError, wallet],
+    [program, onSuccess, onError, wallet],
   );
 
   return {

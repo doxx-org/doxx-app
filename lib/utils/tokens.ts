@@ -46,7 +46,7 @@ export function mapPoolTokenToProfiles(
       try {
         new PublicKey(p.address);
         return true;
-      } catch (error) {
+      } catch {
         return false;
       }
     },

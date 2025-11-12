@@ -62,7 +62,7 @@ export function SwapInfo1({
 
   const handleFlip = useCallback(() => {
     setIsFlipped((prev) => !prev);
-  }, [isFlipped]);
+  }, []);
 
   return (
     <>
