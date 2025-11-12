@@ -11,7 +11,9 @@ export const BPS = 10_000; // 100%
 // ==============================================
 export const MAX_UINT128 = new BN("340282366920938463463374607431768211455");
 export const ZERO = new BN(0);
-export const ONE_E9 = new BN(1_000_000_000); // 1e9
+export const ONE_E9 = new BN(1e9); // 1
+export const ONE_MILLION_E9 = new BN(1_000_000e9); // 1,000,000
+export const MINIMUM_CAP_E9 = new BN(0.01e9); // 0.01
 
 // ==============================================
 // Settings constants

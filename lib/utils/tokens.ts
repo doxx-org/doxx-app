@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { TokenProfile } from "../config/tokens";
+import { RawTokenProfile, TokenProfile } from "../config/tokens";
 import { PoolStateWithConfig } from "../hooks/chain/types";
 
 export function ellipseAddress(
@@ -11,23 +11,19 @@ export function ellipseAddress(
 }
 
 export function mapPoolTokenToProfiles(
-  poolStates: PoolStateWithConfig[] | undefined,
-  knownTokenProfiles: TokenProfile[] | undefined,
-): TokenProfile[] | undefined {
-  if (!poolStates && !knownTokenProfiles) {
-    return undefined;
-  }
-
+  poolStates: PoolStateWithConfig[],
+  knownTokenProfiles: TokenProfile[],
+): RawTokenProfile[] {
   // get all token profiles from pool states
-  const allTokenProfiles = poolStates?.flatMap((p) => {
+  const allTokenProfiles = poolStates.flatMap((p) => {
     const poolState = p.poolState;
 
-    const token0Profile: TokenProfile = {
+    const token0Profile: RawTokenProfile = {
       address: poolState.token0Mint.toString(),
       decimals: poolState.mint0Decimals,
     };
 
-    const token1Profile: TokenProfile = {
+    const token1Profile: RawTokenProfile = {
       address: poolState.token1Mint.toString(),
       decimals: poolState.mint1Decimals,
     };
@@ -37,19 +33,24 @@ export function mapPoolTokenToProfiles(
 
   // merge with known token profiles
   const mergedTokenProfiles = [
-    ...(knownTokenProfiles ?? []),
-    ...(allTokenProfiles ?? []),
+    ...knownTokenProfiles.map((p) => ({
+      address: p.address,
+      decimals: p.decimals,
+    })),
+    ...allTokenProfiles,
   ];
 
   // filter out invalid token profiles
-  const validTokenProfiles: TokenProfile[] = mergedTokenProfiles.filter((p) => {
-    try {
-      new PublicKey(p.address);
-      return true;
-    } catch (error) {
-      return false;
-    }
-  });
+  const validTokenProfiles: RawTokenProfile[] = mergedTokenProfiles.filter(
+    (p) => {
+      try {
+        new PublicKey(p.address);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
+  );
 
   // remove duplicates
   const uniqueTokenProfiles = validTokenProfiles.filter(

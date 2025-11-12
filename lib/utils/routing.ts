@@ -31,6 +31,7 @@ export interface SwapState {
   token1Decimals: number;
   isBaseExactIn: boolean;
   amountOutPerOneTokenIn: BN;
+  amountInPerOneTokenOut: BN;
   minMaxAmount: BN;
   priceImpact: BN;
 }
@@ -231,6 +232,10 @@ export async function getBestQuoteSingleHopExactIn(
       reserveToken1,
     );
 
+    if (newAmountOut.lte(ZERO)) {
+      continue;
+    }
+
     // apply slippage on output (decrease minOut)
     const minAmountOut = newAmountOut.muln(BPS - slippageBps).divn(BPS);
 
@@ -245,14 +250,22 @@ export async function getBestQuoteSingleHopExactIn(
       newAmountOut.lt(best.swapState.token1Amount) ||
       minAmountOut.gt(best.swapState.minAmountOut)
     ) {
+      // amount out per one token in
       const amountOutPerOneTokenIn = newAmountOut
         .mul(ONE_E9)
         .div(amountInTokenDecimals);
+
+      // amount in per one token out
+      const amountInPerOneTokenOut = amountInTokenDecimals
+        .mul(ONE_E9)
+        .div(newAmountOut);
+
       // TODO: handle this
       const priceImpact = newAmountOut
         .sub(minAmountOut)
         .mul(ONE_E9)
         .div(newAmountOut);
+
       const swapState: GetBestQuoteSwapStateBase = {
         token0: inputMint,
         token1: outputMint,
@@ -261,6 +274,7 @@ export async function getBestQuoteSingleHopExactIn(
         token0Decimals: poolState.mint0Decimals,
         token1Decimals: poolState.mint1Decimals,
         amountOutPerOneTokenIn,
+        amountInPerOneTokenOut,
         priceImpact,
       };
 
@@ -359,6 +373,10 @@ export async function getBestQuoteSingleHopExactOut(
       reserveToken1,
     );
 
+    if (newAmountIn.lte(ZERO)) {
+      continue;
+    }
+
     // apply slippage on input (increase maxIn)
     const maxAmountIn = newAmountIn.muln(BPS + slippageBps).divn(BPS);
 
@@ -373,14 +391,22 @@ export async function getBestQuoteSingleHopExactOut(
       newAmountIn.lt(best.swapState.token0Amount) ||
       maxAmountIn.lt(best.swapState.maxAmountIn)
     ) {
-      const amountOutPerOneTokenIn = maxAmountIn
+      // amount out per one token in
+      const amountOutPerOneTokenIn = amountOutTokenDecimals
         .mul(ONE_E9)
         .div(amountOutTokenDecimals);
+
+      // amount in per one token out
+      const amountInPerOneTokenOut = amountOutTokenDecimals
+        .mul(ONE_E9)
+        .div(newAmountIn);
+
       // TODO: handle this
       const priceImpact = newAmountIn
         .sub(maxAmountIn)
         .mul(ONE_E9)
         .div(newAmountIn);
+
       const swapState: GetBestQuoteSwapStateBase = {
         token0: inputMint,
         token1: outputMint,
@@ -389,6 +415,7 @@ export async function getBestQuoteSingleHopExactOut(
         token0Decimals: poolState.mint0Decimals,
         token1Decimals: poolState.mint1Decimals,
         amountOutPerOneTokenIn,
+        amountInPerOneTokenOut,
         priceImpact,
       };
 

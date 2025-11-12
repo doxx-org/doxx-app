@@ -13,8 +13,6 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
-import ArrowRight from "@/assets/icons/arrow-right.svg";
-import Info from "@/assets/icons/info.svg";
 import Zap from "@/assets/icons/zap.svg";
 import {
   Card,
@@ -41,8 +39,9 @@ import { simplifyErrorMessage } from "@/lib/utils/errors/error";
 import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
-import { Skeleton } from "../ui/skeleton";
 import { SwapButton } from "./SwapButton";
+import { SwapInfo1 } from "./SwapInfo1";
+import { SwapInfo2 } from "./SwapInfo2";
 import { SwapInput } from "./SwapInput";
 import { SwapSetting } from "./SwapSetting";
 import { TokenSelectorDialog } from "./TokenSelectorDialog";
@@ -113,6 +112,7 @@ export function SwapWidget() {
     data: allPoolStates,
     isLoading: isLoadingAllPoolStates,
     refetch: refetchAllPoolStates,
+    isRefetching: isRefetchingAllPoolStates,
   } = useGetAllPools(doxxAmmProgram);
 
   const {
@@ -136,6 +136,8 @@ export function SwapWidget() {
     data: bestRoute,
     isLoading: isLoadingBestRoute,
     error: errorBestRoute,
+    isRefetching: isRefetchingBestRoute,
+    refetch: refetchBestRoute,
   } = useBestRoute({
     connection,
     inputMint: new PublicKey(sellToken.address),
@@ -180,8 +182,21 @@ export function SwapWidget() {
       return false;
     }
 
-    return isLoadingBestRoute || isTyping;
-  }, [isLoadingBestRoute, isTyping, isBaseExactIn, sellAmount, buyAmount]);
+    return (
+      isLoadingBestRoute ||
+      isTyping ||
+      isRefetchingBestRoute ||
+      isRefetchingAllPoolStates // TODO: consider how to ignore this because it fetches all pool states
+    );
+  }, [
+    isLoadingBestRoute,
+    isTyping,
+    isBaseExactIn,
+    sellAmount,
+    buyAmount,
+    isRefetchingBestRoute,
+    isRefetchingAllPoolStates,
+  ]);
 
   const isActionable = useMemo(() => {
     return (
@@ -274,6 +289,11 @@ export function SwapWidget() {
 
     handleSellInputChange(displayToken0Balance.toString());
   }, [displayToken0Balance, handleSellInputChange]);
+
+  const handleRefreshBestRoute = useCallback(() => {
+    refetchAllPoolStates();
+    refetchBestRoute();
+  }, [refetchAllPoolStates, refetchBestRoute]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
@@ -410,92 +430,20 @@ export function SwapWidget() {
         </div>
         {/* details */}
         <div className={cn(text.sb3(), "flex flex-col gap-2 text-gray-600")}>
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center justify-center gap-1">
-              <p>1 {sellToken.symbol}</p>
-              <ArrowRight />
-
-              {isFetchingBestRoute ? (
-                <Skeleton />
-              ) : (
-                <p>
-                  {bestRoute
-                    ? normalizeBN(
-                        bestRoute.swapState.amountOutPerOneTokenIn,
-                        bestRoute.swapState.token1Decimals,
-                        { displayDecimals: buyToken.displayDecimals },
-                      )
-                    : "-"}
-                </p>
-              )}
-              {buyToken.symbol}
-            </div>
-            <div className="flex gap-1">
-              {"="}
-              {isFetchingBestRoute ? (
-                <Skeleton />
-              ) : (
-                <p>
-                  {bestRoute
-                    ? normalizeBN(
-                        bestRoute.swapState.token1Amount,
-                        bestRoute.swapState.token1Decimals,
-                        { displayDecimals: buyToken.displayDecimals },
-                      )
-                    : "-"}
-                </p>
-              )}
-              {buyToken.symbol}
-            </div>
-          </div>
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center justify-center gap-1">
-              <p>{isBaseExactIn ? "Minimum Received" : "Maximum Spent"}</p>
-              <Info />
-            </div>
-            <p>
-              {bestRoute
-                ? normalizeBN(bestRoute.swapState.minMaxAmount, 9, {
-                    displayDecimals: buyToken.displayDecimals,
-                  })
-                : "-"}
-            </p>
-          </div>
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center justify-center gap-1">
-              <p>Price Impact</p>
-              <Info />
-            </div>
-            <p>
-              {bestRoute
-                ? "N/A"
-                : // ? `${normalizeBN(bestRoute.swapState.priceImpact, 4)}%`
-                  "-"}
-            </p>
-          </div>
+          <SwapInfo1
+            bestRoute={bestRoute}
+            isBaseExactIn={isBaseExactIn}
+            buyToken={buyToken}
+            sellToken={sellToken}
+            isFetchingBestRoute={isFetchingBestRoute}
+            onRefreshBestRoute={handleRefreshBestRoute}
+          />
           <Separator className="bg-gray-800" />
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center justify-center gap-1">
-              <p>Routing</p>
-              <Info />
-            </div>
-            <div className="flex flex-row items-center justify-center gap-1">
-              <p>
-                {bestRoute
-                  ? normalizeBN(bestRoute.pool.ammConfig.tradeFeeRate, 2)
-                  : "-"}
-                %
-              </p>
-              <Info />
-            </div>
-          </div>
-          <div className="flex flex-row items-center justify-between">
-            <div className="flex flex-row items-center justify-center gap-1">
-              <p>Slippage</p>
-              <Info />
-            </div>
-            <p>{slippage}%</p>
-          </div>
+          <SwapInfo2
+            bestRoute={bestRoute}
+            isFetchingBestRoute={isFetchingBestRoute}
+            slippage={slippage}
+          />
         </div>
       </CardContent>
       <CardFooter className="flex w-full flex-row items-center justify-between p-3">

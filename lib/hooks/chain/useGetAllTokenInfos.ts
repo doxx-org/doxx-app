@@ -1,11 +1,8 @@
 // app/hooks/useTokenDisplays.ts
 import { useMemo } from "react";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
-import type {
-  GetAllTokenInfosPayload,
-  TokenDisplay,
-} from "@/app/api/token-infos/type";
-import { TokenProfile, TokenSymbol } from "@/lib/config/tokens";
+import type { GetAllTokenInfosPayload } from "@/app/api/token-infos/type";
+import { RawTokenProfile, TokenProfile } from "@/lib/config/tokens";
 import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
 import { mapPoolTokenToProfiles } from "@/lib/utils/tokens";
 import { PoolStateWithConfig } from "./types";
@@ -14,7 +11,7 @@ export function useGetAllTokenInfos(
   poolStates: PoolStateWithConfig[] | undefined,
   knownTokenProfiles: TokenProfile[] | undefined,
 ): UseQueryResult<TokenProfile[] | undefined, Error> {
-  const allTokenProfiles: TokenProfile[] | undefined = useMemo(() => {
+  const allTokenProfiles: RawTokenProfile[] | undefined = useMemo(() => {
     if (!poolStates || !knownTokenProfiles) return undefined;
 
     return mapPoolTokenToProfiles(poolStates, knownTokenProfiles);

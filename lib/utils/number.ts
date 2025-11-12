@@ -1,4 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
+import { MINIMUM_CAP_E9, ONE_MILLION_E9 } from "../constants";
 
 export function parseDecimalsInput(value: string): string {
   // ✅ Disallow leading zeros (unless '0' or '0.xxx' or '.xxx')
@@ -36,36 +37,83 @@ export function parseAmountBN(stringAmount: string, decimals: number): BN {
   return new BN(combined);
 }
 
-interface NormalizeBNOptions {
+interface FormatAmountBNOptions {
   displayDecimals?: number;
 }
 
+// format amount to human readable format
+// e.g. formatAmountBN(1e9, 9) -> "1"
+//      formatAmountBN(0.1e9, 9) -> "0.1"
+//      formatAmountBN(0.11111e9, 9) -> "0.11111"
+//      formatAmountBN(0.11111e9, 9, { displayDecimals: 2 }) -> "0.11"
+function formatAmountBN(
+  amount: BN,
+  decimals: number,
+  options?: FormatAmountBNOptions,
+): string {
+  if (decimals === 0) return amount.toString(10);
+
+  const base = new BN(10).pow(new BN(decimals)); // 10^decimals (as BN)
+  const isNeg = amount.isNeg();
+  const abs = amount.abs();
+
+  const integer = abs.div(base).toString(10);
+  let fraction = abs.mod(base).toString(10).padStart(decimals, "0");
+
+  // Trim trailing zeros in the fractional part
+  fraction = fraction.replace(/0+$/, "");
+
+  // Cut off till displayDecimals
+  if (options?.displayDecimals) {
+    fraction = fraction.slice(0, options.displayDecimals);
+  }
+
+  // Build the result
+  const result = fraction.length > 0 ? `${integer}.${fraction}` : integer;
+  return isNeg ? `-${result}` : result;
+}
+
+// normalize bps string to human readable format
+// e.g. "1000" -> "0.1"
+//      = 1000 / 10000 = 0.1
+export function normalizeBPSString(bpsString: string): string {
+  return normalizeBN(parseAmountBN(bpsString, 2), 4, {
+    minCap: parseAmountBN("0.01", 4),
+  });
+}
+
+interface NormalizeBNOptions extends FormatAmountBNOptions {
+  minCap?: BN;
+  maxCap?: BN;
+}
+
 // normalize amount to human readable format
+// e.g. normalizeBN(1e9, 9) -> "1"
+//      normalizeBN(0.1e9, 9) -> "0.1"
+//      normalizeBN(0.11111e9, 9) -> "0.11111"
+//      normalizeBN(0.11111e9, 9, { displayDecimals: 2 }) -> "0.11"
+//      normalizeBN(0.009e9, 9, { minCap: parseAmountBN("0.01", 9) }) -> "<0.01"
+//      normalizeBN(1000001e9, 9, { maxCap: parseAmountBN("1000000", 9) }) -> ">1000000"
 export function normalizeBN(
   amount: BN,
   decimals: number,
-  options: NormalizeBNOptions = {
-    displayDecimals: decimals,
-  },
+  {
+    displayDecimals = decimals,
+    minCap = MINIMUM_CAP_E9,
+    maxCap = ONE_MILLION_E9,
+  }: NormalizeBNOptions = {},
 ): string {
-  const { displayDecimals } = options;
-
   // Convert to string and pad with zeros if needed
-  const amountStr = amount.toString().padStart(decimals + 1, "0");
+  try {
+    if (amount.lt(minCap)) {
+      return "<" + formatAmountBN(minCap, decimals);
+    }
+    if (amount.gt(maxCap)) {
+      return ">" + formatAmountBN(maxCap, decimals);
+    }
+  } catch {
+    return "-";
+  }
 
-  // Split into integer and fractional parts
-  const integerPart = amountStr.slice(0, -decimals) || "0";
-  const fractionalPart = amountStr.slice(-decimals);
-
-  // Remove trailing zeros from fractional part
-  const trimmedFractional = fractionalPart
-    .replace(/0+$/, "")
-    .slice(0, displayDecimals);
-
-  // Combine parts
-  const result = trimmedFractional
-    ? `${integerPart}.${trimmedFractional}`
-    : integerPart;
-
-  return result;
+  return formatAmountBN(amount, decimals, { displayDecimals });
 }

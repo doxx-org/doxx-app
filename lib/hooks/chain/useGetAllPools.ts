@@ -45,5 +45,10 @@ export function useGetAllPools(
     },
     refetchOnWindowFocus: false,
     enabled: !!program,
+    refetchInterval: 15 * 1000, // 15 seconds
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 60 * 1000, // 60 seconds
+    refetchOnReconnect: true,
+    refetchOnMount: true,
   });
 }

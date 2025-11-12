@@ -102,7 +102,10 @@ export function useBestRoute({
         return bestRoute
           ? {
               pool: bestRoute.pool,
-              swapState: { ...bestRoute.swapState, isBaseExactIn },
+              swapState: {
+                ...bestRoute.swapState,
+                isBaseExactIn,
+              },
             }
           : null;
       } catch (error) {
@@ -119,7 +122,7 @@ export function useBestRoute({
     // UX stability: avoid flashing/loading state on each keystroke; keep last data while refetching
     // keepPreviousData: true,
     // Quotes are quickly stale but not instant; allow brief reuse to prevent thrash
-    staleTime: 2_000,
+    staleTime: 10_000,
     gcTime: 30_000,
     // Cancel in-flight quotes when params change
     retry: 1,

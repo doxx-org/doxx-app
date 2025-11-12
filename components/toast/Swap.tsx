@@ -1,6 +1,7 @@
 import { CopyIcon } from "lucide-react";
 import { copyToClipboard } from "@/lib/text";
 import { ellipseAddress } from "@/lib/utils";
+import { Link } from "../Link";
 
 export const SwapSuccessToast = ({ txSignature }: { txSignature: string }) => {
   return (
@@ -8,14 +9,12 @@ export const SwapSuccessToast = ({ txSignature }: { txSignature: string }) => {
       <span>Swap successful</span>
       <div className="flex flex-row items-center gap-1">
         <span>Transaction signature: </span>
-        <a
+        <Link
           href={`https://solscan.io/tx/${txSignature}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 underline"
+          className="text-blue-500"
         >
           {ellipseAddress(txSignature, 4)}
-        </a>
+        </Link>
         <CopyIcon
           className="h-4 w-4 cursor-pointer"
           onClick={() => copyToClipboard(txSignature)}
