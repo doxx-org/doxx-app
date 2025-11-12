@@ -39,7 +39,7 @@ export function SwapInfo2({
               {bestRoute ? (
                 <Tooltip>
                   <TooltipTrigger>
-                    <Underlined>CLMM</Underlined>
+                    <Underlined>CPMM</Underlined>
                   </TooltipTrigger>
                   <TooltipContent className="flex flex-col gap-1">
                     <div>
