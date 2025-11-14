@@ -49,4 +49,27 @@ function AvatarFallback({
   );
 }
 
-export { Avatar, AvatarImage, AvatarFallback };
+interface AvatarUnknownFallbackProps {
+  parentProps?: React.ComponentProps<typeof AvatarPrimitive.Fallback>;
+  className?: string;
+  children?: React.ReactNode;
+}
+
+function AvatarUnknownFallback({
+  parentProps,
+  className,
+  ...props
+}: AvatarUnknownFallbackProps) {
+  return (
+    <AvatarFallback {...parentProps}>
+      <div
+        className="flex h-full w-full items-center justify-center rounded-full border"
+        {...props}
+      >
+        ?
+      </div>
+    </AvatarFallback>
+  );
+}
+
+export { Avatar, AvatarImage, AvatarFallback, AvatarUnknownFallback };

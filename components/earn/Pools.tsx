@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import Plus from "@/assets/icons/table/plus.svg";
-import { knownTokenProfiles } from "@/lib/config/tokens";
+import { knownTokenProfiles, unknownToken } from "@/lib/config/tokens";
 import { PoolState } from "@/lib/hooks/chain/types";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
-import { getPoolAddress } from "@/lib/utils/instructions";
+import { normalizeBPSString } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
@@ -17,8 +18,6 @@ import { SearchInput } from "../ui/search-input";
 import { CreatePoolDialog } from "./CreatePoolDialog";
 import { DepositDialog } from "./DepositDialog";
 import { Pool, createColumns } from "./PoolColumn";
-import { columns } from "./PoolColumn";
-import { mockPoolsData } from "./mock-pools-data";
 
 export function Pools() {
   const [searchValue, setSearchValue] = useState("");
@@ -36,47 +35,48 @@ export function Pools() {
   const doxxAmmProgram = useDoxxAmmProgram({ provider });
 
   // Fetch all pools
-  const { data: poolsData, isLoading } = useGetAllPools(doxxAmmProgram);
+  const {
+    data: poolsData,
+    isLoading: isLoadingPools,
+    refetch: refetchAllPoolStates,
+  } = useGetAllPools(doxxAmmProgram);
+
+  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
+    useGetAllTokenInfos(poolsData, knownTokenProfiles);
 
   // Transform pool data from chain to table format
   const transformedPools = useMemo<Pool[]>(() => {
-    if (!poolsData || !doxxAmmProgram) return mockPoolsData; // Fallback to mock data
+    if (!poolsData || !allTokenProfiles) return []; // Fallback to mock data
 
     return poolsData.map((poolData, index) => {
       const { poolState, ammConfig } = poolData;
 
       // Find token profiles
-      const token0Profile = knownTokenProfiles.find(
+      const token0Profile = allTokenProfiles.find(
         (t) => t.address === poolState.token0Mint.toBase58(),
-      );
-      const token1Profile = knownTokenProfiles.find(
+      ) ?? {
+        ...unknownToken,
+        address: poolState.token0Mint.toBase58(),
+      };
+      const token1Profile = allTokenProfiles.find(
         (t) => t.address === poolState.token1Mint.toBase58(),
-      );
+      ) ?? {
+        ...unknownToken,
+        address: poolState.token1Mint.toBase58(),
+      };
 
-      // Calculate pool address
-      const [poolAddress] = getPoolAddress(
-        poolState.ammConfig,
-        poolState.token0Mint,
-        poolState.token1Mint,
-        doxxAmmProgram.programId,
-      );
+      const poolAddress = poolData.observationState.poolId;
 
       // Calculate fee percentage from tradeFeeRate (basis points)
-      const feePercent = (Number(ammConfig.tradeFeeRate) / 10000).toFixed(2);
+      const feePercent = normalizeBPSString(ammConfig.tradeFeeRate.toString());
 
       return {
         id: index.toString(),
         account: poolAddress.toBase58(),
         fee: feePercent,
         lpToken: {
-          token1: {
-            name: token0Profile?.symbol || "Unknown",
-            image: token0Profile?.image || "/coins/usdc.svg",
-          },
-          token2: {
-            name: token1Profile?.symbol || "Unknown",
-            image: token1Profile?.image || "/coins/usdc.svg",
-          },
+          token1: token0Profile,
+          token2: token1Profile,
         },
         apr: "10", // Placeholder - calculate from fees/TVL
         tvl: "0.00", // Placeholder - fetch from vault balances
@@ -85,7 +85,7 @@ export function Pools() {
         poolState, // IMPORTANT: Include the actual pool state for deposit
       };
     });
-  }, [poolsData, doxxAmmProgram]);
+  }, [poolsData, doxxAmmProgram, allTokenProfiles]);
 
   const handleOpenDeposit = (poolState: PoolState, poolAddress: string) => {
     setSelectedPool(poolState);
@@ -111,14 +111,14 @@ export function Pools() {
         </Button>
       </div>
       <div className="h-full min-h-[660px] w-full">
-        {isLoading ? (
+        {isLoadingPools ? (
           <div className="flex h-full items-center justify-center">
             <span className="text-gray-400">Loading pools...</span>
           </div>
         ) : (
           <DataTable
-            columns={columns}
-            data={mockPoolsData} // seems like real data didn't work.
+            columns={poolColumns}
+            data={transformedPools} // seems like real data didn't work.
             globalFilter={searchValue}
             pageSize={10}
             searchInput={

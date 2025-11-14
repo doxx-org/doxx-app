@@ -1,6 +1,15 @@
 import { addressConfig } from "../addresses";
 import { TokenProfile, TokenSymbol } from "./type";
 
+export const unknownToken: TokenProfile = {
+  name: "UNKNOWN",
+  symbol: "UNK",
+  address: "",
+  decimals: 9,
+  displayDecimals: 4,
+  image: undefined,
+};
+
 export const solayer: TokenProfile = {
   name: "SOLAYER",
   symbol: TokenSymbol.LAYER,

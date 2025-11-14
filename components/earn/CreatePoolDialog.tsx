@@ -2,22 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { toast } from "sonner";
-import { addressConfig } from "@/lib/config/addresses";
 import { TokenProfile, knownTokenProfiles } from "@/lib/config/tokens";
-import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
-import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { simplifyErrorMessage } from "@/lib/utils/errors/error";
-import { getAmmConfigAddress } from "@/lib/utils/instructions";
-import { parseAmountBN } from "@/lib/utils/number";
 import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
-import { Button } from "../ui/button";
 import {
   Dialog,
   DialogBody,
@@ -25,6 +14,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../ui/dialog";
+import { CreatePoolButton } from "./CreatePoolButton";
+import { FeeTierSelection } from "./FeeTierSelection";
 import { TokenSelectionRow } from "./TokenSelectionRow";
 
 interface CreatePoolDialogProps {
@@ -36,29 +27,6 @@ enum SelectTokenType {
   TOKEN_A,
   TOKEN_B,
 }
-
-// Fee tier configuration matching the AMM program's config indexes
-const FEE_TIERS = [
-  {
-    index: 0,
-    fee: 0.01,
-    label: "0.01% fee",
-    description: "Best for very stable pairs",
-  },
-  {
-    index: 1,
-    fee: 0.05,
-    label: "0.05% fee",
-    description: "Best for stable pairs",
-  },
-  { index: 2, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
-  {
-    index: 3,
-    fee: 1.0,
-    label: "1.0% fee",
-    description: "Best for exotic pairs",
-  },
-];
 
 export const CreatePoolDialog = ({
   isOpen,
@@ -73,13 +41,10 @@ export const CreatePoolDialog = ({
   );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
-  const [isFeeSelectionOpen, setIsFeeSelectionOpen] = useState(false);
 
   // Hooks
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
-  const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
 
   // Fetch token balances
   const { data: splBalances } = useAllSplBalances(
@@ -199,128 +164,18 @@ export const CreatePoolDialog = ({
     setIsTokenSelectorOpen(true);
   };
 
-  const handleSuccess = (txSignature: string | undefined) => {
-    if (txSignature) {
-      toast.success(
-        `Pool created successfully! TX: ${txSignature.slice(0, 8)}...`,
-      );
-    } else {
-      toast.success("Pool created successfully!");
-    }
-
-    // Reset form
-    setTokenA(null);
-    setTokenB(null);
-    setAmountA("");
-    setAmountB("");
-    onOpenChange(false);
-  };
-
-  const handleError = (error: Error) => {
-    toast.error(simplifyErrorMessage(error, "Pool creation failed"));
-  };
-
-  const { createPool, isCreating } = useCreatePool(
-    doxxAmmProgram,
-    wallet,
-    handleSuccess,
-    handleError,
-  );
-
-  const handleCreatePool = async () => {
-    if (!tokenA || !tokenB || !amountA || !amountB || !doxxAmmProgram) {
-      toast.error("Please select both tokens and enter amounts");
-      return;
-    }
-
-    try {
-      // Get AMM config for selected fee tier
-      const [ammConfig] = getAmmConfigAddress(
-        selectedFeeIndex,
-        doxxAmmProgram.programId,
-      );
-      console.log(
-        "Using AMM config index:",
-        selectedFeeIndex,
-        "Address:",
-        ammConfig.toBase58(),
-      );
-
-      // Verify AMM config exists
-      try {
-        const configAccount =
-          await doxxAmmProgram.account.ammConfig.fetch(ammConfig);
-        console.log("AMM Config found:", {
-          index: configAccount.index,
-          tradeFeeRate: configAccount.tradeFeeRate.toString(),
-          disableCreatePool: configAccount.disableCreatePool,
-        });
-
-        if (configAccount.disableCreatePool) {
-          toast.error("Pool creation is disabled for this fee tier");
-          return;
-        }
-      } catch (configError) {
-        console.error("AMM Config fetch error:", configError);
-        toast.error(
-          `AMM Config for fee tier ${FEE_TIERS[selectedFeeIndex].fee}% does not exist on-chain. Please select a different fee tier.`,
-        );
-        return;
-      }
-
-      // Note: Fee account may not exist until first pool is created - this is normal
-      console.log("Using fee account:", addressConfig.contracts.createPoolFee);
-
-      // Convert amounts to BN with proper decimals
-      const initAmount0 = parseAmountBN(amountA, tokenA.decimals);
-      const initAmount1 = parseAmountBN(amountB, tokenB.decimals);
-
-      console.log("Creating pool with:", {
-        tokenA: tokenA.symbol,
-        tokenB: tokenB.symbol,
-        amountA,
-        amountB,
-        feeIndex: selectedFeeIndex,
-        feeTier: FEE_TIERS[selectedFeeIndex].fee + "%",
-        ammConfig: ammConfig.toBase58(),
-        initAmount0: initAmount0.toString(),
-        initAmount1: initAmount1.toString(),
-      });
-
-      await createPool({
-        ammConfig,
-        token0Mint: new PublicKey(tokenA.address),
-        token1Mint: new PublicKey(tokenB.address),
-        initAmount0,
-        initAmount1,
-      });
-    } catch (error) {
-      console.error("Pool creation error:", error);
-      // Error is already handled by handleError callback
-    }
-  };
-
-  const isCreatePoolEnabled =
-    tokenA &&
-    tokenB &&
-    amountA &&
-    amountB &&
-    parseFloat(amountA) > 0 &&
-    parseFloat(amountB) > 0 &&
-    !isCreating;
-
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="flex min-h-[480px] w-[640px] flex-col gap-0 overflow-hidden">
+        <DialogContent className="flex min-h-[480px] w-[640px] !max-w-[576px] flex-col gap-0 overflow-hidden">
           <DialogHeader className="h-fit border-b border-gray-800 py-6">
             <DialogTitle>Create Pool</DialogTitle>
           </DialogHeader>
-          <DialogBody className="flex flex-1 flex-col justify-between gap-1 p-6">
+          <DialogBody className="flex flex-1 flex-col justify-between gap-5.5 p-3">
             {/* Token Selection Rows */}
             <div className="flex flex-col gap-1">
               <div className="flex flex-row gap-1">
-                <div className="h-full w-full rounded-tl-xl bg-gray-800 p-2">
+                <div className="h-full w-full rounded-tl-xl border border-gray-800 bg-gray-900 p-4 pt-5">
                   <TokenSelectionRow
                     token={tokenA}
                     amount={amountA}
@@ -337,7 +192,7 @@ export const CreatePoolDialog = ({
                   />
                 </div>
 
-                <div className="h-full w-full rounded-tr-xl bg-gray-800 p-2">
+                <div className="h-full w-full rounded-tr-xl border border-gray-800 bg-gray-900 p-4 pt-5">
                   <TokenSelectionRow
                     token={tokenB}
                     amount={amountB}
@@ -355,7 +210,7 @@ export const CreatePoolDialog = ({
                 </div>
               </div>
 
-              <div className="h-full w-full rounded-b-xl bg-gray-800 p-2">
+              <div className="h-full w-full rounded-b-xl border border-gray-800 bg-gray-900 p-4 pt-5">
                 {/* LP Token Info - Display Only */}
                 <div className="flex w-full flex-col gap-2 py-2">
                   <div className="flex items-center justify-between">
@@ -392,103 +247,22 @@ export const CreatePoolDialog = ({
               </div>
             </div>
 
-            {/* Fee Selection Section */}
-            <div className="flex flex-col gap-3 pt-4">
-              <div className="flex items-center justify-between">
-                <h3 className={cn(text.sb2(), "text-gray-400")}>Select Pool</h3>
-              </div>
-              <p className={cn(text.sb3(), "text-gray-500")}>
-                Select a pool type based on your preferred liquidity provider
-                fee.
-              </p>
-
-              {/* Fee Tier Selector */}
-              <button
-                onClick={() => setIsFeeSelectionOpen(!isFeeSelectionOpen)}
-                className={cn(
-                  "flex w-full items-center justify-between rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3 transition-colors hover:bg-gray-700/50",
-                )}
-              >
-                <span className={cn(text.b3(), "text-gray-300")}>
-                  Select a fee tier
-                </span>
-                <div className="flex items-center gap-2">
-                  {isFeeSelectionOpen && (
-                    <span className={cn(text.sb3(), "text-gray-400")}>
-                      Hide
-                    </span>
-                  )}
-                  {isFeeSelectionOpen ? (
-                    <ChevronUp className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                  )}
-                </div>
-              </button>
-
-              {/* Fee Tier Options */}
-              {isFeeSelectionOpen && (
-                <div className="grid grid-cols-2 gap-3">
-                  {FEE_TIERS.map((tier) => (
-                    <button
-                      key={tier.index}
-                      onClick={() => {
-                        setSelectedFeeIndex(tier.index);
-                        setIsFeeSelectionOpen(false);
-                      }}
-                      className={cn(
-                        "flex flex-col items-start gap-1 rounded-xl border p-4 transition-all",
-                        selectedFeeIndex === tier.index
-                          ? "border-green bg-green/10"
-                          : "border-gray-700 bg-gray-800/30 hover:border-gray-600 hover:bg-gray-700/30",
-                      )}
-                    >
-                      <div className="flex w-full items-center justify-between">
-                        <span
-                          className={cn(text.b3(), "font-semibold text-white")}
-                        >
-                          {tier.label}
-                        </span>
-                        <div
-                          className={cn(
-                            "flex h-5 w-5 items-center justify-center rounded-full border-2",
-                            selectedFeeIndex === tier.index
-                              ? "border-green"
-                              : "border-gray-600",
-                          )}
-                        >
-                          {selectedFeeIndex === tier.index && (
-                            <div className="bg-green h-3 w-3 rounded-full" />
-                          )}
-                        </div>
-                      </div>
-                      <span
-                        className={cn(text.sb3(), "text-left text-gray-500")}
-                      >
-                        {tier.description}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div />
-            {/* Create Pool Button */}
-            <Button
-              className={cn(
-                "h-12 w-full rounded-xl",
-                isCreatePoolEnabled
-                  ? "bg-green hover:bg-green/90 text-black"
-                  : "cursor-not-allowed bg-gray-700 text-gray-400",
-              )}
-              onClick={handleCreatePool}
-              disabled={!isCreatePoolEnabled}
-            >
-              <span className={cn(text.hsb2())}>
-                {isCreating ? "Creating Pool..." : "Create Pool"}
-              </span>
-            </Button>
+            <FeeTierSelection
+              selectedFeeIndex={selectedFeeIndex}
+              onSelectFeeIndex={setSelectedFeeIndex}
+            />
+            <CreatePoolButton
+              tokenA={tokenA}
+              tokenB={tokenB}
+              amountA={amountA}
+              amountB={amountB}
+              onSelectTokenA={setTokenA}
+              onSelectTokenB={setTokenB}
+              onAmountChangeA={setAmountA}
+              onAmountChangeB={setAmountB}
+              onOpenChange={onOpenChange}
+              selectedFeeIndex={selectedFeeIndex}
+            />
           </DialogBody>
         </DialogContent>
       </Dialog>

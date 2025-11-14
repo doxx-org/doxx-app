@@ -1,26 +1,23 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import { TokenProfile } from "@/lib/config/tokens";
 import { PoolState } from "@/lib/hooks/chain/types";
+import { numericSort } from "@/lib/utils/table";
 import { Button } from "../ui/button";
 import { SortHeader } from "./cols/sortColomn";
 import { PoolRow } from "./rows/";
 import { NumberRows } from "./rows/NumberRow";
-import { numericSort } from "@/lib/utils/table";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
-type Token = {
-  name: string;
-  image: string;
-};
 export type Pool = {
   id: string;
   account: string;
   fee: string;
   lpToken: {
-    token1: Token;
-    token2: Token;
+    token1: TokenProfile;
+    token2: TokenProfile;
   };
   apr: string;
   tvl: string;
@@ -30,11 +27,14 @@ export type Pool = {
 };
 
 // Callback type for deposit action
-export type OnDepositCallback = (poolState: PoolState, poolAddress: string) => void;
+export type OnDepositCallback = (
+  poolState: PoolState,
+  poolAddress: string,
+) => void;
 
 const depositButton = (pool: Pool, onDeposit?: OnDepositCallback) => {
   return (
-    <Button 
+    <Button
       className="bg-gray-800 text-gray-400 hover:bg-gray-700"
       onClick={() => {
         if (pool.poolState && onDeposit) {
@@ -48,7 +48,9 @@ const depositButton = (pool: Pool, onDeposit?: OnDepositCallback) => {
   );
 };
 
-export const createColumns = (onDeposit?: OnDepositCallback): ColumnDef<Pool>[] => [
+export const createColumns = (
+  onDeposit?: OnDepositCallback,
+): ColumnDef<Pool>[] => [
   {
     id: "poolName",
     header: "Pool",

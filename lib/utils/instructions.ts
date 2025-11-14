@@ -1,4 +1,4 @@
-import { utils } from "@coral-xyz/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import {
   ORACLE_SEED,
@@ -68,15 +68,22 @@ export function getOrcleAccountAddress(
   return [address, bump];
 }
 
+function u16ToBytes(num: number) {
+  const arr = new ArrayBuffer(2);
+  const view = new DataView(arr);
+  view.setUint16(0, num, false);
+  return new Uint8Array(arr);
+}
+
 export function getAmmConfigAddress(
   index: number,
   programId: PublicKey,
 ): [PublicKey, number] {
-  const indexBuffer = Buffer.alloc(2);
-  indexBuffer.writeUInt16LE(index, 0);
+  const indexBuffer = u16ToBytes(index);
 
+  // Match the script's exact derivation method
   const [address, bump] = PublicKey.findProgramAddressSync(
-    [Buffer.from(utils.bytes.utf8.encode("amm_config")), indexBuffer],
+    [Buffer.from(anchor.utils.bytes.utf8.encode("amm_config")), indexBuffer],
     programId,
   );
   return [address, bump];

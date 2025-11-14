@@ -1,10 +1,9 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
-import Image from "next/image";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 
 interface TokenSelectionRowProps {
@@ -37,20 +36,17 @@ export const TokenSelectionRow = ({
       <div className="flex flex-1 flex-col items-start justify-start">
         <Button
           variant="outline"
-          className="h-12 min-w-40 gap-2 rounded-xl border border-gray-700 bg-gray-800/50 p-2 hover:bg-gray-700/50"
+          className="h-11 gap-2 rounded-xl border border-gray-700 bg-gray-800/50 p-1.5 pr-3 hover:bg-gray-700/50"
           onClick={onTokenSelect}
           disabled={disableTokenSelect}
         >
           {token ? (
             <div className="flex flex-row items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full">
-                <Image
-                  width={20}
-                  height={20}
-                  src={token.image ?? ""}
-                  alt={token.symbol ?? ""}
-                  className="rounded-full"
-                />
+              <div className="flex items-center justify-center rounded-full">
+                <Avatar className="z-10 size-8 bg-gray-800">
+                  <AvatarImage src={token.image} alt={token.symbol} />
+                  <AvatarFallback>{"?"}</AvatarFallback>
+                </Avatar>
               </div>
               <span className={cn(text.b3(), "text-gray-300")}>
                 {token.symbol}
@@ -58,19 +54,19 @@ export const TokenSelectionRow = ({
             </div>
           ) : (
             <div className="flex flex-row items-center gap-2">
-              <div className="h-6 w-6 rounded-full bg-gray-800" />
-              <span className={cn(text.b3(), "text-gray-400")}>{label}</span>
+              <div className="size-8 rounded-full bg-white/5" />
+              <span className={cn(text.b3(), "text-gray-300")}>{label}</span>
             </div>
           )}
-          <ChevronDown className="h-4 w-4" />
+          {/* {!disableTokenSelect && <ChevronDown className="h-4 w-4" />} */}
         </Button>
         <input
           type="text"
-          value={amount}
-          onChange={(e) => onAmountChange(e.target.value)}
+          value={amount !== "" ? `-${amount}` : amount}
+          onChange={(e) => onAmountChange(e.target.value.replace("-", ""))}
           className={cn(
             text.sh1(),
-            "w-20 self-end bg-transparent text-right text-gray-400 outline-none placeholder:text-gray-500",
+            "w-full self-end bg-transparent text-right align-middle text-gray-400 outline-none placeholder:text-gray-500",
           )}
           placeholder={placeholder}
           disabled={disabled}
