@@ -189,7 +189,7 @@ export function useDoxxSwap(
         return undefined;
       }
     },
-    [program, wallet?.publicKey, onSuccess, onError],
+    [program, wallet, onSuccess, onError],
   );
 
   const swapBaseInput = useCallback(

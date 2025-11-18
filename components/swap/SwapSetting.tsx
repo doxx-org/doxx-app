@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import Gear from "@/assets/icons/gear.svg";
 import {
   DropdownBody,
@@ -42,7 +42,14 @@ interface SwapSettingProps {
 export function SwapSetting({ slippage, onSlippageChange }: SwapSettingProps) {
   const { isOpen, setIsOpen } = useDialogState();
   const [customSlippage, setCustomSlippage] = useState("0");
-  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleInput = useCallback(
+    (inputSlippage: string) => {
+      onSlippageChange(inputSlippage);
+      setCustomSlippage("0");
+    },
+    [onSlippageChange],
+  );
 
   const handleCustomSlippageChange = (value: string) => {
     const inputValue = parseDecimalsInput(value);
@@ -56,13 +63,15 @@ export function SwapSetting({ slippage, onSlippageChange }: SwapSettingProps) {
     onSlippageChange(inputValue);
   };
 
-  const handleInputBlur = () => {
+  const handleInputBlur = useCallback(() => {
     // If input is empty or "0", reset to default slippage
     if (!customSlippage || customSlippage === "0" || customSlippage === "") {
       setCustomSlippage("0");
-      onSlippageChange(DEFAULT_SLIPPAGE);
+      if (slippage === "0" || slippage === "") {
+        onSlippageChange(DEFAULT_SLIPPAGE);
+      }
     }
-  };
+  }, [customSlippage, slippage, onSlippageChange]);
 
   return (
     <div className="flex flex-row items-center justify-end">
@@ -92,7 +101,7 @@ export function SwapSetting({ slippage, onSlippageChange }: SwapSettingProps) {
                       "px-4 py-3 transition-colors duration-200",
                       isSelected && "text-green",
                     )}
-                    onClick={() => onSlippageChange(option.value)}
+                    onClick={() => handleInput(option.value)}
                   >
                     {option.label}
                   </Button>
@@ -101,16 +110,11 @@ export function SwapSetting({ slippage, onSlippageChange }: SwapSettingProps) {
               <div
                 className={cn(
                   text.sb3(),
-                  "flex h-9 w-fit flex-row items-center justify-between gap-1 rounded-md border p-3 outline-none focus-within:border-gray-50",
-                  {
-                    "border-gray-50 text-gray-50":
-                      Number(customSlippage) > 0 ||
-                      document.activeElement === inputRef.current,
-                    "border-gray-800": !(
-                      Number(customSlippage) > 0 ||
-                      document.activeElement === inputRef.current
-                    ),
-                  },
+                  "flex h-9 w-fit flex-row items-center justify-between gap-1 rounded-md border p-3 outline-none",
+                  "focus-within:border-gray-50 focus-within:text-gray-50",
+                  Number(customSlippage) > 0
+                    ? "border-gray-50 text-gray-50"
+                    : "border-gray-800",
                 )}
               >
                 <input
@@ -123,7 +127,6 @@ export function SwapSetting({ slippage, onSlippageChange }: SwapSettingProps) {
                     "w-6 text-left outline-none placeholder:text-gray-600",
                   )}
                   placeholder="0"
-                  ref={inputRef}
                 />
                 %
               </div>

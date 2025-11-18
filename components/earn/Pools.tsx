@@ -43,7 +43,8 @@ export function Pools() {
   const {
     data: poolsData,
     isLoading: isLoadingPools,
-    refetch: refetchAllPoolStates,
+    // TODO: add refetchAllPoolStates to the dependencies
+    // refetch: refetchAllPoolStates,
   } = useGetAllPools(doxxAmmProgram);
 
   // Fetch token balances
@@ -112,7 +113,7 @@ export function Pools() {
         poolState, // IMPORTANT: Include the actual pool state for deposit
       };
     });
-  }, [poolsData, doxxAmmProgram, allTokenProfiles]);
+  }, [poolsData, allTokenProfiles]);
 
   const handleOpenDeposit = (poolState: PoolState, poolAddress: string) => {
     setSelectedPool(poolState);

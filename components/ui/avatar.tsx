@@ -63,7 +63,10 @@ function AvatarUnknownFallback({
   return (
     <AvatarFallback {...parentProps}>
       <div
-        className="flex h-full w-full items-center justify-center rounded-full border"
+        className={cn(
+          "flex h-full w-full items-center justify-center rounded-full border",
+          className,
+        )}
         {...props}
       >
         ?

@@ -18,7 +18,7 @@ import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { text } from "@/lib/text";
 import { cn, simplifyErrorMessage } from "@/lib/utils";
-import { parseAmountBN } from "@/lib/utils/number";
+import { parseAmountBN, parseDecimalsInput } from "@/lib/utils/number";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -34,11 +34,6 @@ interface DepositDialogProps {
   onOpenChange: (open: boolean) => void;
   poolState: PoolState | null;
   poolStateAddress: string | null; // The public key of the pool state account
-}
-
-enum SelectTokenType {
-  TOKEN_A,
-  TOKEN_B,
 }
 
 export const DepositDialog = ({
@@ -250,7 +245,7 @@ export const DepositDialog = ({
     setAmount: (value: string) => void,
   ) => {
     // Allow empty string, numbers, and decimal points
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    if (parseDecimalsInput(value)) {
       setAmount(value);
     }
   };

@@ -153,7 +153,15 @@ export const CreatePoolButton = ({
       console.error("Pool creation error:", error);
       // Error is already handled by handleError callback
     }
-  }, [tokenA, tokenB, amountA, amountB, doxxAmmProgram, selectedFeeIndex]);
+  }, [
+    tokenA,
+    tokenB,
+    amountA,
+    amountB,
+    doxxAmmProgram,
+    selectedFeeIndex,
+    createPool,
+  ]);
 
   const [label, disabled, handleCreatePoolButton] = useMemo(() => {
     if (
@@ -173,8 +181,16 @@ export const CreatePoolButton = ({
       return ["Error creating Pool", true, undefined];
     }
 
-    return ["Create Pool", false, async () => await handleCreatePool()];
-  }, [handleCreatePool, isCreatingPool, createPoolError]);
+    return ["Create Pool", false, handleCreatePool];
+  }, [
+    tokenA,
+    tokenB,
+    amountA,
+    amountB,
+    handleCreatePool,
+    isCreatingPool,
+    createPoolError,
+  ]);
 
   return (
     <Button

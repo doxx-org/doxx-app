@@ -28,7 +28,11 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
   children,
 }) => {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []); // only render children on client
+
+  useEffect(() => {
+    // Defer state update to avoid synchronous setState in effect
+    setTimeout(() => setMounted(true), 0);
+  }, []); // only render children on client
 
   // Memoize wallets array to prevent recreation on every render
   const wallets = useMemo(
@@ -50,11 +54,11 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
     [],
   );
 
-  if (!mounted) return null;
-
   const handleError = (error: Error) => {
     toast.error(simplifyErrorMessage(error));
   };
+
+  if (!mounted) return null;
 
   return (
     <ConnectionProvider endpoint={endpoint}>

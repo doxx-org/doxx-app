@@ -21,6 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useNoMemo } from "@/lib/hooks/useNoMemo";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
 import { DataTablePagination } from "./data-table-pagination";
@@ -46,22 +47,25 @@ export function DataTable<TData, TValue>({
     pageSize,
   });
 
-  const table = useReactTable({
-    data,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    onSortingChange: setSorting,
-    onPaginationChange: setPagination,
-    onGlobalFilterChange: () => {},
-    state: {
-      sorting,
-      globalFilter,
-      pagination,
-    },
-  });
+  const table = useNoMemo(() =>
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useReactTable({
+      data,
+      columns,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+      onSortingChange: setSorting,
+      onPaginationChange: setPagination,
+      onGlobalFilterChange: () => {},
+      state: {
+        sorting,
+        globalFilter,
+        pagination,
+      },
+    }),
+  );
 
   const isEmpty = table.getRowModel().rows?.length === 0;
 

@@ -207,7 +207,7 @@ export function SwapWidget() {
   }, [
     isLoadingAllTokenProfiles,
     errorAllTokenProfiles,
-    isFetchingBestRoute,
+    // isFetchingBestRoute,
     isLoadingSplBalances,
     isLoadingAllPoolStates,
   ]);
@@ -353,7 +353,7 @@ export function SwapWidget() {
       );
       setSellAmount(normalizedAmountIn);
     }
-  }, [isBaseExactIn, bestRoute, isFetchingBestRoute]);
+  }, [isBaseExactIn, bestRoute, isFetchingBestRoute, errorBestRoute]);
 
   useEffect(() => {
     if (isBaseExactIn) {
@@ -363,7 +363,7 @@ export function SwapWidget() {
     }
     // stop the immediate typing loading once we hand off to debounced fetch
     setIsTyping(false);
-    // @eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSellAmount, debouncedBuyAmount]);
 
   useEffect(() => {
