@@ -9,13 +9,13 @@ import { PoolStateWithConfig } from "./types";
 
 export function useGetAllTokenInfos(
   poolStates: PoolStateWithConfig[] | undefined,
-  knownTokenProfiles: TokenProfile[] | undefined,
+  rawTokenProfiles?: RawTokenProfile[],
 ): UseQueryResult<TokenProfile[] | undefined, Error> {
   const allTokenProfiles: RawTokenProfile[] | undefined = useMemo(() => {
-    if (!poolStates || !knownTokenProfiles) return undefined;
+    if (!poolStates) return undefined;
 
-    return mapPoolTokenToProfiles(poolStates, knownTokenProfiles);
-  }, [poolStates, knownTokenProfiles]);
+    return mapPoolTokenToProfiles(poolStates, rawTokenProfiles);
+  }, [poolStates, rawTokenProfiles]);
 
   return useQuery({
     queryKey: [

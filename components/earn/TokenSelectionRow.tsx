@@ -5,6 +5,7 @@ import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
+import { ChevronDown } from "lucide-react";
 
 interface TokenSelectionRowProps {
   token: TokenProfile | null;
@@ -58,7 +59,7 @@ export const TokenSelectionRow = ({
               <span className={cn(text.b3(), "text-gray-300")}>{label}</span>
             </div>
           )}
-          {/* {!disableTokenSelect && <ChevronDown className="h-4 w-4" />} */}
+          {!disableTokenSelect && <ChevronDown className="h-4 w-4" />}
         </Button>
         <input
           type="text"

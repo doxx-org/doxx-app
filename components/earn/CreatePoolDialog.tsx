@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { TokenProfile, knownTokenProfiles } from "@/lib/config/tokens";
-import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
+import { TokenProfile } from "@/lib/config/tokens";
+import { BalanceMapByMint } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
@@ -20,6 +19,8 @@ import { TokenSelectionRow } from "./TokenSelectionRow";
 
 interface CreatePoolDialogProps {
   isOpen: boolean;
+  splBalances: BalanceMapByMint | undefined;
+  allTokenProfiles: TokenProfile[];
   onOpenChange: (open: boolean) => void;
 }
 
@@ -30,6 +31,8 @@ enum SelectTokenType {
 
 export const CreatePoolDialog = ({
   isOpen,
+  splBalances,
+  allTokenProfiles,
   onOpenChange,
 }: CreatePoolDialogProps) => {
   const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
@@ -41,17 +44,6 @@ export const CreatePoolDialog = ({
   );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
-
-  // Hooks
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-
-  // Fetch token balances
-  const { data: splBalances } = useAllSplBalances(
-    connection,
-    wallet?.publicKey ?? undefined,
-    knownTokenProfiles,
-  );
 
   // Memoized calculations
   const lpTokenAmount = useMemo((): string => {
@@ -87,15 +79,14 @@ export const CreatePoolDialog = ({
     return lpAmount.toFixed(6);
   }, [tokenA, tokenB, amountA, amountB]);
 
-  const tokenBalances = useMemo(
-    () => ({
+  const tokenBalances = useMemo(() => {
+    return {
       tokenA:
         tokenA && splBalances ? (splBalances[tokenA.address]?.amount ?? 0) : 0,
       tokenB:
         tokenB && splBalances ? (splBalances[tokenB.address]?.amount ?? 0) : 0,
-    }),
-    [tokenA, tokenB, splBalances],
-  );
+    };
+  }, [tokenA, tokenB, splBalances]);
 
   const usdValues = useMemo(() => {
     const getTokenPrice = (token: TokenProfile | null): number => {
@@ -133,14 +124,14 @@ export const CreatePoolDialog = ({
   const handleSelectToken = (token: TokenProfile) => {
     if (selectedTokenType === SelectTokenType.TOKEN_A) {
       // If token B is the same as the new token A, clear it
-      if (tokenB?.symbol === token.symbol) {
+      if (tokenB?.address.toLowerCase() === token.address.toLowerCase()) {
         setTokenB(null);
         setAmountB("");
       }
       setTokenA(token);
     } else if (selectedTokenType === SelectTokenType.TOKEN_B) {
       // If token A is the same as the new token B, clear it
-      if (tokenA?.symbol === token.symbol) {
+      if (tokenA?.address.toLowerCase() === token.address.toLowerCase()) {
         setTokenA(null);
         setAmountA("");
       }
@@ -179,7 +170,7 @@ export const CreatePoolDialog = ({
                   <TokenSelectionRow
                     token={tokenA}
                     amount={amountA}
-                    placeholder="0.00"
+                    placeholder="-0.00"
                     label="Token A"
                     onTokenSelect={() =>
                       handleOpenTokenSelector(SelectTokenType.TOKEN_A)
@@ -196,7 +187,7 @@ export const CreatePoolDialog = ({
                   <TokenSelectionRow
                     token={tokenB}
                     amount={amountB}
-                    placeholder="0.00"
+                    placeholder="-0.00"
                     label="Token B"
                     onTokenSelect={() =>
                       handleOpenTokenSelector(SelectTokenType.TOKEN_B)
@@ -268,12 +259,14 @@ export const CreatePoolDialog = ({
       </Dialog>
 
       {/* Token Selector Dialog */}
-      <TokenSelectorDialog
-        isOpen={isTokenSelectorOpen}
-        onOpenChange={setIsTokenSelectorOpen}
-        tokenProfiles={knownTokenProfiles}
-        onSelectToken={handleSelectToken}
-      />
+      {isTokenSelectorOpen && (
+        <TokenSelectorDialog
+          isOpen={isTokenSelectorOpen}
+          onOpenChange={setIsTokenSelectorOpen}
+          tokenProfiles={allTokenProfiles}
+          onSelectToken={handleSelectToken}
+        />
+      )}
     </>
   );
 };

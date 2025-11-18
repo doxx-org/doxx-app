@@ -3,12 +3,17 @@
 import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import Plus from "@/assets/icons/table/plus.svg";
-import { knownTokenProfiles, unknownToken } from "@/lib/config/tokens";
+import {
+  RawTokenProfile,
+  knownTokenProfiles,
+  unknownToken,
+} from "@/lib/config/tokens";
 import { PoolState } from "@/lib/hooks/chain/types";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
+import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { text } from "@/lib/text";
 import { normalizeBPSString } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
@@ -41,8 +46,30 @@ export function Pools() {
     refetch: refetchAllPoolStates,
   } = useGetAllPools(doxxAmmProgram);
 
+  // Fetch token balances
+  const { data: splBalances } = useAllSplBalances(
+    connection,
+    wallet?.publicKey ?? undefined,
+    knownTokenProfiles,
+    true,
+  );
+
+  const rawTokenProfilesFromSplBalances: RawTokenProfile[] | undefined =
+    useMemo(() => {
+      if (!splBalances) return undefined;
+
+      const allBalances = Object.values(splBalances).filter((c) => !!c);
+
+      return allBalances.map((b) => {
+        return {
+          address: b.mint,
+          decimals: b.decimals,
+        };
+      });
+    }, [splBalances]);
+
   const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
-    useGetAllTokenInfos(poolsData, knownTokenProfiles);
+    useGetAllTokenInfos(poolsData, rawTokenProfilesFromSplBalances);
 
   // Transform pool data from chain to table format
   const transformedPools = useMemo<Pool[]>(() => {
@@ -133,9 +160,11 @@ export function Pools() {
       </div>
 
       {/* Create Pool Dialog */}
-      {isCreatePoolOpen && (
+      {isCreatePoolOpen && !isLoadingAllTokenProfiles && allTokenProfiles && (
         <CreatePoolDialog
           isOpen={isCreatePoolOpen}
+          splBalances={splBalances}
+          allTokenProfiles={allTokenProfiles}
           onOpenChange={setIsCreatePoolOpen}
         />
       )}

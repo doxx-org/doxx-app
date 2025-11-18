@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/card";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
-import { knownTokenProfiles } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
 import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
@@ -119,7 +118,7 @@ export function SwapWidget() {
     data: allTokenProfiles,
     isLoading: isLoadingAllTokenProfiles,
     error: errorAllTokenProfiles,
-  } = useGetAllTokenInfos(allPoolStates, knownTokenProfiles);
+  } = useGetAllTokenInfos(allPoolStates);
 
   // get all spl balances
   const {

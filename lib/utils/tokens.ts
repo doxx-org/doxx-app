@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { RawTokenProfile, TokenProfile } from "../config/tokens";
+import { RawTokenProfile, knownTokenProfiles } from "../config/tokens";
 import { PoolStateWithConfig } from "../hooks/chain/types";
 
 export function ellipseAddress(
@@ -12,7 +12,7 @@ export function ellipseAddress(
 
 export function mapPoolTokenToProfiles(
   poolStates: PoolStateWithConfig[],
-  knownTokenProfiles: TokenProfile[],
+  rawTokenProfiles: RawTokenProfile[] | undefined,
 ): RawTokenProfile[] {
   // get all token profiles from pool states
   const allTokenProfiles = poolStates.flatMap((p) => {
@@ -38,6 +38,7 @@ export function mapPoolTokenToProfiles(
       decimals: p.decimals,
     })),
     ...allTokenProfiles,
+    ...(rawTokenProfiles ?? []),
   ];
 
   // filter out invalid token profiles
@@ -55,7 +56,10 @@ export function mapPoolTokenToProfiles(
   // remove duplicates
   const uniqueTokenProfiles = validTokenProfiles.filter(
     (p, index, self) =>
-      index === self.findIndex((t) => t.address === p.address),
+      index ===
+      self.findIndex(
+        (t) => t.address.toLowerCase() === p.address.toLowerCase(),
+      ),
   );
 
   return uniqueTokenProfiles;

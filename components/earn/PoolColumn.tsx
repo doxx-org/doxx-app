@@ -56,7 +56,7 @@ export const createColumns = (
     header: "Pool",
     cell: ({ row }) => <PoolRow pool={row.original} />,
     accessorFn: (row) =>
-      `${row.lpToken.token1.name}/${row.lpToken.token2.name}`,
+      `${row.lpToken.token1.symbol}/${row.lpToken.token2.symbol}`,
     enableGlobalFilter: true,
   },
   {
