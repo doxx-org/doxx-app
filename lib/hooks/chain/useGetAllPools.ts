@@ -15,23 +15,34 @@ export function useGetAllPools(
       // get all pool states
       const allPoolStates = await program.account.poolState.all();
 
-      // get all amm configs and observation states
-      const allConfigs = await Promise.all(
-        allPoolStates.map(async (poolState) => {
-          const ammConfig = await program.account.ammConfig.fetch(
-            poolState.account.ammConfig,
-          );
-          const observationState = await program.account.observationState.fetch(
-            poolState.account.observationKey,
-          );
-          return { ammConfig, observationState };
-        }),
+      // collect all addresses for batch fetching
+      const ammConfigAddresses = allPoolStates.map(
+        (poolState) => poolState.account.ammConfig,
       );
+      const observationStateAddresses = allPoolStates.map(
+        (poolState) => poolState.account.observationKey,
+      );
+
+      // batch fetch all amm configs and observation states
+      const [ammConfigs, observationStates] = await Promise.all([
+        program.account.ammConfig.fetchMultiple(ammConfigAddresses),
+        program.account.observationState.fetchMultiple(
+          observationStateAddresses,
+        ),
+      ]);
 
       // combine pool states, amm configs and observation states
       const allPoolStatesData: PoolStateWithConfig[] = allPoolStates.map(
         (poolState, index) => {
-          const { ammConfig, observationState } = allConfigs[index];
+          const ammConfig = ammConfigs[index];
+          const observationState = observationStates[index];
+
+          if (!ammConfig || !observationState) {
+            // TODO: handle this error
+            throw new Error(
+              `Failed to fetch configs for pool at index ${index}`,
+            );
+          }
 
           return {
             poolState: { ...poolState.account },

@@ -253,12 +253,10 @@ export function SwapWidget() {
   );
 
   // callback when open token selector dialog
-  const handleOpenTokenSelector = isActionable
-    ? (selectTokenType: SelectTokenType) => {
-        setSelectedTokenType(selectTokenType);
-        setIsOpen(true);
-      }
-    : undefined;
+  const handleOpenTokenSelector = (selectTokenType: SelectTokenType) => {
+    setSelectedTokenType(selectTokenType);
+    setIsOpen(true);
+  };
 
   const handleSellInputChange = useCallback((value: string) => {
     setSellAmount(parseDecimalsInput(value));

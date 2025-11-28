@@ -58,8 +58,8 @@ export function SwapInput({
           <Button
             variant="outline"
             className="h-fit w-fit gap-2 rounded-2xl border border-white/10 bg-white/5 p-[6px]"
-            disabled={!onOpenTokenSelector || !isActionable}
-            onClick={isActionable ? onOpenTokenSelector : undefined}
+            disabled={!onOpenTokenSelector}
+            onClick={onOpenTokenSelector}
           >
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/5">
               <Avatar>
