@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
 import { TokenProfile } from "@/lib/config/tokens";
-import { text } from "@/lib/text";
-import { cn } from "@/lib/utils/style";
+import { SearchInput } from "../SearchInput";
 import {
   Dialog,
   DialogBody,
@@ -46,22 +44,11 @@ export const TokenSelectorDialog = ({
         </DialogHeader>
         <DialogBody className="flex flex-1 flex-col overflow-hidden px-0">
           {/* Search Input */}
-          <div className="shrink-0 px-4 pt-4">
-            <div className="bg-black-700 flex items-center gap-2 rounded-2xl p-4">
-              <Search className="h-4 w-4 text-gray-500" />
-              <input
-                id="search-token-selector"
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className={cn(
-                  text.sb2(),
-                  "w-full text-left text-gray-700 outline-none placeholder:text-gray-700",
-                )}
-                placeholder="Search by token or address"
-              />
-            </div>
-          </div>
+          <SearchInput
+            value={search}
+            onChange={setSearch}
+            placeholder="Search by token or address"
+          />
 
           {/* Token list */}
           <TokenList
