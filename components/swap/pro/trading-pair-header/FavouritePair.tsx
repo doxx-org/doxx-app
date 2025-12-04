@@ -1,7 +1,8 @@
 import { useAtom } from "jotai";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
 import { favouritePairsAtom } from "@/lib/utils/atomWithStorage";
+import { formatNumber } from "@/lib/utils/number";
+import { cn } from "@/lib/utils/style";
 import { TradingPair } from "./types";
 
 interface FavouritePairProps {
@@ -35,9 +36,9 @@ export const FavouritePair = ({ onSelect }: FavouritePairProps) => {
               )}
             >
               {tradingPair.change24h > 0 ? "+" : ""}
-              {tradingPair.change24h}%
+              {formatNumber(tradingPair.change24h)}%
             </span>
-            <span>{tradingPair.lastPrice}</span>
+            <span>{formatNumber(tradingPair.lastPrice)}</span>
           </div>
         ))}
       </div>

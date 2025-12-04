@@ -32,6 +32,26 @@ interface DataTableProps<TData, TValue> {
   searchInput?: ReactNode;
   globalFilter?: string;
   pageSize?: number;
+  className?: {
+    outer?: string;
+    table?: {
+      className?: string;
+      searchInput?: {
+        row?: string;
+        head?: string;
+      };
+      headers?: {
+        row?: string;
+        head?: string;
+      };
+      body?: {
+        className?: string;
+        row?: string;
+        cell?: string;
+      };
+    };
+  };
+  onSelectRow?: (row: TData) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -40,6 +60,8 @@ export function DataTable<TData, TValue>({
   searchInput,
   globalFilter,
   pageSize = 10,
+  className,
+  onSelectRow,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -72,21 +94,34 @@ export function DataTable<TData, TValue>({
   return (
     <div
       className={cn(
-        "bg-black-800 h-full overflow-hidden rounded-md border",
+        className?.outer
+          ? className.outer
+          : "bg-black-800 h-full overflow-hidden rounded-md border",
         isEmpty && "h-full",
       )}
     >
       <Table className={cn(isEmpty && "h-full", "w-full")}>
         <TableHeader>
           {searchInput && (
-            <TableRow className="border-b border-gray-800 hover:bg-transparent">
-              <TableHead colSpan={columns.length} className="px-4 py-4">
+            <TableRow
+              className={cn(
+                className?.table?.searchInput?.row,
+                "border-b border-gray-800 hover:bg-transparent",
+              )}
+            >
+              <TableHead
+                colSpan={columns.length}
+                className={cn(className?.table?.searchInput?.head, "px-4 py-4")}
+              >
                 <div className="w-[360px]">{searchInput}</div>
               </TableHead>
             </TableRow>
           )}
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow
+              key={headerGroup.id}
+              className={className?.table?.headers?.row}
+            >
               {headerGroup.headers.map((header) => (
                 <TableHead
                   key={header.id}
@@ -98,6 +133,7 @@ export function DataTable<TData, TValue>({
                     text.sb3(),
                     "px-4 text-gray-500",
                     header.index === 0 ? "text-left" : "text-right",
+                    className?.table?.headers?.head,
                   )}
                 >
                   {header.isPlaceholder
@@ -111,12 +147,14 @@ export function DataTable<TData, TValue>({
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody>
+        <TableBody className={className?.table?.body?.className}>
           {table.getRowModel().rows?.length ? (
             table.getRowModel().rows.map((row) => (
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
+                className={className?.table?.body?.row}
+                onClick={() => onSelectRow?.(row.original)}
               >
                 {row.getVisibleCells().map((cell) => (
                   <TableCell
@@ -127,6 +165,7 @@ export function DataTable<TData, TValue>({
                       cell.column.id === "tokenName"
                         ? "text-left"
                         : "text-right",
+                      className?.table?.body?.cell,
                     )}
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}

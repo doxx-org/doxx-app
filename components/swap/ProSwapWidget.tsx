@@ -5,22 +5,46 @@ import { ActivityPanel, FooterStats, ProTradePanel, TradingGraph } from "./pro";
 import { TradingPairHeader } from "./pro/trading-pair-header";
 import { MarketType, TradingPair } from "./pro/trading-pair-header/types";
 
-const mockTradingPair: TradingPair = {
-  symbol: "ETH-USDC",
-  selectedMarketType: MarketType.AMM,
-  allMarketType: [MarketType.AMM],
-  lastPrice: 3466.66,
-  address: "EAqRCe9xcQvfAfqCCzVhbu839ysxLawL8NPkngRweE6i",
-  change24h: -1.71,
-  change24hValue: -60.26,
-  marketCap: "$3,465.52",
-  volume24h: "",
-  contract: "",
-};
+export const mockMarketPairs: TradingPair[] = [
+  {
+    symbol: "ETH-USDC",
+    address: "EAqRCe9xcQvfAfqCCzVhbu839ysxLawL8NPkngRweE6i",
+    lastPrice: 3466.66,
+    marketCap: 4219090124.21,
+    volume24h: 123123123.12,
+    change24h: -1.71,
+    change24hValue: -60.26,
+    selectedMarketType: MarketType.AMM,
+    allMarketType: [MarketType.AMM],
+  },
+  {
+    symbol: "BTC-USDC",
+    address: "HLaxJ13C7m6fKwrfnnzpmWXjdAH3ZL9sGR6mxZMA4tdk",
+    lastPrice: 93245.23,
+    marketCap: 123123123.12,
+    volume24h: 1231231.12,
+    change24h: 1.77,
+    change24hValue: 107141.1,
+    selectedMarketType: MarketType.CLOB,
+    allMarketType: [MarketType.CLOB],
+  },
+  {
+    symbol: "SOL-USDC",
+    address: "DyyHbfkCSWcHjaB8GTVCqkVFC3NpxgF9wXsEgvNLSSn1",
+    lastPrice: 145.55,
+    marketCap: 52123123.12,
+    volume24h: 3942831.12,
+    change24h: 1.06,
+    change24hValue: 145.55,
+    selectedMarketType: MarketType.AMM,
+    allMarketType: [MarketType.AMM, MarketType.CLOB],
+  },
+];
 
 export function ProSwapWidget() {
-  const [selectedPair, setSelectedPair] =
-    useState<TradingPair>(mockTradingPair);
+  const [selectedPair, setSelectedPair] = useState<TradingPair>(
+    mockMarketPairs[0],
+  );
   const [tradingType, setTradingType] = useState<MarketType>(MarketType.AMM);
 
   const handleMarketTypeChange = (value: MarketType) => {
@@ -41,22 +65,24 @@ export function ProSwapWidget() {
       />
 
       {/* Main Content Area */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">
-        {/* Left: Trading Graph */}
-        <div className="min-h-[500px]">
-          <TradingGraph />
+      <div className="flex w-full">
+        {/* Left: */}
+        <div className="flex w-full flex-col">
+          {/* Trading Graph */}
+          <div className="min-h-[500px]">
+            <TradingGraph />
+          </div>
+          {/* Activity Panel */}
+          <div className="min-h-[400px]">
+            <ActivityPanel />
+          </div>
         </div>
-
         {/* Right: Trade Panel */}
-        <div className="w-full">
+        <div className="w-[400px]">
           <ProTradePanel />
         </div>
       </div>
-
-      {/* Activity Panel */}
-      <div className="min-h-[400px]">
-        <ActivityPanel />
-      </div>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]"></div>
 
       {/* Footer Stats */}
       <FooterStats />

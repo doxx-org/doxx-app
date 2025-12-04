@@ -117,3 +117,59 @@ export function normalizeBN(
 
   return formatAmountBN(amount, decimals, { displayDecimals });
 }
+
+/**
+ * Format a number with comma separators and optional abbreviation.
+ * @param number The number to format.
+ * @param opts Options for formatting:
+ *   - abbreviate: boolean (whether to abbreviate, e.g., 1.5K, 3.2M)
+ *   - decimals: number (number of decimal places, default 2 if abbreviated)
+ */
+export function formatNumber(
+  number: number,
+  opts: { abbreviate?: boolean; decimals?: number } = {},
+): string {
+  if (number === null || number === undefined || isNaN(number)) return "-";
+  const { abbreviate = false, decimals = 2 } = opts;
+
+  if (!abbreviate) {
+    return number.toLocaleString(undefined, {
+      maximumFractionDigits: decimals,
+      minimumFractionDigits: 0,
+    });
+  }
+
+  const abs = Math.abs(number);
+  let abbr = "";
+  let value = number;
+
+  if (abs >= 1_000_000_000) {
+    value = number / 1_000_000_000;
+    abbr = "B";
+  } else if (abs >= 1_000_000) {
+    value = number / 1_000_000;
+    abbr = "M";
+  } else if (abs >= 1_000) {
+    value = number / 1_000;
+    abbr = "K";
+  }
+
+  if (abbr) {
+    // Always show at least one decimal if abbreviated, up to specified decimals
+    return (
+      value
+        .toLocaleString(undefined, {
+          maximumFractionDigits: decimals,
+          minimumFractionDigits: value < 10 && decimals > 1 ? 1 : 0,
+        })
+        .replace(/\.0+$/, "") +
+      " " +
+      abbr
+    );
+  } else {
+    return number.toLocaleString(undefined, {
+      maximumFractionDigits: decimals,
+      minimumFractionDigits: 0,
+    });
+  }
+}
