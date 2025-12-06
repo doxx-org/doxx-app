@@ -17,7 +17,7 @@ export function TradingPairHeader({
   onMarketTypeChange,
 }: TradingPairHeaderProps) {
   return (
-    <div className="bg-black-900 sticky top-14 z-40 flex flex-col border-b border-gray-800 pb-4">
+    <div className="bg-black-900 sticky top-14 z-40 flex flex-col border-b border-gray-800">
       {/* Main Trading Pair Info */}
       <div className="sticky top-0 flex flex-row items-center border-b border-gray-800">
         <MarketDropdown selectedPair={selectedPair} onSelect={onSelect} />

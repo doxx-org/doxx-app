@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ActivityPanel, FooterStats, ProTradePanel, TradingGraph } from "./pro";
+import { ActivityPanel, ProTradePanel, TradingGraph } from "./pro";
 import { TradingPairHeader } from "./pro/trading-pair-header";
 import { MarketType, TradingPair } from "./pro/trading-pair-header/types";
 
@@ -56,7 +56,7 @@ export function ProSwapWidget() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col gap-6">
+    <div className="flex h-full w-full flex-col">
       {/* Market Info Bar */}
       <TradingPairHeader
         selectedPair={selectedPair}
@@ -78,14 +78,11 @@ export function ProSwapWidget() {
           </div>
         </div>
         {/* Right: Trade Panel */}
-        <div className="w-[400px]">
-          <ProTradePanel />
+        <div className="min-w-[400px]">
+          <ProTradePanel selectedPair={selectedPair} />
         </div>
       </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]"></div>
-
-      {/* Footer Stats */}
-      <FooterStats />
     </div>
   );
 }

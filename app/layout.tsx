@@ -6,7 +6,7 @@ import {
   // Poltawski_Nowy,
   Roboto_Mono,
 } from "next/font/google";
-import { Footer, Navbar } from "@/components/layout";
+import { AppFooter, Navbar } from "@/components/layout";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -49,7 +49,7 @@ export default function RootLayout({
             <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
               <Navbar />
               <main className="flex min-h-screen flex-col">{children}</main>
-              <Footer />
+              <AppFooter />
               <Toaster />
             </ThemeProvider>
           </QueryProvider>

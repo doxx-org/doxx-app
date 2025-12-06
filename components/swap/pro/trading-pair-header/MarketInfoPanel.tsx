@@ -72,7 +72,9 @@ export const MarketInfoPanel = ({
           label="Market Cap"
           value={
             selectedPair.marketCap
-              ? formatNumber(selectedPair.marketCap, { abbreviate: true })
+              ? formatNumber(selectedPair.marketCap, {
+                  abbreviate: { apply: true, prefix: " " },
+                })
               : "-"
           }
         />
@@ -81,7 +83,9 @@ export const MarketInfoPanel = ({
           label="24h Volume"
           value={
             selectedPair.volume24h
-              ? formatNumber(selectedPair.volume24h, { abbreviate: true })
+              ? formatNumber(selectedPair.volume24h, {
+                  abbreviate: { apply: true, prefix: " " },
+                })
               : "-"
           }
         />

@@ -127,12 +127,18 @@ export function normalizeBN(
  */
 export function formatNumber(
   number: number,
-  opts: { abbreviate?: boolean; decimals?: number } = {},
+  opts: {
+    abbreviate?: {
+      apply?: boolean;
+      prefix?: string;
+    };
+    decimals?: number;
+  } = {},
 ): string {
   if (number === null || number === undefined || isNaN(number)) return "-";
-  const { abbreviate = false, decimals = 2 } = opts;
+  const { abbreviate = { apply: false, prefix: "" }, decimals = 2 } = opts;
 
-  if (!abbreviate) {
+  if (!abbreviate.apply) {
     return number.toLocaleString(undefined, {
       maximumFractionDigits: decimals,
       minimumFractionDigits: 0,
@@ -163,7 +169,7 @@ export function formatNumber(
           minimumFractionDigits: value < 10 && decimals > 1 ? 1 : 0,
         })
         .replace(/\.0+$/, "") +
-      " " +
+      (abbreviate.prefix ?? "") +
       abbr
     );
   } else {

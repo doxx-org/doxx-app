@@ -15,7 +15,10 @@ interface SegmentedControlProps {
   value: string;
   onValueChange: (value: string) => void;
   options: Option[];
-  className?: string;
+  className?: {
+    group?: string;
+    item?: string;
+  };
 }
 
 export function SegmentedControl({
@@ -31,7 +34,7 @@ export function SegmentedControl({
       // onValueChange={(val) => val && onValueChange(val)}
       className={cn(
         "bg-black-700 flex items-center gap-0.5 rounded-full p-1",
-        className,
+        className?.group,
       )}
     >
       {options.map((option) => {
@@ -49,6 +52,7 @@ export function SegmentedControl({
               value.toLowerCase() === option.value.toLowerCase()
                 ? "!text-green !border-green !border"
                 : "",
+              className?.item,
             )}
             size="sm"
             onClick={() => !option.disabled && onValueChange(option.value)}
