@@ -92,7 +92,7 @@ export function ProTradePanel({
   const totalValue = parseFloat(inputAmount) || 0;
 
   return (
-    <div className="bg-black-900 sticky top-0 flex w-full flex-col border-l border-gray-800">
+    <div className="bg-black-900 sticky top-40 flex w-full flex-col border-l border-gray-800">
       <div
         className={cn(
           text.b3(),
