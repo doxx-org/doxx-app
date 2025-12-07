@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   ColumnDef,
   PaginationState,
@@ -70,9 +70,10 @@ export function DataTable<TData, TValue>({
     pageIndex: 0,
     pageSize,
   });
-  const [loadedPages, setLoadedPages] = useState<number>(1);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const isLoadingRef = useRef(false);
+
+  // const [loadedPages, setLoadedPages] = useState<number>(1);
+  // const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // const isLoadingRef = useRef(false);
 
   const table = useNoMemo(() =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
