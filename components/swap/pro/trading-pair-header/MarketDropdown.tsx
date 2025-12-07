@@ -198,7 +198,7 @@ export const MarketDropdown = ({
       return 0;
     });
     return sortedPairs;
-  }, [mockMarketPairs, search, favouritePairs]);
+  }, [search, favouritePairs]);
 
   const handleCloseDropdown = () => {
     setIsOpen(false);

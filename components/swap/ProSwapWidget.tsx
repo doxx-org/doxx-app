@@ -45,6 +45,7 @@ export function ProSwapWidget() {
   const [selectedPair, setSelectedPair] = useState<TradingPair>(
     mockMarketPairs[0],
   );
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [tradingType, setTradingType] = useState<MarketType>(MarketType.AMM);
 
   const handleMarketTypeChange = (value: MarketType) => {
