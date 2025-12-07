@@ -146,20 +146,28 @@ export const columns: ColumnDef<PoolActivity>[] = [
     accessorKey: "address",
     header: "Account",
     cell: ({ row }) => (
-      <div
-        className={cn(
-          text.r3(),
-          "text-gray-300 hover:cursor-pointer hover:text-gray-200 hover:underline",
-        )}
-      >
-        {ellipseAddress(row.original.address)}
+      <div>
+        <span
+          className={cn(
+            text.r3(),
+            "text-gray-300 hover:cursor-pointer hover:text-gray-200 hover:underline",
+          )}
+        >
+          {ellipseAddress(row.original.address)}
+        </span>
       </div>
     ),
   },
   {
     id: "apr",
     accessorKey: "apr",
-    header: ({ column }) => <SortHeader column={column} header="APR" />,
+    header: ({ column }) => (
+      <SortHeader
+        column={column}
+        header="APR"
+        className="hover:!stroke-gray-500 hover:text-gray-500"
+      />
+    ),
     cell: ({ row }) => (
       <div className={cn(text.r3(), "text-gray-300")}>{row.original.apr}</div>
     ),
@@ -168,7 +176,13 @@ export const columns: ColumnDef<PoolActivity>[] = [
   {
     id: "tvl",
     accessorKey: "tvl",
-    header: ({ column }) => <SortHeader column={column} header="TVL" />,
+    header: ({ column }) => (
+      <SortHeader
+        column={column}
+        header="TVL"
+        className="hover:!stroke-gray-500 hover:text-gray-500"
+      />
+    ),
     cell: ({ row }) => (
       <div className={cn(text.r3(), "text-gray-300")}>{row.original.tvl}</div>
     ),
@@ -176,7 +190,13 @@ export const columns: ColumnDef<PoolActivity>[] = [
   },
   {
     id: "time",
-    header: ({ column }) => <SortHeader column={column} header="Time" />,
+    header: ({ column }) => (
+      <SortHeader
+        column={column}
+        header="Time"
+        className="hover:!stroke-gray-500 hover:text-gray-500"
+      />
+    ),
     cell: ({ row }) => (
       <div className={cn(text.r3(), "text-gray-300")}>
         {new Date(row.original.time).toLocaleString()}
@@ -192,11 +212,13 @@ export const columns: ColumnDef<PoolActivity>[] = [
       <div
         className={cn(
           text.r3(),
-          "flex items-center justify-end gap-1 text-gray-300 hover:cursor-pointer hover:text-gray-200 hover:underline",
+          "flex items-center justify-end gap-1 text-gray-300 hover:text-gray-200 hover:underline",
         )}
       >
-        {ellipseAddress(row.original.txn)}
-        <ExternalLink className="h-3.5 w-3.5" />
+        <span className="hover:cursor-pointer">
+          {ellipseAddress(row.original.txn)}
+        </span>
+        <ExternalLink className="h-3.5 w-3.5 hover:cursor-pointer" />
       </div>
     ),
   },
@@ -240,11 +262,11 @@ export function ActivityPanel() {
               outer: "bg-black-900 relative h-full overflow-y-auto",
               table: {
                 headers: {
-                  row: "bg-black-700 [&>th]:bg-black-700 sticky top-0 z-10",
+                  row: "bg-black-900 hover:!bg-black-900 sticky top-0 z-10 border-b border-gray-800",
                   head: "!rounded-none !border-none",
                 },
                 body: {
-                  row: "!border-none hover:cursor-pointer",
+                  row: "!border-none",
                   cell: "!border-white/10",
                 },
               },

@@ -108,13 +108,21 @@ function TableCaption({
 interface SortHeaderProps<TData> {
   column: Column<TData, unknown>;
   header: string;
+  className?: string;
 }
 
-function SortHeader<TData>({ column, header }: SortHeaderProps<TData>) {
+function SortHeader<TData>({
+  column,
+  header,
+  className,
+}: SortHeaderProps<TData>) {
   return (
     <div
       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-      className="flex cursor-pointer flex-row items-center justify-end gap-1"
+      className={cn(
+        "flex cursor-pointer flex-row items-center justify-end gap-1",
+        className,
+      )}
     >
       <p>{header}</p>
       <ChevronUpDown className="hover:stroke-gray-600" />
