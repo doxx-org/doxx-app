@@ -69,11 +69,11 @@ export function ProSwapWidget() {
         {/* Left: */}
         <div className="flex w-full flex-col">
           {/* Trading Graph */}
-          <div className="min-h-[500px]">
+          <div className="min-h-[496px]">
             <TradingGraph />
           </div>
           {/* Activity Panel */}
-          <div className="min-h-[400px]">
+          <div className="h-full">
             <ActivityPanel />
           </div>
         </div>

@@ -12,7 +12,7 @@ export function ProModeFooter() {
   const fees24h = "$0";
 
   return (
-    <div className="bg-background sticky bottom-0">
+    <div className="bg-background sticky bottom-0 max-h-[3.0625rem]">
       <div className="flex items-center justify-between border-t border-gray-800 px-8 py-3">
         <div className="flex items-center gap-8">
           <Link href="https://x.com/doxx_exchange" target="_blank">
@@ -24,23 +24,35 @@ export function ProModeFooter() {
           <Link
             href="/docs"
             target="_blank"
-            className={cn(text.sb3(), "text-gray-600")}
+            className={cn(text.sb3(), "leading-none text-gray-600")}
           >
             Docs
           </Link>
         </div>
         <div className="flex items-center gap-6">
           <div>
-            <span className={cn(text.sb2(), "text-gray-500")}>TVL: </span>
-            <span className={cn(text.b3(), "text-gray-50")}>{tvl}</span>
+            <span className={cn(text.sb2(), "leading-none text-gray-500")}>
+              TVL:{" "}
+            </span>
+            <span className={cn(text.b3(), "leading-none text-gray-50")}>
+              {tvl}
+            </span>
           </div>
           <div>
-            <span className={cn(text.sb2(), "text-gray-500")}>24h Vol: </span>
-            <span className={cn(text.b3(), "text-gray-50")}>{volume24h}</span>
+            <span className={cn(text.sb2(), "leading-none text-gray-500")}>
+              24h Vol:{" "}
+            </span>
+            <span className={cn(text.b3(), "leading-none text-gray-50")}>
+              {volume24h}
+            </span>
           </div>
           <div>
-            <span className={cn(text.sb2(), "text-gray-500")}>24h Fees: </span>
-            <span className={cn(text.b3(), "text-gray-50")}>{fees24h}</span>
+            <span className={cn(text.sb2(), "leading-none text-gray-500")}>
+              24h Fees:{" "}
+            </span>
+            <span className={cn(text.b3(), "leading-none text-gray-50")}>
+              {fees24h}
+            </span>
           </div>
         </div>
       </div>

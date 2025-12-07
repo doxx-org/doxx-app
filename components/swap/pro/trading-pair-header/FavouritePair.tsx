@@ -16,7 +16,7 @@ export const FavouritePair = ({ onSelect }: FavouritePairProps) => {
     <div
       className={cn(text.r3(), "flex items-center border-b border-gray-800")}
     >
-      <span className="p-4 text-gray-50">Favourite</span>
+      <span className="p-4 leading-none text-gray-50">Favourite</span>
       <div className="flex items-center">
         {favouritePairs.map((tradingPair, index) => (
           <div
