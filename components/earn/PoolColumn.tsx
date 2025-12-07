@@ -5,7 +5,7 @@ import { TokenProfile } from "@/lib/config/tokens";
 import { PoolState } from "@/lib/hooks/chain/types";
 import { numericSort } from "@/lib/utils/table";
 import { Button } from "../ui/button";
-import { SortHeader } from "./cols/sortColomn";
+import { SortHeader } from "../ui/table";
 import { PoolRow } from "./rows/";
 import { NumberRows } from "./rows/NumberRow";
 

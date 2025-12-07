@@ -57,8 +57,8 @@ export function ProSwapWidget() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col">
-      {/* Market Info Bar */}
+    <div className="fixed flex h-full w-full flex-col overflow-hidden">
+      {/* Market Info Bar - Fixed within relative parent */}
       <TradingPairHeader
         selectedPair={selectedPair}
         onSelect={setSelectedPair}
@@ -66,20 +66,20 @@ export function ProSwapWidget() {
       />
 
       {/* Main Content Area */}
-      <div className="flex w-full">
-        {/* Left: */}
-        <div className="flex w-full flex-col">
+      <div className="relative top-14 flex w-full overflow-hidden">
+        {/* Left: Chart and Table */}
+        <div className="flex w-full flex-col overflow-hidden">
           {/* Trading Graph */}
-          <div className="min-h-[496px]">
+          <div className="min-h-[496px] flex-shrink-0">
             <TradingGraph />
           </div>
           {/* Activity Panel */}
-          <div className="h-full">
+          <div className="flex-1 overflow-hidden">
             <ActivityPanel />
           </div>
         </div>
         {/* Right: Trade Panel */}
-        <div className="min-w-[400px]">
+        <div className="h-full min-w-[400px] flex-1 overflow-hidden">
           <ProTradePanel selectedPair={selectedPair} />
         </div>
       </div>

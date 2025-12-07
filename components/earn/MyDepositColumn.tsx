@@ -1,9 +1,9 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { SortHeader } from "./cols/sortColomn";
-import { NumberRows } from "./rows/NumberRow";
 import { numericSort } from "@/lib/utils/table";
+import { SortHeader } from "../ui/table";
+import { NumberRows } from "./rows/NumberRow";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
@@ -33,7 +33,9 @@ export const columns: ColumnDef<Deposit>[] = [
   {
     id: "shareAmount",
     accessorKey: "shareAmount",
-    header: ({ column }) => <SortHeader column={column} header="Share of Pool" />,
+    header: ({ column }) => (
+      <SortHeader column={column} header="Share of Pool" />
+    ),
     cell: ({ row }) => (
       <NumberRows value={row.original.shareAmount} displayValue="percent" />
     ),
@@ -42,7 +44,9 @@ export const columns: ColumnDef<Deposit>[] = [
   {
     id: "tokenAmount",
     accessorKey: "tokenAmount",
-    header: ({ column }) => <SortHeader column={column} header="Token Amount" />,
+    header: ({ column }) => (
+      <SortHeader column={column} header="Token Amount" />
+    ),
     cell: ({ row }) => {
       const value = parseFloat(row.original.tokenAmount);
       return (

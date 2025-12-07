@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import {
   ColumnDef,
   PaginationState,
@@ -32,6 +32,7 @@ interface DataTableProps<TData, TValue> {
   searchInput?: ReactNode;
   globalFilter?: string;
   pageSize?: number;
+  isShowPagination?: boolean;
   className?: {
     outer?: string;
     table?: {
@@ -61,6 +62,7 @@ export function DataTable<TData, TValue>({
   globalFilter,
   pageSize = 10,
   className,
+  isShowPagination = true,
   onSelectRow,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -68,6 +70,9 @@ export function DataTable<TData, TValue>({
     pageIndex: 0,
     pageSize,
   });
+  const [loadedPages, setLoadedPages] = useState<number>(1);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false);
 
   const table = useNoMemo(() =>
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -89,15 +94,76 @@ export function DataTable<TData, TValue>({
     }),
   );
 
-  const isEmpty = table.getRowModel().rows?.length === 0;
+  // // Reset loaded pages when data or filters change
+  // useEffect(() => {
+  //   if (!isShowPagination) {
+  //     setLoadedPages(1);
+  //   }
+  // }, [data, globalFilter, isShowPagination]);
+
+  // // Infinite scroll handler
+  // useEffect(() => {
+  //   console.log("🚀 ~ isShowPagination:", isShowPagination);
+  //   if (isShowPagination || !scrollContainerRef.current) return;
+
+  //   const container = scrollContainerRef.current;
+  //   console.log("🚀 ~ container:", container);
+  //   const handleScroll = () => {
+  //     if (isLoadingRef.current) return;
+
+  //     const { scrollTop, scrollHeight, clientHeight } = container;
+  //     const threshold = 100; // Load more when 100px from bottom
+
+  //     // Get all sorted rows to check if there are more to load
+  //     const allRows = table.getSortedRowModel().rows;
+  //     console.log("🚀 ~ allRows:", allRows);
+  //     const totalItemsToShow = loadedPages * pageSize;
+  //     console.log("🚀 ~ totalItemsToShow:", totalItemsToShow);
+
+  //     if (
+  //       scrollHeight - scrollTop - clientHeight < threshold &&
+  //       totalItemsToShow < allRows.length
+  //     ) {
+  //       isLoadingRef.current = true;
+  //       setLoadedPages((prev) => prev + 1);
+  //       setTimeout(() => {
+  //         isLoadingRef.current = false;
+  //       }, 100);
+  //     }
+  //   };
+
+  //   container.addEventListener("scroll", handleScroll);
+  //   return () => container.removeEventListener("scroll", handleScroll);
+  // }, [isShowPagination, loadedPages, table, pageSize]);
+
+  // Get rows to display
+  // const displayRows = isShowPagination
+  //   ? table.getRowModel().rows
+  //   : (() => {
+  //       // For infinite scroll, get all filtered/sorted rows and slice based on loaded pages
+  //       // getFilteredRowModel returns all filtered rows (not paginated)
+  //       // We need to get sorted rows, which are already filtered
+  //       const allRows = table.getSortedRowModel().rows;
+  //       const totalItemsToShow = Math.min(
+  //         loadedPages * pageSize,
+  //         allRows.length,
+  //       );
+  //       return allRows.slice(0, totalItemsToShow);
+  //     })();
+  const displayRows = table.getRowModel().rows;
+
+  const isEmpty = displayRows?.length === 0;
 
   return (
     <div
+      // ref={scrollContainerRef}
       className={cn(
         className?.outer
           ? className.outer
           : "bg-black-800 h-full overflow-hidden rounded-md border",
         isEmpty && "h-full",
+        // !isShowPagination && "overflow-y-auto",
+        // isShowPagination && "overflow-hidden",
       )}
     >
       <Table className={cn(isEmpty && "h-full", "w-full")}>
@@ -148,8 +214,8 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody className={className?.table?.body?.className}>
-          {table.getRowModel().rows?.length ? (
-            table.getRowModel().rows.map((row) => (
+          {displayRows?.length ? (
+            displayRows.map((row) => (
               <TableRow
                 key={row.id}
                 data-state={row.getIsSelected() && "selected"}
@@ -184,7 +250,7 @@ export function DataTable<TData, TValue>({
             </TableRow>
           )}
         </TableBody>
-        {table.getPageCount() > 1 && (
+        {isShowPagination && table.getPageCount() > 1 && (
           <TableFooter>
             <TableRow>
               <TableCell colSpan={columns.length} className="p-0">

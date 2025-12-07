@@ -46,6 +46,7 @@
 
   --color-green: var(--color-green);
   --color-red: var(--color-red);
+  --color-red-light: var(--color-red-light);
   --color-black-900: var(--color-black-900);
   --color-black-800: var(--color-black-800);
   --color-black-700: var(--color-black-700);
@@ -123,6 +124,7 @@
 
   --color-green: #9df09c;
   --color-red: #ff1744;
+  --color-red-light: #ef4e4e;
   --color-black-900: #000000;
   --color-black-800: #0a0a0a;
   --color-black-700: #141414;

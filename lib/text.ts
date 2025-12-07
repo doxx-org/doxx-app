@@ -16,6 +16,7 @@ export const text = {
   sb2: cva("text-[14px] font-normal font-roboto-mono"),
   sb3: cva("text-[12px] font-normal font-roboto-mono"),
   sb4: cva("text-[10px] font-normal font-roboto-mono"),
+  sb5: cva("text-[8px] font-normal font-roboto-mono"),
   r3: cva("text-[12px] font-normal font-plus-jakarta-sans"),
   r4: cva("text-[10px] font-normal font-plus-jakarta-sans"),
   hsb1: cva("text-[16px] font-semibold font-plus-jakarta-sans"),

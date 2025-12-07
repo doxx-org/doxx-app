@@ -9,7 +9,7 @@ export default function Home() {
 
   if (tradingMode === TradingMode.PRO) {
     return (
-      <div className="min-h-screen w-full">
+      <div className="flex h-screen w-full flex-col overflow-hidden">
         <ProSwapWidget />
       </div>
     );

@@ -12,7 +12,7 @@ export function ProModeFooter() {
   const fees24h = "$0";
 
   return (
-    <div className="bg-background sticky bottom-0 max-h-[3.0625rem]">
+    <div className="bg-background fixed bottom-0 max-h-[3.0625rem] w-full">
       <div className="flex items-center justify-between border-t border-gray-800 px-8 py-3">
         <div className="flex items-center gap-8">
           <Link href="https://x.com/doxx_exchange" target="_blank">

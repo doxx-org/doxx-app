@@ -86,19 +86,19 @@ export function ProTradePanel({
     setInputAmount(parseDecimalsInput(value));
   };
 
-  const ethAmount = useMemo(() => {
+  const amountReceived = useMemo(() => {
     if (inputAmount === "") return 0;
-    return parseFloat(inputAmount) / 3466.66; // Mock ETH price
-  }, [inputAmount]);
+    return parseFloat(inputAmount) / selectedPair.lastPrice;
+  }, [inputAmount, selectedPair.lastPrice]);
 
   const totalValue = parseFloat(inputAmount) || 0;
 
   return (
-    <div className="bg-black-900 sticky top-40 flex w-full flex-col border-l border-gray-800">
+    <div className="bg-black-900 flex h-full flex-col border-l-2 border-gray-800">
       <div
         className={cn(
           text.b3(),
-          "flex items-center border-b border-gray-800 px-2",
+          "flex w-full items-center border-b border-gray-800 px-2",
         )}
       >
         <ButtonPanel title="Trade" active={true} />
@@ -143,7 +143,8 @@ export function ProTradePanel({
                 balance={balance}
                 inputAmount={inputAmount}
                 onInputAmountChange={handleInputAmountChange}
-                ethAmount={ethAmount}
+                amountReceived={amountReceived}
+                selectedPair={selectedPair}
                 totalValue={totalValue}
                 gasFee={gasFee}
                 slippage={slippage}
@@ -156,11 +157,9 @@ export function ProTradePanel({
         </div>
 
         {/* Connect Wallet / Trade Button */}
-        <ConnectButtonWrapper
-          className={cn(text.hsb1(), "h-14 w-full rounded-lg")}
-        >
+        <ConnectButtonWrapper className={cn(text.hsb1(), "w-full rounded-lg")}>
           <Button
-            className={cn("h-full w-full")}
+            className={cn("h-14 w-full")}
             disabled={!inputAmount || parseFloat(inputAmount) === 0}
           >
             {orderType} {selectedPair.symbol}

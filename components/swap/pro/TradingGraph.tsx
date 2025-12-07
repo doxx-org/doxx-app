@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils/style";
 
 export function TradingGraph() {
   return (
-    <div className="bg-black-900 flex h-full w-full items-center justify-center border-r border-gray-800">
+    <div className="bg-black-900 flex h-full w-full items-center justify-center">
       <div className="text-center">
         <div className={cn(text.hsb2(), "mb-2 text-gray-400")}>
           [Trading Graph]

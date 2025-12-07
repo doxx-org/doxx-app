@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { text } from "@/lib/text";
 import { cn, formatNumber } from "@/lib/utils";
+import { TradingPair } from "../trading-pair-header/types";
 
 const PERCENTAGE_BUTTONS = [10, 25, 50, 75, 100];
 
@@ -10,7 +11,8 @@ interface TradeMarketPanelProps {
   balance: number;
   inputAmount: string;
   onInputAmountChange: (value: string) => void;
-  ethAmount: number;
+  amountReceived: number;
+  selectedPair: TradingPair;
   totalValue: number;
   gasFee: string;
   slippage: string;
@@ -20,7 +22,8 @@ export const TradeMarketPanel = ({
   balance,
   inputAmount,
   onInputAmountChange,
-  ethAmount,
+  amountReceived,
+  selectedPair,
   totalValue,
   gasFee,
   slippage,
@@ -104,11 +107,11 @@ export const TradeMarketPanel = ({
             </span>
             <ArrowRight className="size-2 text-white" />
             <span className="leading-none">
-              {formatNumber(ethAmount, {
+              {formatNumber(amountReceived, {
                 abbreviate: { apply: true },
                 decimals: 6,
               })}{" "}
-              ETH
+              {selectedPair.symbol.split("-")[0]}
             </span>
           </div>
           {/* Total value */}

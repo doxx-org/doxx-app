@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { Column } from "@tanstack/react-table";
+import ChevronUpDown from "@/assets/icons/chevron-up-down.svg";
 import { cn } from "@/lib/utils/style";
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {
@@ -103,6 +105,23 @@ function TableCaption({
   );
 }
 
+interface SortHeaderProps<TData> {
+  column: Column<TData, unknown>;
+  header: string;
+}
+
+function SortHeader<TData>({ column, header }: SortHeaderProps<TData>) {
+  return (
+    <div
+      onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      className="flex cursor-pointer flex-row items-center justify-end gap-1"
+    >
+      <p>{header}</p>
+      <ChevronUpDown className="hover:stroke-gray-600" />
+    </div>
+  );
+}
+
 export {
   Table,
   TableHeader,
@@ -112,4 +131,5 @@ export {
   TableRow,
   TableCell,
   TableCaption,
+  SortHeader,
 };
