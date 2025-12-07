@@ -157,7 +157,9 @@ export function ProTradePanel({
         </div>
 
         {/* Connect Wallet / Trade Button */}
-        <ConnectButtonWrapper className={cn(text.hsb1(), "w-full rounded-lg")}>
+        <ConnectButtonWrapper
+          className={cn(text.hsb1(), "h-14 w-full rounded-lg")}
+        >
           <Button
             className={cn("h-14 w-full")}
             disabled={!inputAmount || parseFloat(inputAmount) === 0}
