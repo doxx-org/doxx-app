@@ -21,3 +21,5 @@ export type SplBalance = {
 
 // Token balance map by token address
 export type BalanceMapByMint = Partial<Record<string, SplBalance>>;
+
+export type PriceMap = Partial<Record<string, number>>;

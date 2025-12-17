@@ -17,7 +17,7 @@ import { CreatePoolButton } from "./CreatePoolButton";
 import { FeeTierSelection } from "./FeeTierSelection";
 import { TokenSelectionRow } from "./TokenSelectionRow";
 
-interface CreatePoolDialogProps {
+interface CreateCPMMPoolDialogProps {
   isOpen: boolean;
   splBalances: BalanceMapByMint | undefined;
   allTokenProfiles: TokenProfile[];
@@ -29,12 +29,12 @@ enum SelectTokenType {
   TOKEN_B,
 }
 
-export const CreatePoolDialog = ({
+export const CreateCPMMPoolDialog = ({
   isOpen,
   splBalances,
   allTokenProfiles,
   onOpenChange,
-}: CreatePoolDialogProps) => {
+}: CreateCPMMPoolDialogProps) => {
   const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
   const [amountA, setAmountA] = useState("");

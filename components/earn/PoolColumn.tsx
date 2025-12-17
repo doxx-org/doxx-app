@@ -1,6 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
+import BN from "bn.js";
 import { TokenProfile } from "@/lib/config/tokens";
 import { PoolState } from "@/lib/hooks/chain/types";
 import { numericSort } from "@/lib/utils/table";
@@ -8,29 +9,30 @@ import { Button } from "../ui/button";
 import { SortHeader } from "../ui/table";
 import { PoolRow } from "./rows/";
 import { NumberRows } from "./rows/NumberRow";
+import { PoolType } from "./v2/types";
 
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 export type Pool = {
   id: string;
   account: string;
-  fee: string;
+  fee: BN;
   lpToken: {
     token1: TokenProfile;
     token2: TokenProfile;
   };
-  apr: string;
-  tvl: string;
-  dailyVol: string;
-  dailyVolperTvl: string;
+  apr: number; // in percentage
+  tvl: number; // in usd
+  dailyVol: number; // in usd
+  dailyVolperTvl: number; // in percentage
+  reward24h: number; // in usd
   poolState?: PoolState; // Optional: actual pool state from chain
+  price: number;
+  poolType: PoolType;
 };
 
 // Callback type for deposit action
-export type OnDepositCallback = (
-  poolState: PoolState,
-  poolAddress: string,
-) => void;
+export type OnDepositCallback = (pool: Pool) => void;
 
 const depositButton = (pool: Pool, onDeposit?: OnDepositCallback) => {
   return (
@@ -38,7 +40,7 @@ const depositButton = (pool: Pool, onDeposit?: OnDepositCallback) => {
       className="bg-gray-800 text-gray-400 hover:bg-gray-700"
       onClick={() => {
         if (pool.poolState && onDeposit) {
-          onDeposit(pool.poolState, pool.account);
+          onDeposit(pool);
         }
       }}
       disabled={!pool.poolState}
@@ -64,7 +66,7 @@ export const createColumns = (
     accessorKey: "apr",
     header: ({ column }) => <SortHeader column={column} header="APR" />,
     cell: ({ row }) => (
-      <NumberRows value={row.original.apr} displayValue="percent" />
+      <NumberRows value={row.original.apr.toString()} displayValue="percent" />
     ),
     sortingFn: numericSort,
   },
@@ -73,7 +75,7 @@ export const createColumns = (
     accessorKey: "tvl",
     header: ({ column }) => <SortHeader column={column} header="TVL" />,
     cell: ({ row }) => (
-      <NumberRows value={row.original.tvl} displayValue="dollar" />
+      <NumberRows value={row.original.tvl.toString()} displayValue="dollar" />
     ),
     sortingFn: numericSort,
   },
@@ -82,7 +84,10 @@ export const createColumns = (
     accessorKey: "dailyVol",
     header: ({ column }) => <SortHeader column={column} header="Volume 24h" />,
     cell: ({ row }) => (
-      <NumberRows value={row.original.dailyVol} displayValue="dollar" />
+      <NumberRows
+        value={row.original.dailyVol.toString()}
+        displayValue="dollar"
+      />
     ),
     sortingFn: numericSort,
   },
@@ -91,7 +96,10 @@ export const createColumns = (
     accessorKey: "dailyVolperTvl",
     header: ({ column }) => <SortHeader column={column} header="1D Vol/TVL" />,
     cell: ({ row }) => (
-      <NumberRows value={row.original.dailyVolperTvl} displayValue="percent" />
+      <NumberRows
+        value={row.original.dailyVolperTvl.toString()}
+        displayValue="percent"
+      />
     ),
     sortingFn: numericSort,
   },

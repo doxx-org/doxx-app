@@ -7,16 +7,17 @@ import { ProModeFooter } from "../swap/pro/ProModeFooter";
 import { Footer } from "./Footer";
 
 export function AppFooter() {
-  const pathname = usePathname();
-  const [tradingMode] = useAtom(tradingModeAtom);
+  return <ProModeFooter />;
+  // const pathname = usePathname();
+  // const [tradingMode] = useAtom(tradingModeAtom);
 
-  // change this to match the page(s) that need a custom footer
-  const useSpecialFooter =
-    pathname?.startsWith("/") && tradingMode === TradingMode.PRO;
+  // // change this to match the page(s) that need a custom footer
+  // const useSpecialFooter =
+  //   pathname?.startsWith("/") && tradingMode === TradingMode.PRO;
 
-  if (useSpecialFooter) {
-    return <ProModeFooter />;
-  }
+  // if (useSpecialFooter) {
+  //   return <ProModeFooter />;
+  // }
 
-  return <Footer />;
+  // return <Footer />;
 }

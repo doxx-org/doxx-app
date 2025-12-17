@@ -511,6 +511,6 @@ export const DepositDialog = ({
           </DialogBody>
         </DialogContent>
       </Dialog>
-    </>
+  </>
   );
 };

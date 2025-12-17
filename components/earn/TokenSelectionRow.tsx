@@ -1,11 +1,11 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn, formatNumber } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
-import { ChevronDown } from "lucide-react";
 
 interface TokenSelectionRowProps {
   token: TokenProfile | null;
@@ -35,11 +35,16 @@ export const TokenSelectionRow = ({
   return (
     <div className="flex w-full flex-row items-center justify-between gap-4">
       <div className="flex flex-1 flex-col items-start justify-start">
-        <Button
-          variant="outline"
-          className="h-11 gap-2 rounded-xl border border-gray-700 bg-gray-800/50 p-1.5 pr-3 hover:bg-gray-700/50"
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 p-1.5 pr-2.5",
+            disableTokenSelect
+              ? "cursor-not-allowed"
+              : "hover:cursor-pointer hover:bg-gray-700/50",
+          )}
           onClick={onTokenSelect}
-          disabled={disableTokenSelect}
+
+          // disabled={disableTokenSelect}
         >
           {token ? (
             <div className="flex flex-row items-center gap-2">
@@ -60,34 +65,42 @@ export const TokenSelectionRow = ({
             </div>
           )}
           {!disableTokenSelect && <ChevronDown className="h-4 w-4" />}
-        </Button>
+        </div>
         <input
           type="text"
           value={amount !== "" ? `-${amount}` : amount}
           onChange={(e) => onAmountChange(e.target.value.replace("-", ""))}
           className={cn(
             text.sh1(),
-            "w-full self-end bg-transparent text-right align-middle text-gray-400 outline-none placeholder:text-gray-500",
+            "w-full self-end bg-transparent text-right align-middle text-gray-600 outline-none placeholder:text-gray-600",
           )}
           placeholder={placeholder}
           disabled={disabled}
         />
         <div className="flex w-full flex-row items-center justify-between gap-1">
-          <div>
-            <span className={cn(text.sb3(), "text-gray-500")}>Balance: </span>
-            <span className={cn(text.sb3(), "text-gray-400")}>
-              {balance.toLocaleString(undefined, {
+          <div className="flex flex-row items-center gap-1.5">
+            <span className={cn(text.sb3(), "text-gray-700")}>Balance: </span>
+            <span className={cn(text.sb3(), "text-gray-600")}>
+              {formatNumber(balance, {
+                abbreviate: { apply: true },
+                decimals: 6,
+              })}
+              {/* {balance.toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 6,
-              })}
+              })} */}
             </span>
           </div>
-          <span className={cn(text.sb3(), "text-gray-500")}>
+          <span className={cn(text.sb3(), "text-gray-600")}>
             $
-            {usdValue.toLocaleString(undefined, {
+            {formatNumber(usdValue, {
+              abbreviate: { apply: true },
+              decimals: 2,
+            })}
+            {/* {usdValue.toLocaleString(undefined, {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
-            })}
+            })} */}
           </span>
         </div>
       </div>

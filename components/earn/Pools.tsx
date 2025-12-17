@@ -20,18 +20,21 @@ import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
 import { SearchInput } from "../ui/search-input";
-import { CreatePoolDialog } from "./CreatePoolDialog";
+// import { CreatePoolDialog } from "./CreateCPMMPoolDialog";
 import { DepositDialog } from "./DepositDialog";
 import { Pool, createColumns } from "./PoolColumn";
+import { DepositPoolDrawer } from "./v2/DepositPoolDrawer";
+import { PoolType } from "./v2/types";
 
 export function Pools() {
   const [searchValue, setSearchValue] = useState("");
-  const [isCreatePoolOpen, setIsCreatePoolOpen] = useState(false);
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
-  const [selectedPool, setSelectedPool] = useState<PoolState | null>(null);
-  const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(
-    null,
-  );
+  const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
+  // const [selectedPool, setSelectedPool] = useState<PoolState | null>(null);
+  // const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(
+  //   null,
+  // );
+  const [isPoolDrawerOpen, setIsPoolDrawerOpen] = useState(false);
 
   // Hooks
   const { connection } = useConnection();
@@ -96,36 +99,40 @@ export function Pools() {
       const poolAddress = poolData.observationState.poolId;
 
       // Calculate fee percentage from tradeFeeRate (basis points)
-      const feePercent = normalizeBPSString(ammConfig.tradeFeeRate.toString());
+      // const feePercent = normalizeBPSString(ammConfig.tradeFeeRate.toString());
 
       return {
         id: index.toString(),
         account: poolAddress.toBase58(),
-        fee: feePercent,
+        fee: ammConfig.tradeFeeRate,
         lpToken: {
           token1: token0Profile,
           token2: token1Profile,
         },
-        apr: "10", // Placeholder - calculate from fees/TVL
-        tvl: "0.00", // Placeholder - fetch from vault balances
-        dailyVol: "0.00", // Placeholder - fetch from analytics
-        dailyVolperTvl: "0", // Placeholder
+        apr: 10, // Placeholder - calculate from fees/TVL
+        tvl: 0, // Placeholder - fetch from vault balances
+        dailyVol: 0, // Placeholder - fetch from analytics
+        dailyVolperTvl: 0, // Placeholder
+        reward24h: 0.001, // Placeholder - fetch from analytics
         poolState, // IMPORTANT: Include the actual pool state for deposit
+        // TODO: fetch from pool state
+        price: 0.301,
+        poolType: PoolType.CPMM, // Placeholder - fetch from pool state
       };
     });
   }, [poolsData, allTokenProfiles]);
 
-  const handleOpenDeposit = (poolState: PoolState, poolAddress: string) => {
-    setSelectedPool(poolState);
-    setSelectedPoolAddress(poolAddress);
-    setIsDepositDialogOpen(true);
+  const handleOpenDeposit = (pool: Pool) => {
+    setSelectedPool(pool);
+    // setSelectedPoolAddress(poolAddress);
+    setIsPoolDrawerOpen(true);
   };
 
   const poolColumns = createColumns(handleOpenDeposit);
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-row items-center justify-between">
+      {/* <div className="flex flex-row items-center justify-between">
         <h1 className={cn(text.it1(), "text-green")}>All Pools</h1>
         <Button
           className={cn(
@@ -137,7 +144,7 @@ export function Pools() {
           <Plus className="mt-1" />
           Create Pool
         </Button>
-      </div>
+      </div> */}
       <div className="h-full min-h-[660px] w-full">
         {isLoadingPools ? (
           <div className="flex h-full items-center justify-center">
@@ -160,7 +167,15 @@ export function Pools() {
         )}
       </div>
 
-      {/* Create Pool Dialog */}
+      {isPoolDrawerOpen && selectedPool && (
+        <DepositPoolDrawer
+          isOpen={isPoolDrawerOpen}
+          onOpenChange={setIsPoolDrawerOpen}
+          selectedPool={selectedPool}
+        />
+      )}
+
+      {/* Create Pool Dialog
       {isCreatePoolOpen && !isLoadingAllTokenProfiles && allTokenProfiles && (
         <CreatePoolDialog
           isOpen={isCreatePoolOpen}
@@ -168,9 +183,9 @@ export function Pools() {
           allTokenProfiles={allTokenProfiles}
           onOpenChange={setIsCreatePoolOpen}
         />
-      )}
+      )} */}
 
-      {/* Deposit Dialog */}
+      {/* Deposit Dialog
       {isDepositDialogOpen && (
         <DepositDialog
           isOpen={isDepositDialogOpen}
@@ -178,7 +193,7 @@ export function Pools() {
           poolState={selectedPool}
           poolStateAddress={selectedPoolAddress}
         />
-      )}
+      )} */}
     </div>
   );
 }

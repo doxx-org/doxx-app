@@ -11,7 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { copyToClipboard, text } from "@/lib/text";
-import { cn, ellipseAddress } from "@/lib/utils";
+import { cn, ellipseAddress, normalizeBPSString } from "@/lib/utils";
 import { getTokenExplorerUrl } from "@/lib/utils/network";
 import { Pool } from "../PoolColumn";
 
@@ -93,7 +93,7 @@ export function PoolRow({ pool }: PoolRowProps) {
           </p>
           <div className="flex flex-row items-center gap-1">
             <p className={cn(text.sb3(), "text-gray-400")}>
-              {`${fee}% | ${ellipseAddress(account, 5)}`}
+              {`${normalizeBPSString(fee.toString())}% | ${ellipseAddress(account, 5)}`}
             </p>
             <CopyIcon
               className="cursor-pointer"
