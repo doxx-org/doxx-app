@@ -52,6 +52,7 @@ interface DataTableProps<TData, TValue> {
       };
     };
   };
+  isLoading?: boolean;
   onSelectRow?: (row: TData) => void;
 }
 
@@ -63,6 +64,7 @@ export function DataTable<TData, TValue>({
   pageSize = 10,
   className,
   isShowPagination = true,
+  isLoading = false,
   onSelectRow,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -215,7 +217,15 @@ export function DataTable<TData, TValue>({
           ))}
         </TableHeader>
         <TableBody className={className?.table?.body?.className}>
-          {displayRows?.length ? (
+          {isLoading ? (
+            <TableRow>
+              <TableCell colSpan={columns.length} className="p-0">
+                <div className="flex h-full items-center justify-center">
+                  <span className="text-gray-400">Loading...</span>
+                </div>
+              </TableCell>
+            </TableRow>
+          ) : displayRows?.length ? (
             displayRows.map((row) => (
               <TableRow
                 key={row.id}

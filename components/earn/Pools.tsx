@@ -51,7 +51,7 @@ export function Pools() {
     true,
   );
 
-  const rawTokenProfilesFromSplBalances: RawTokenProfile[] | undefined =
+  const _rawTokenProfilesFromSplBalances: RawTokenProfile[] | undefined =
     useMemo(() => {
       if (!splBalances) return undefined;
 
@@ -65,8 +65,9 @@ export function Pools() {
       });
     }, [splBalances]);
 
-  const { data: allTokenProfiles, isLoading: _isLoadingAllTokenProfiles } =
-    useGetAllTokenInfos(poolsData, rawTokenProfilesFromSplBalances);
+  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
+    useGetAllTokenInfos(poolsData, []);
+  // useGetAllTokenInfos(poolsData, rawTokenProfilesFromSplBalances);
 
   // Transform pool data from chain to table format
   const transformedPools = useMemo<Pool[]>(() => {
@@ -115,6 +116,10 @@ export function Pools() {
     });
   }, [poolsData, allTokenProfiles]);
 
+  const isLoading = useMemo(() => {
+    return isLoadingPools || isLoadingAllTokenProfiles;
+  }, [isLoadingPools, isLoadingAllTokenProfiles]);
+
   const handleOpenDeposit = (pool: Pool) => {
     setSelectedPool(pool);
     // setSelectedPoolAddress(poolAddress);
@@ -139,25 +144,26 @@ export function Pools() {
         </Button>
       </div> */}
       <div className="h-full min-h-[660px] w-full">
-        {isLoadingPools ? (
+        {/* {isLoading ? (
           <div className="flex h-full items-center justify-center">
             <span className="text-gray-400">Loading pools...</span>
           </div>
-        ) : (
-          <DataTable
-            columns={poolColumns}
-            data={transformedPools} // seems like real data didn't work.
-            globalFilter={searchValue}
-            pageSize={10}
-            searchInput={
-              <SearchInput
-                value={searchValue}
-                onChange={setSearchValue}
-                placeholder="Search pool or token"
-              />
-            }
-          />
-        )}
+        ) : ( */}
+        <DataTable
+          columns={poolColumns}
+          data={transformedPools} // seems like real data didn't work.
+          globalFilter={searchValue}
+          pageSize={10}
+          isLoading={isLoading}
+          searchInput={
+            <SearchInput
+              value={searchValue}
+              onChange={setSearchValue}
+              placeholder="Search pool or token"
+            />
+          }
+        />
+        {/* )} */}
       </div>
 
       {isPoolDrawerOpen && selectedPool && (
