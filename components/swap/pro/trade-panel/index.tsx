@@ -70,8 +70,7 @@ export function ProTradePanel({
   selectedPair,
 }: ProTradePanelProps) {
   const [orderType, setOrderType] = useState<OrderType>(OrderType.Buy);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [_, setOrderMode] = useState<OrderMode>(OrderMode.Market);
+  const [_orderMode, setOrderMode] = useState<OrderMode>(OrderMode.Market);
   const [inputAmount, setInputAmount] = useState("");
   const [slippage] = useState("1%");
   const [gasFee] = useState("$0.0001");

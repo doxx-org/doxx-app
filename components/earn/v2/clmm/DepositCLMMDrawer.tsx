@@ -31,7 +31,7 @@ interface DepositCLMMDrawerProps {
 export const DepositCLMMDrawer = ({
   isOpen,
   onOpenChange,
-  selectedPool,
+  selectedPool: _selectedPool,
 }: DepositCLMMDrawerProps) => {
   const [activeTab, setActiveTab] = useState(Tab.CREATE);
 

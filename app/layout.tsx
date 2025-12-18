@@ -20,6 +20,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 const poltawskiNowy = Poltawski_Nowy({
   variable: "--font-poltawski-nowy",
+  subsets: ["latin"],
   style: ["italic"],
 });
 

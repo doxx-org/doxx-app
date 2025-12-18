@@ -1,11 +1,9 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn, formatNumber } from "@/lib/utils";
 import { TokenLabel } from "../TokenLabel";
-import { Avatar, AvatarImage, AvatarUnknownFallback } from "../ui/avatar";
 
 interface TokenSelectionRowProps {
   token: TokenProfile | null;

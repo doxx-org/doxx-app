@@ -10,8 +10,8 @@ import { Pool } from "../../PoolColumn";
 import { DepositPanel } from "../DepositPanel";
 
 export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
-  const [tokenA, setTokenA] = useState(selectedPool.lpToken.token1);
-  const [tokenB, setTokenB] = useState(selectedPool.lpToken.token2);
+  const [_tokenA, _setTokenA] = useState(selectedPool.lpToken.token1);
+  const [_tokenB, _setTokenB] = useState(selectedPool.lpToken.token2);
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
 

@@ -1,21 +1,10 @@
 import { useMemo } from "react";
-import BN from "bn.js";
 import { TokenLabel } from "@/components/TokenLabel";
 import { TokenProfile } from "@/lib/config/tokens";
-import {
-  BalanceMapByMint,
-  PriceMap,
-  SplBalance,
-} from "@/lib/hooks/chain/types";
+import { BalanceMapByMint, PriceMap } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";
 import { cn, formatNumber } from "@/lib/utils";
 import { TokenSelectionRow } from "../TokenSelectionRow";
-
-interface TokenInfo {
-  token: TokenProfile;
-  balance: BN;
-  price: BN;
-}
 
 interface DepositPanelProps {
   tokenA: TokenProfile;
@@ -24,7 +13,6 @@ interface DepositPanelProps {
   priceMap: PriceMap | undefined;
   tokenAInput: string;
   tokenBInput: string;
-  // lpToken: TokenInfo;
   onAmountAChange: (value: string) => void;
   onAmountBChange: (value: string) => void;
 }
@@ -69,7 +57,7 @@ export const DepositPanel = ({
       inputUsd: 0,
       balance: 0,
     };
-  }, [tokenAInfo.balance, tokenBInfo.balance]);
+  }, []);
 
   return (
     <div className="flex flex-col gap-4 px-4">

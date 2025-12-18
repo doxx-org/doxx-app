@@ -1,10 +1,11 @@
 "use client";
 
-import { useAtom } from "jotai";
-import { usePathname } from "next/navigation";
-import { TradingMode, tradingModeAtom } from "@/lib/utils/atomWithStorage";
+// import { useAtom } from "jotai";
+// import { usePathname } from "next/navigation";
+// import { TradingMode, tradingModeAtom } from "@/lib/utils/atomWithStorage";
 import { ProModeFooter } from "../swap/pro/ProModeFooter";
-import { Footer } from "./Footer";
+
+// import { Footer } from "./Footer";
 
 export function AppFooter() {
   return <ProModeFooter />;

@@ -6,7 +6,6 @@ import { ChevronDown } from "lucide-react";
 import Plus from "@/assets/icons/table/plus.svg";
 import { Pools } from "@/components/earn";
 import { CreatePoolDialog } from "@/components/earn/v2/CreatePoolDialog";
-import { DepositPoolDrawer } from "@/components/earn/v2/DepositPoolDrawer";
 import { PoolType } from "@/components/earn/v2/types";
 import {
   DropdownMenu,
@@ -38,7 +37,7 @@ export default function Home() {
   // Fetch all pools
   const {
     data: poolsData,
-    isLoading: isLoadingPools,
+    isLoading: _isLoadingPools,
     // TODO: add refetchAllPoolStates to the dependencies
     // refetch: refetchAllPoolStates,
   } = useGetAllPools(doxxAmmProgram);

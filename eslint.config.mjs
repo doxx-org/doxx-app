@@ -18,6 +18,15 @@ const eslintConfig = [
     rules: {
       // Add your custom hook names here (regex)
       "react-hooks/exhaustive-deps": ["warn"],
+      // Allow unused variables/args prefixed with underscore
+      "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ];

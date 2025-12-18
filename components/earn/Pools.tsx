@@ -2,33 +2,26 @@
 
 import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import Plus from "@/assets/icons/table/plus.svg";
 import {
   RawTokenProfile,
   knownTokenProfiles,
   unknownToken,
 } from "@/lib/config/tokens";
-import { PoolState } from "@/lib/hooks/chain/types";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
-import { text } from "@/lib/text";
-import { normalizeBPSString } from "@/lib/utils";
-import { cn } from "@/lib/utils/style";
-import { Button } from "../ui/button";
 import { DataTable } from "../ui/data-table";
 import { SearchInput } from "../ui/search-input";
 // import { CreatePoolDialog } from "./CreateCPMMPoolDialog";
-import { DepositDialog } from "./DepositDialog";
 import { Pool, createColumns } from "./PoolColumn";
 import { DepositPoolDrawer } from "./v2/DepositPoolDrawer";
 import { PoolType } from "./v2/types";
 
 export function Pools() {
   const [searchValue, setSearchValue] = useState("");
-  const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
+  const [_isDepositDialogOpen, _setIsDepositDialogOpen] = useState(false);
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
   // const [selectedPool, setSelectedPool] = useState<PoolState | null>(null);
   // const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(
@@ -72,7 +65,7 @@ export function Pools() {
       });
     }, [splBalances]);
 
-  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
+  const { data: allTokenProfiles, isLoading: _isLoadingAllTokenProfiles } =
     useGetAllTokenInfos(poolsData, rawTokenProfilesFromSplBalances);
 
   // Transform pool data from chain to table format

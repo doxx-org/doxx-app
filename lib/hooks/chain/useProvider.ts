@@ -26,14 +26,12 @@ const READ_ONLY_WALLET: AnchorWallet = (() => {
   return {
     publicKey: dummyKeypair.publicKey,
     signTransaction: async <T extends Transaction | VersionedTransaction>(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _transaction: T,
     ): Promise<T> => {
       // This should never be called for read-only operations
       throw new Error("Cannot sign transaction with read-only wallet");
     },
     signAllTransactions: async <T extends Transaction | VersionedTransaction>(
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _transactions: T[],
     ): Promise<T[]> => {
       // This should never be called for read-only operations
