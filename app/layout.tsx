@@ -3,7 +3,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import {
   Plus_Jakarta_Sans,
-  // Poltawski_Nowy,
+  Poltawski_Nowy,
   Roboto_Mono,
 } from "next/font/google";
 import { AppFooter, Navbar } from "@/components/layout";
@@ -18,10 +18,10 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
 });
 
-// const poltawskiNowy = Poltawski_Nowy({
-//   variable: "--font-poltawski-nowy",
-//   style: ["italic"],
-// });
+const poltawskiNowy = Poltawski_Nowy({
+  variable: "--font-poltawski-nowy",
+  style: ["italic"],
+});
 
 const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
@@ -41,8 +41,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${plusJakartaSans.variable} ${robotoMono.variable} antialiased`}
-        // className={`${plusJakartaSans.variable} ${robotoMono.variable} ${poltawskiNowy.variable} antialiased`}
+        className={`${plusJakartaSans.variable} ${robotoMono.variable} ${poltawskiNowy.variable} antialiased`}
       >
         <WalletConnectionProvider>
           <QueryProvider>

@@ -10,8 +10,8 @@ import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
 import { PoolInfo } from "../PoolInfo";
-import { CPMMCreatePool } from "./CPMMCreatePool";
-import { CPMMPoolPositions } from "./CPMMPoolPositions";
+import { CPMMDepositTab } from "./CPMMDepositTab";
+import { CPMMPositionsTab } from "./CPMMPositionsTab";
 
 enum Tab {
   DEPOSIT = "Deposit",
@@ -26,23 +26,23 @@ const PoolTabs = ({
   selectedPool: Pool;
 }) => {
   if (activeTab === Tab.DEPOSIT) {
-    return <CPMMCreatePool selectedPool={selectedPool} />;
+    return <CPMMDepositTab selectedPool={selectedPool} />;
   }
 
-  return <CPMMPoolPositions />;
+  return <CPMMPositionsTab />;
 };
 
-interface CPMMPoolDrawerProps {
+interface DepositCPMMDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedPool: Pool;
 }
 
-export const CPMMPoolDrawer = ({
+export const DepositCPMMDrawer = ({
   isOpen,
   onOpenChange,
   selectedPool,
-}: CPMMPoolDrawerProps) => {
+}: DepositCPMMDrawerProps) => {
   const [activeTab, setActiveTab] = useState(Tab.DEPOSIT);
 
   return (

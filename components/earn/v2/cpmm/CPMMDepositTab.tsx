@@ -1,30 +1,15 @@
 import { useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
-import { knownTokenProfiles, solayer, usdc } from "@/lib/config/tokens";
+import { knownTokenProfiles } from "@/lib/config/tokens";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
 import { DepositPanel } from "../DepositPanel";
-import { PoolInfo } from "../PoolInfo";
-import { PoolType } from "../types";
 
-const defaultCPMMPool = {
-  symbol: "LAYER/USDC",
-  token0: solayer,
-  token1: usdc,
-  fee: 0.03,
-  address: "0x0000000000000000000000000000000000000000",
-  apr: 0.0,
-  poolType: PoolType.CPMM,
-  tvl: 10239410.21,
-  currentPrice: 0.301,
-  reward24h: 0.0001,
-};
-
-export const CPMMCreatePool = ({ selectedPool }: { selectedPool: Pool }) => {
+export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
   const [tokenA, setTokenA] = useState(selectedPool.lpToken.token1);
   const [tokenB, setTokenB] = useState(selectedPool.lpToken.token2);
   const [tokenAAmount, setTokenAAmount] = useState("");
@@ -55,7 +40,7 @@ export const CPMMCreatePool = ({ selectedPool }: { selectedPool: Pool }) => {
 
   return (
     <div className="flex h-full flex-col justify-between">
-      <div className="flex flex-col py-6">
+      <div className="flex flex-col py-5">
         <DepositPanel
           tokenA={selectedPool.lpToken.token1}
           tokenB={selectedPool.lpToken.token2}
@@ -67,18 +52,30 @@ export const CPMMCreatePool = ({ selectedPool }: { selectedPool: Pool }) => {
           onAmountBChange={setTokenBAmount}
         />
       </div>
-      <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-6">
-        <div className={cn(text.sb3(), "flex flex-col gap-3")}>
+      <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-5">
+        <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
           <div className="flex justify-between">
             <p className="text-gray-500">Total Value</p>
             <p className="text-gray-200">${depositingInfo.totalValue}</p>
           </div>
           <div className="flex justify-between">
-            <p className="text-gray-600">Estimated Yields</p>
+            <div className="flex items-center gap-2">
+              <p className="text-gray-600">Estimated Yields</p>
+              <span
+                className={cn(
+                  text.sb4(),
+                  "text-green rounded-full bg-gray-900 px-3 py-1.5",
+                )}
+              >
+                1Y
+              </span>
+            </div>
             <p className="text-gray-200">${depositingInfo.estimatedYields}</p>
           </div>
         </div>
-        <Button className={cn("text-green")}>Deposit</Button>
+        <Button className={cn(text.hsb1(), "text-green h-13 py-6")}>
+          Deposit
+        </Button>
       </div>
     </div>
   );

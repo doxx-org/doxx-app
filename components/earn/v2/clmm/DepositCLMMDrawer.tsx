@@ -9,8 +9,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
-import { CLMMCreatePool } from "./CLMMCreatePool";
-import { CLMMPoolPositions } from "./CLMMPoolPositions";
+import { CLMMDepositTab } from "./CLMMDepositTab";
+import { CLMMPositionsTab } from "./CLMMPositionsTab";
 
 enum Tab {
   CREATE = "Create",
@@ -18,21 +18,21 @@ enum Tab {
 }
 
 const tabs = [
-  { label: Tab.CREATE, component: <CLMMCreatePool /> },
-  { label: Tab.POSITIONS, component: <CLMMPoolPositions /> },
+  { label: Tab.CREATE, component: <CLMMDepositTab /> },
+  { label: Tab.POSITIONS, component: <CLMMPositionsTab /> },
 ];
 
-interface CLMMPoolDrawerProps {
+interface DepositCLMMDrawerProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   selectedPool: Pool;
 }
 
-export const CLMMPoolDrawer = ({
+export const DepositCLMMDrawer = ({
   isOpen,
   onOpenChange,
   selectedPool,
-}: CLMMPoolDrawerProps) => {
+}: DepositCLMMDrawerProps) => {
   const [activeTab, setActiveTab] = useState(Tab.CREATE);
 
   return (

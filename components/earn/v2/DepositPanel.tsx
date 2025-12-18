@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import BN from "bn.js";
+import { TokenLabel } from "@/components/TokenLabel";
 import { TokenProfile } from "@/lib/config/tokens";
 import {
   BalanceMapByMint,
@@ -72,10 +73,11 @@ export const DepositPanel = ({
 
   return (
     <div className="flex flex-col gap-4 px-4">
-      <p className={cn(text.b4(), "text-white")}>Deposit Amount</p>
+      <p className={cn(text.b4(), "leading-none text-white")}>Deposit Amount</p>
+      {/* LP Token depositing panel */}
       <div className="flex flex-col gap-1">
         <div className="flex flex-row gap-1">
-          <div className="h-full w-full rounded-tl-xl border border-gray-800 bg-gray-900 p-4 pt-5">
+          <div className="h-full w-[50%] rounded-tl-xl border border-gray-800 bg-gray-900 p-4 pt-5">
             <TokenSelectionRow
               token={tokenAInfo.token}
               amount={tokenAInfo.inputAmount}
@@ -89,7 +91,7 @@ export const DepositPanel = ({
             />
           </div>
 
-          <div className="h-full w-full rounded-tr-xl border border-gray-800 bg-gray-900 p-4 pt-5">
+          <div className="h-full w-[50%] rounded-tr-xl border border-gray-800 bg-gray-900 p-4 pt-5">
             <TokenSelectionRow
               token={tokenBInfo.token}
               amount={tokenBInfo.inputAmount}
@@ -104,7 +106,7 @@ export const DepositPanel = ({
           </div>
         </div>
 
-        <div className="h-full w-full rounded-b-xl border border-gray-800 bg-gray-900 p-4 pt-5">
+        <div className="rounded-b-xl border border-gray-800 bg-gray-900 p-4 pt-5">
           <div className="relative flex items-center justify-center">
             <div className="bg-black-700 absolute -top-10 flex h-8 w-8 items-center justify-center rounded-full border border-gray-800">
               <svg
@@ -127,26 +129,66 @@ export const DepositPanel = ({
           </div>
 
           {/* LP Token Info - Display Only */}
-          <div className="flex w-full flex-col gap-2 py-2 pt-6">
-            <div className="flex items-center justify-between">
-              <span className={cn(text.sb3(), "text-gray-400")}>
-                {tokenA && tokenB
-                  ? `${tokenA.symbol} / ${tokenB.symbol}`
-                  : "Select / Select"}
-              </span>
-              <span className={cn(text.sh1(), "text-gray-300")}>
-                +{lpToken.inputAmount || "0.00"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className={cn(text.sb3(), "text-gray-500")}>
-                Balance: 0
-              </span>
-              <span className={cn(text.sb3(), "text-gray-500")}>
-                ${lpToken.inputUsd.toFixed(2)}
+          <div className="flex flex-col gap-4">
+            <TokenLabel
+              token={null}
+              label={`${tokenA.symbol} / ${tokenB.symbol}`}
+              disableTokenSelect={true}
+            />
+            <span
+              className={cn(
+                text.sh1(),
+                "text-right leading-none text-gray-600",
+              )}
+            >
+              +
+              {lpToken.inputAmount !== 0
+                ? formatNumber(lpToken.inputAmount, {
+                    abbreviate: { apply: true },
+                    decimals: 6,
+                  })
+                : "0.00"}
+            </span>
+            <div
+              className={cn(
+                text.sb3(),
+                "flex items-center justify-between leading-none",
+              )}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-700">Balance:</span>
+                <span className="text-gray-600">
+                  {formatNumber(lpToken.balance, {
+                    abbreviate: { apply: true },
+                    decimals: 6,
+                  })}
+                </span>
+              </div>
+              <span className="text-gray-600">
+                $
+                {formatNumber(lpToken.inputUsd, {
+                  abbreviate: { apply: true },
+                  decimals: 2,
+                })}
               </span>
             </div>
           </div>
+        </div>
+      </div>
+      {/* Deposit ratio panel */}
+      <div
+        className={cn(text.sb3(), "flex w-full justify-between leading-none")}
+      >
+        <p className="py-1.75 text-gray-500">Deposit Ratio</p>
+        <div className="flex gap-1">
+          <button className="flex h-full items-center gap-1 rounded-full bg-gray-900 px-3 hover:cursor-pointer hover:bg-gray-800">
+            <div className="h-3.5 w-3.5 rounded-full bg-gray-700" />
+            <span className="text-gray-200">50%</span>
+          </button>
+          <button className="flex h-full items-center gap-1 rounded-full bg-gray-900 px-3 hover:cursor-pointer hover:bg-gray-800">
+            <div className="h-3.5 w-3.5 rounded-full bg-gray-700" />
+            <span className="text-gray-200">50%</span>
+          </button>
         </div>
       </div>
     </div>

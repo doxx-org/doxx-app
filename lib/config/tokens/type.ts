@@ -2,8 +2,8 @@
 export enum TokenSymbol {
   LAYER = "LAYER",
   sUSD = "sUSD",
-  USDC = "USDC",
-  sSOL = "sSOL",
+  USDC = "USDCsad112fnwjfhwejkqwd1",
+  sSOL = "sqweqw1231sadkS1212eOLEEIQ",
 }
 
 export interface RawTokenProfile {

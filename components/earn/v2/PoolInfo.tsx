@@ -52,11 +52,11 @@ const PoolDetail1 = ({
   apr,
 }: PoolDetail1Props) => {
   return (
-    <div className="bg-black-700 flex w-full items-center justify-between rounded-xl p-4">
+    <div className="bg-black-700 flex w-full items-center justify-between gap-4 rounded-xl p-4">
       {/* Left Side: Img, Symbol, Pool Type, Address, Fee */}
-      <div className="flex gap-4.5">
+      <div className="flex min-w-0 flex-1 gap-4.5">
         {/* Image */}
-        <div className="flex items-center">
+        <div className="flex shrink-0 items-center">
           <Avatar className="size-8.5">
             <AvatarImage src={token1.image} alt={token1.symbol} />
             <AvatarFallback>{token1.symbol}</AvatarFallback>
@@ -67,15 +67,15 @@ const PoolDetail1 = ({
           </Avatar>
         </div>
         {/* Symbol, Pool Type */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-1 text-left">
-            <p className={cn(text.hsb2(), "leading-5 text-gray-200")}>
+        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+          <div className="flex min-w-0 items-center gap-1 text-left">
+            <p className={cn(text.hsb2(), "truncate leading-5 text-gray-200")}>
               {poolSymbol}
             </p>
             <div
               className={cn(
                 text.sb4(),
-                "text-green flex h-full items-center rounded-2xl bg-gray-900 px-3",
+                "text-green flex h-full shrink-0 items-center rounded-2xl bg-gray-900 px-3",
               )}
             >
               <span className="leading-0">{poolType}</span>
@@ -108,7 +108,7 @@ const PoolDetail1 = ({
       <div
         className={cn(
           text.b3(),
-          "bg-green/10 text-green flex gap-1.5 rounded-full px-3 py-2 leading-none",
+          "bg-green/10 text-green flex shrink-0 gap-1.5 rounded-full px-3 py-2 leading-none",
         )}
       >
         <p>APR</p>
@@ -143,7 +143,7 @@ export const PoolInfo = ({
   reward24h,
 }: Pool) => {
   return (
-    <div className="flex w-full flex-col gap-5 border-b border-gray-800 px-4 py-6 pt-8">
+    <div className="flex w-full flex-col gap-5 border-b border-gray-800 px-4 py-5">
       <PoolDetail1
         token1={token1}
         token2={token2}
