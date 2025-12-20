@@ -1,5 +1,9 @@
 import { BN } from "@coral-xyz/anchor";
-import { MINIMUM_CAP_E9, ONE_MILLION_E9 } from "../constants";
+import {
+  MAXIMUM_100_MILLION,
+  MINIMUM_CAP_E9,
+  ONE_MILLION_E9,
+} from "../constants";
 
 export function parseDecimalsInput(value: string): string {
   // ✅ Disallow leading zeros (unless '0' or '0.xxx' or '.xxx')
@@ -133,16 +137,41 @@ export function formatNumber(
       prefix?: string;
     };
     decimals?: number;
+    maximumNumber?: number;
+    prefix?: string;
+    suffix?: string;
   } = {},
 ): string {
   if (number === null || number === undefined || isNaN(number)) return "-";
-  const { abbreviate = { apply: false, prefix: "" }, decimals = 2 } = opts;
+  const {
+    abbreviate = { apply: false, prefix: "" },
+    decimals = 2,
+    maximumNumber = MAXIMUM_100_MILLION,
+    prefix = "",
+    suffix = "",
+  } = opts;
 
   if (!abbreviate.apply) {
-    return number.toLocaleString(undefined, {
-      maximumFractionDigits: decimals,
-      minimumFractionDigits: 0,
-    });
+    if (number > maximumNumber) {
+      return (
+        ">" +
+        prefix +
+        maximumNumber.toLocaleString(undefined, {
+          maximumFractionDigits: decimals,
+          minimumFractionDigits: 0,
+        }) +
+        suffix
+      );
+    }
+
+    return (
+      prefix +
+      number.toLocaleString(undefined, {
+        maximumFractionDigits: decimals,
+        minimumFractionDigits: 0,
+      }) +
+      suffix
+    );
   }
 
   const abs = Math.abs(number);
@@ -163,6 +192,7 @@ export function formatNumber(
   if (abbr) {
     // Always show at least one decimal if abbreviated, up to specified decimals
     return (
+      prefix +
       value
         .toLocaleString(undefined, {
           maximumFractionDigits: decimals,
@@ -170,12 +200,17 @@ export function formatNumber(
         })
         .replace(/\.0+$/, "") +
       (abbreviate.prefix ?? "") +
-      abbr
+      abbr +
+      suffix
     );
   } else {
-    return number.toLocaleString(undefined, {
-      maximumFractionDigits: decimals,
-      minimumFractionDigits: 0,
-    });
+    return (
+      prefix +
+      number.toLocaleString(undefined, {
+        maximumFractionDigits: decimals,
+        minimumFractionDigits: 0,
+      }) +
+      suffix
+    );
   }
 }

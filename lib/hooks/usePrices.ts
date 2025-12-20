@@ -12,6 +12,10 @@ export const usePrices = (): UseQueryResult<PriceMap, Error> => {
         [solayer.address]: 0.1771,
         [solayerUSD.address]: 0.91,
         [ssol.address]: 138.38,
+        // UNK
+        ["2egW39Canf2oPP7jenwjkW8y8CwsDcEiDC8xnaYeo6sw"]: 1230.2,
+        // TOKEN2
+        ["5mvoZPmbP7j4RQKmEwF6B94aTKoihEKo1LpVeimzexDh"]: 0.00214,
       };
 
       return prices;

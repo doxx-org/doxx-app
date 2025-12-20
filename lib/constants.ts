@@ -45,3 +45,8 @@ export const POOL_AUTH_SEED = Buffer.from(
   utils.bytes.utf8.encode("vault_and_lp_mint_auth_seed"),
 );
 export const ORACLE_SEED = Buffer.from(utils.bytes.utf8.encode("observation"));
+
+// ==============================================
+// Display Number constants
+// ==============================================
+export const MAXIMUM_100_MILLION = 1_000_000_000;
