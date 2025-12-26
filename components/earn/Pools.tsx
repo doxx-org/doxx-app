@@ -75,6 +75,11 @@ export function Pools() {
 
     return poolsData.map((poolData, index) => {
       const { poolState, ammConfig } = poolData;
+      console.log(
+        "🚀 ~ poolState.poolId:",
+        poolData.observationState.poolId.toString(),
+      );
+      console.log("🚀 ~ poolState.lpmint:", poolState.lpMint.toString());
 
       // Find token profiles
       const token0Profile = allTokenProfiles.find(
@@ -96,8 +101,7 @@ export function Pools() {
       // const feePercent = normalizeBPSString(ammConfig.tradeFeeRate.toString());
 
       return {
-        id: index.toString(),
-        account: poolAddress.toBase58(),
+        poolId: poolAddress.toBase58(),
         fee: ammConfig.tradeFeeRate,
         lpToken: {
           token1: token0Profile,

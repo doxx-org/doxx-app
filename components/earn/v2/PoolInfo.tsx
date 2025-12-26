@@ -135,7 +135,7 @@ interface PoolInfoProps {
 export const PoolInfo = ({
   lpToken: { token1, token2 },
   fee,
-  account,
+  poolId,
   apr,
   tvl,
   poolType,
@@ -149,7 +149,7 @@ export const PoolInfo = ({
         token2={token2}
         symbol={`${token1.symbol}/${token2.symbol}`}
         poolType={poolType}
-        address={account}
+        address={poolId}
         fee={fee}
         apr={apr}
       />

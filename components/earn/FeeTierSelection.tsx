@@ -28,13 +28,13 @@ export const FEE_TIERS = [
     label: "0.35% fee",
     description: "Best for stable pairs",
   },
-  { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
-  {
-    index: 4,
-    fee: 1.0,
-    label: "1.0% fee",
-    description: "Best for exotic pairs",
-  },
+  // { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
+  // {
+  //   index: 4,
+  //   fee: 1.0,
+  //   label: "1.0% fee",
+  //   description: "Best for exotic pairs",
+  // },
 ];
 
 interface IFeeTierSelectionProps {
@@ -53,16 +53,17 @@ export const FeeTierSelection = ({
 
   const [isFeeSelectionOpen, setIsFeeSelectionOpen] = useState(false);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col">
-        <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-          <h3 className={cn(text.sb2(), "px-3 text-gray-400")}>Select Pool</h3>
+    <>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+            <h3 className={cn(text.b4(), "px-3 text-gray-400")}>Select Pool</h3>
+          </div>
+          <p className={cn(text.sb3(), "px-3 pt-3 text-gray-600")}>
+            Select a pool type based on your preferred liquidity provider fee.
+          </p>
         </div>
-        <p className={cn(text.sb3(), "px-3 pt-3 text-gray-500")}>
-          Select a pool type based on your preferred liquidity provider fee.
-        </p>
       </div>
-
       {/* Fee Tier Selector */}
       <button
         onClick={() => setIsFeeSelectionOpen(!isFeeSelectionOpen)}
@@ -113,7 +114,7 @@ export const FeeTierSelection = ({
                     "flex h-5 w-5 items-center justify-center rounded-full border-2",
                     selectedFeeIndex === tier.index
                       ? "border-green"
-                      : "border-gray-600",
+                      : "border-dashed border-gray-600",
                   )}
                 >
                   {selectedFeeIndex === tier.index && (
@@ -128,6 +129,6 @@ export const FeeTierSelection = ({
           ))}
         </div>
       )}
-    </div>
+    </>
   );
 };

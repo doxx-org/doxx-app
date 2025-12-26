@@ -21,7 +21,7 @@ export function parseDecimalsInput(value: string): string {
   return "0";
 }
 
-export function toBN(v: BN | number | string): BN {
+export function toBN(v: BN | number | string | bigint): BN {
   return BN.isBN(v) ? (v as BN) : new BN(v);
 }
 
@@ -122,6 +122,17 @@ export function normalizeBN(
   return formatAmountBN(amount, decimals, { displayDecimals });
 }
 
+export interface NumberFormatter {
+  abbreviate?: {
+    apply?: boolean;
+    prefix?: string;
+  };
+  decimals?: number;
+  maximumNumber?: number;
+  prefix?: string;
+  suffix?: string;
+}
+
 /**
  * Format a number with comma separators and optional abbreviation.
  * @param number The number to format.
@@ -131,16 +142,7 @@ export function normalizeBN(
  */
 export function formatNumber(
   number: number,
-  opts: {
-    abbreviate?: {
-      apply?: boolean;
-      prefix?: string;
-    };
-    decimals?: number;
-    maximumNumber?: number;
-    prefix?: string;
-    suffix?: string;
-  } = {},
+  opts: NumberFormatter = {},
 ): string {
   if (number === null || number === undefined || isNaN(number)) return "-";
   const {

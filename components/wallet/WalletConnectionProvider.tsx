@@ -62,7 +62,11 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
 
   return (
     <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect onError={handleError}>
+      <WalletProvider
+        wallets={wallets}
+        autoConnect
+        // onError={handleError}
+      >
         {children}
       </WalletProvider>
     </ConnectionProvider>

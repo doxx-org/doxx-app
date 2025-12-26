@@ -1,5 +1,5 @@
 import { TokenProfile } from "@/lib/config/tokens";
-import { SplBalance } from "@/lib/hooks/chain/types";
+import { PoolStateWithConfig, SplBalance } from "@/lib/hooks/chain/types";
 import { CreateCPMMPoolDialog } from "../CreateCPMMPoolDialog";
 import { PoolType } from "./types";
 
@@ -9,6 +9,7 @@ interface CreatePoolDialogProps {
   splBalances: Partial<Record<string, SplBalance>> | undefined;
   createPoolType: PoolType;
   allTokenProfiles: TokenProfile[];
+  poolsData: PoolStateWithConfig[] | undefined;
 }
 
 export const CreatePoolDialog = ({
@@ -17,6 +18,7 @@ export const CreatePoolDialog = ({
   splBalances,
   createPoolType,
   allTokenProfiles,
+  poolsData,
 }: CreatePoolDialogProps) => {
   if (createPoolType === PoolType.CPMM) {
     return (
@@ -25,6 +27,7 @@ export const CreatePoolDialog = ({
         onOpenChange={onOpenChange}
         splBalances={splBalances}
         allTokenProfiles={allTokenProfiles}
+        poolsData={poolsData}
       />
     );
   }

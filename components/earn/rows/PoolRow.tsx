@@ -20,7 +20,7 @@ type PoolRowProps = {
 };
 
 export function PoolRow({ pool }: PoolRowProps) {
-  const { lpToken, account, fee } = pool;
+  const { lpToken, poolId, fee } = pool;
 
   return (
     <div className="flex flex-row items-center gap-2">
@@ -93,12 +93,12 @@ export function PoolRow({ pool }: PoolRowProps) {
           </p>
           <div className="flex flex-row items-center gap-1">
             <p className={cn(text.sb3(), "text-gray-400")}>
-              {`${normalizeBPSString(fee.toString())}% | ${ellipseAddress(account, 5)}`}
+              {`${normalizeBPSString(fee.toString())}% | ${ellipseAddress(poolId, 5)}`}
             </p>
             <CopyIcon
               className="cursor-pointer"
               onClick={() => {
-                copyToClipboard(account);
+                copyToClipboard(poolId);
               }}
             />
           </div>

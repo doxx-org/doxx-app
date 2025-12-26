@@ -23,10 +23,8 @@ import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
-  // const [isPoolDrawerOpen, setIsPoolDrawerOpen] = useState(false);
   const [poolDrawer, setPoolDrawer] = useState<PoolType>(PoolType.CLMM);
   const [isCreatePoolOpen, setIsCreatePoolOpen] = useState(false);
-  // const [createPoolType, setCreatePoolType] = useState<PoolType>(PoolType.CLMM);
 
   // Hooks
   const { connection } = useConnection();
@@ -41,6 +39,15 @@ export default function Home() {
     // TODO: add refetchAllPoolStates to the dependencies
     // refetch: refetchAllPoolStates,
   } = useGetAllPools(doxxAmmProgram);
+  // poolsData?.map((c) => {
+  //   console.log("🚀 ~ ===:");
+  //   console.log("🚀 ~ poolsData.lpMint:", c.poolState.lpMint.toString());
+  //   console.log("🚀 ~ poolsData.ammConfig:", c.poolState.ammConfig.toString());
+  //   console.log(
+  //     "🚀 ~ poolsData.ammConfig:",
+  //     c.observationState.poolId.toString(),
+  //   );
+  // });
 
   // Fetch token balances
   const { data: splBalances } = useAllSplBalances(
@@ -49,6 +56,7 @@ export default function Home() {
     knownTokenProfiles,
     true,
   );
+  console.log("🚀 ~ splBalances:", splBalances);
 
   const rawTokenProfilesFromSplBalances: RawTokenProfile[] | undefined =
     useMemo(() => {
@@ -138,6 +146,7 @@ export default function Home() {
           splBalances={splBalances}
           allTokenProfiles={allTokenProfiles}
           onOpenChange={setIsCreatePoolOpen}
+          poolsData={poolsData}
         />
       )}
       {/* {isPoolDrawerOpen && (

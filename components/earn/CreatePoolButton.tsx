@@ -1,8 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
+import { BN } from "bn.js";
 import { toast } from "sonner";
 import { TokenProfile } from "@/lib/config/tokens";
+import { PoolStateWithConfig } from "@/lib/hooks/chain/types";
 import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
@@ -14,6 +16,7 @@ import {
 } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
+import { ConnectButtonWrapper } from "../wallet/ConnectButtonWrapper";
 import { FEE_TIERS } from "./FeeTierSelection";
 
 interface CreatePoolButtonProps {
@@ -27,6 +30,7 @@ interface CreatePoolButtonProps {
   onAmountChangeB: (amount: string) => void;
   onOpenChange: (open: boolean) => void;
   selectedFeeIndex: number;
+  poolsData: PoolStateWithConfig[] | undefined;
 }
 
 export const CreatePoolButton = ({
@@ -40,6 +44,7 @@ export const CreatePoolButton = ({
   onAmountChangeB,
   onOpenChange,
   selectedFeeIndex,
+  poolsData,
 }: CreatePoolButtonProps) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -70,7 +75,7 @@ export const CreatePoolButton = ({
   const {
     createPool,
     isCreating: isCreatingPool,
-    createError: createPoolError,
+    // createError: createPoolError,
   } = useCreatePool(doxxAmmProgram, wallet, handleSuccess, handleError);
 
   const isCreatePoolEnabled =
@@ -150,7 +155,7 @@ export const CreatePoolButton = ({
         initAmount1,
       });
     } catch (error) {
-      console.error("Pool creation error:", error);
+      console.log("Pool creation error:", error);
       // Error is already handled by handleError callback
     }
   }, [
@@ -168,7 +173,8 @@ export const CreatePoolButton = ({
       tokenA === null ||
       tokenB === null ||
       amountA === "" ||
-      amountB === ""
+      amountB === "" ||
+      !poolsData
     ) {
       return ["Create Pool", true, undefined];
     }
@@ -177,9 +183,29 @@ export const CreatePoolButton = ({
       return ["Creating Pool...", true, undefined];
     }
 
-    if (createPoolError) {
-      return ["Error creating Pool", true, undefined];
+    const poolData = poolsData.find((c) => {
+      console.log(
+        "🚀 ~ c.ammConfig.tradeFeeRate:",
+        c.ammConfig.tradeFeeRate.toString(),
+      );
+      return (
+        ((c.poolState.token0Mint.toString() === tokenA.address &&
+          c.poolState.token1Mint.toString() === tokenB.address) ||
+          (c.poolState.token1Mint.toString() === tokenA.address &&
+            c.poolState.token0Mint.toString() === tokenB.address)) &&
+        c.ammConfig.tradeFeeRate.eq(
+          new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
+        )
+      );
+    });
+
+    if (poolData) {
+      return ["Pool already exists", true, undefined];
     }
+
+    // if (createPoolError) {
+    //   return ["Error creating Pool", true, undefined];
+    // }
 
     return ["Create Pool", false, handleCreatePool];
   }, [
@@ -189,22 +215,28 @@ export const CreatePoolButton = ({
     amountB,
     handleCreatePool,
     isCreatingPool,
-    createPoolError,
+    poolsData,
+    selectedFeeIndex,
+    // createPoolError,
   ]);
 
   return (
-    <Button
-      className={cn(
-        "h-12 w-full rounded-xl",
-        isCreatePoolEnabled
-          ? "bg-green hover:bg-green/90 text-black"
-          : "cursor-not-allowed bg-gray-700 text-gray-400",
-      )}
-      loading={isCreatingPool}
-      onClick={handleCreatePoolButton}
-      disabled={disabled}
+    <ConnectButtonWrapper
+      className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
     >
-      <span className={cn(text.hsb2())}>{label}</span>
-    </Button>
+      <Button
+        className={cn(
+          "h-12 w-full rounded-xl",
+          isCreatePoolEnabled || !disabled
+            ? "bg-green hover:bg-green/90 text-black"
+            : "cursor-not-allowed bg-gray-700 text-gray-400",
+        )}
+        loading={isCreatingPool}
+        onClick={handleCreatePoolButton}
+        disabled={disabled}
+      >
+        <span className={cn(text.hsb2())}>{label}</span>
+      </Button>
+    </ConnectButtonWrapper>
   );
 };

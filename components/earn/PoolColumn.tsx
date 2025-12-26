@@ -14,8 +14,7 @@ import { PoolType } from "./v2/types";
 // This type is used to define the shape of our data.
 // You can use a Zod schema here if you want.
 export type Pool = {
-  id: string;
-  account: string;
+  poolId: string;
   fee: BN;
   lpToken: {
     token1: TokenProfile;
@@ -26,7 +25,7 @@ export type Pool = {
   dailyVol: number; // in usd
   dailyVolperTvl: number; // in percentage
   reward24h: number; // in usd
-  poolState?: PoolState; // Optional: actual pool state from chain
+  poolState: PoolState; // Optional: actual pool state from chain
   price: number;
   poolType: PoolType;
 };

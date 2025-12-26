@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint } from "@/lib/hooks/chain/types";
+import { BalanceMapByMint, PoolStateWithConfig } from "@/lib/hooks/chain/types";
+import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
-import { cn } from "@/lib/utils";
+import { cn, parseDecimalsInput } from "@/lib/utils";
 import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
 import {
   Dialog,
@@ -15,12 +16,13 @@ import {
 } from "../ui/dialog";
 import { CreatePoolButton } from "./CreatePoolButton";
 import { FeeTierSelection } from "./FeeTierSelection";
-import { TokenSelectionRow } from "./TokenSelectionRow";
+import { DepositLPPanel } from "./v2/DepositLPPanel";
 
 interface CreateCPMMPoolDialogProps {
   isOpen: boolean;
   splBalances: BalanceMapByMint | undefined;
   allTokenProfiles: TokenProfile[];
+  poolsData: PoolStateWithConfig[] | undefined;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -33,10 +35,13 @@ export const CreateCPMMPoolDialog = ({
   isOpen,
   splBalances,
   allTokenProfiles,
+  poolsData,
   onOpenChange,
 }: CreateCPMMPoolDialogProps) => {
   const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
+  const [lpTokenMint, setLpTokenMint] = useState<string | null>(null);
+  console.log("🚀 ~ lpTokenMint:", lpTokenMint);
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
   const [selectedTokenType, setSelectedTokenType] = useState<SelectTokenType>(
@@ -45,81 +50,7 @@ export const CreateCPMMPoolDialog = ({
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
 
-  // Memoized calculations
-  const lpTokenAmount = useMemo((): string => {
-    if (
-      !tokenA ||
-      !tokenB ||
-      !amountA ||
-      !amountB ||
-      amountA === "" ||
-      amountB === ""
-    ) {
-      return "";
-    }
-
-    const numAmountA = parseFloat(amountA);
-    const numAmountB = parseFloat(amountB);
-
-    if (
-      isNaN(numAmountA) ||
-      isNaN(numAmountB) ||
-      numAmountA <= 0 ||
-      numAmountB <= 0
-    ) {
-      return "";
-    }
-
-    // For initial liquidity provision, LP tokens = sqrt(amount0 * amount1)
-    // This is the Uniswap V2 constant product formula
-    // Note: amounts are already in human-readable format, so we use them directly
-    const lpAmount = Math.sqrt(numAmountA * numAmountB);
-
-    // Format to 6 decimal places for display
-    return lpAmount.toFixed(6);
-  }, [tokenA, tokenB, amountA, amountB]);
-
-  const tokenBalances = useMemo(() => {
-    return {
-      tokenA:
-        tokenA && splBalances ? (splBalances[tokenA.address]?.amount ?? 0) : 0,
-      tokenB:
-        tokenB && splBalances ? (splBalances[tokenB.address]?.amount ?? 0) : 0,
-    };
-  }, [tokenA, tokenB, splBalances]);
-
-  const usdValues = useMemo(() => {
-    const getTokenPrice = (token: TokenProfile | null): number => {
-      if (!token) return 0;
-      // Placeholder prices - in a real app, these would come from a price API
-      const mockPrices: Record<string, number> = {
-        USDC: 1.0,
-        sUSD: 1.0,
-        LAYER: 0.05, // Example price
-        sSOL: 180.0, // Example price
-      };
-      return mockPrices[token.address] ?? 0;
-    };
-
-    const calculateValue = (
-      token: TokenProfile | null,
-      amount: string,
-    ): number => {
-      if (!token || !amount || amount === "") return 0;
-      const price = getTokenPrice(token);
-      const numericAmount = parseFloat(amount);
-      return isNaN(numericAmount) ? 0 : numericAmount * price;
-    };
-
-    const tokenAValue = calculateValue(tokenA, amountA);
-    const tokenBValue = calculateValue(tokenB, amountB);
-
-    return {
-      tokenA: tokenAValue,
-      tokenB: tokenBValue,
-      total: tokenAValue + tokenBValue,
-    };
-  }, [tokenA, tokenB, amountA, amountB]);
+  const { data: prices } = usePrices();
 
   const handleSelectToken = (token: TokenProfile) => {
     if (selectedTokenType === SelectTokenType.TOKEN_A) {
@@ -144,10 +75,7 @@ export const CreateCPMMPoolDialog = ({
     value: string,
     setAmount: (value: string) => void,
   ) => {
-    // Allow empty string, numbers, and decimal points
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
-      setAmount(value);
-    }
+    setAmount(parseDecimalsInput(value));
   };
 
   const handleOpenTokenSelector = (tokenType: SelectTokenType) => {
@@ -155,93 +83,114 @@ export const CreateCPMMPoolDialog = ({
     setIsTokenSelectorOpen(true);
   };
 
+  useEffect(() => {
+    if (!poolsData || !tokenA || !tokenB || poolsData.length === 0) {
+      setLpTokenMint("");
+      return;
+    }
+
+    const poolData = poolsData.find(
+      (c) =>
+        (c.poolState.token0Mint.toString() === tokenA.address &&
+          c.poolState.token1Mint.toString() === tokenB.address) ||
+        (c.poolState.token1Mint.toString() === tokenA.address &&
+          c.poolState.token0Mint.toString() === tokenB.address),
+    );
+
+    if (!poolData) {
+      setLpTokenMint("");
+      return;
+    }
+
+    setLpTokenMint(poolData.poolState.lpMint.toString());
+  }, [poolsData, tokenA, tokenB]);
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
         <DialogContent className="flex min-h-[480px] w-[640px] !max-w-[576px] flex-col gap-0 overflow-hidden">
           <DialogHeader className="h-fit border-b border-gray-800 py-6">
-            <DialogTitle>Create Pool</DialogTitle>
+            <DialogTitle className={cn(text.b2(), "leading-none")}>
+              Create Market
+            </DialogTitle>
           </DialogHeader>
-          <DialogBody className="flex flex-1 flex-col justify-between gap-5.5 p-3">
-            {/* Token Selection Rows */}
-            <div className="flex flex-col gap-1">
-              <div className="flex flex-row gap-1">
-                <div className="h-full w-full rounded-tl-xl border border-gray-800 bg-gray-900 p-4 pt-5">
-                  <TokenSelectionRow
-                    token={tokenA}
-                    amount={amountA}
-                    placeholder="-0.00"
-                    label="Token A"
-                    onTokenSelect={() =>
-                      handleOpenTokenSelector(SelectTokenType.TOKEN_A)
-                    }
-                    onAmountChange={(value) =>
-                      handleAmountChange(value, setAmountA)
-                    }
-                    balance={tokenBalances.tokenA}
-                    usdValue={usdValues.tokenA}
-                  />
-                </div>
-
-                <div className="h-full w-full rounded-tr-xl border border-gray-800 bg-gray-900 p-4 pt-5">
-                  <TokenSelectionRow
-                    token={tokenB}
-                    amount={amountB}
-                    placeholder="-0.00"
-                    label="Token B"
-                    onTokenSelect={() =>
-                      handleOpenTokenSelector(SelectTokenType.TOKEN_B)
-                    }
-                    onAmountChange={(value) =>
-                      handleAmountChange(value, setAmountB)
-                    }
-                    balance={tokenBalances.tokenB}
-                    usdValue={usdValues.tokenB}
-                  />
-                </div>
+          <DialogBody className="flex flex-1 flex-col justify-between gap-4 p-3">
+            <div className="flex flex-col gap-5.5">
+              <div className="mt-2 flex flex-col gap-3">
+                <span
+                  className={cn(text.b4(), "px-3 leading-none text-gray-400")}
+                >
+                  Constant Factor AMM
+                </span>
+                <span className="w-full border-b border-gray-800" />
+                <span
+                  className={cn(text.sb3(), "px-3 leading-none text-gray-600")}
+                >
+                  Constant product pools follow the distribution XY=K.
+                </span>
               </div>
-
-              <div className="h-full w-full rounded-b-xl border border-gray-800 bg-gray-900 p-4 pt-5">
-                {/* LP Token Info - Display Only */}
-                <div className="flex w-full flex-col gap-2 py-2">
-                  <div className="flex items-center justify-between">
-                    <span className={cn(text.sb3(), "text-gray-400")}>
-                      LP Token
-                    </span>
-                    <span className={cn(text.b3(), "text-gray-300")}>
-                      {tokenA && tokenB
-                        ? `${tokenA.symbol} / ${tokenB.symbol}`
-                        : "Select tokens"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className={cn(text.sb3(), "text-gray-400")}>
-                      LP Amount
-                    </span>
-                    <span className={cn(text.sh1(), "text-gray-300")}>
-                      {lpTokenAmount || "0.00"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className={cn(text.sb3(), "text-gray-500")}>
-                      Total Value
-                    </span>
-                    <span className={cn(text.sb3(), "text-gray-500")}>
-                      $
-                      {usdValues.total.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                </div>
-              </div>
+              {/* Token A and Token B Selection */}
+              <DepositLPPanel
+                tokenA={tokenA}
+                tokenB={tokenB}
+                lpTokenMint={lpTokenMint}
+                walletBalances={splBalances}
+                priceMap={prices}
+                tokenAInput={amountA}
+                tokenBInput={amountB}
+                onAmountAChange={(value) =>
+                  handleAmountChange(value, setAmountA)
+                }
+                onAmountBChange={(value) =>
+                  handleAmountChange(value, setAmountB)
+                }
+                onTokenASelect={() =>
+                  handleOpenTokenSelector(SelectTokenType.TOKEN_A)
+                }
+                onTokenBSelect={() =>
+                  handleOpenTokenSelector(SelectTokenType.TOKEN_B)
+                }
+                formatter={{
+                  tokenA: {
+                    input: {
+                      abbreviate: { apply: false },
+                    },
+                    balance: {
+                      abbreviate: { apply: false },
+                    },
+                    usd: {
+                      abbreviate: { apply: false },
+                    },
+                  },
+                  tokenB: {
+                    input: {
+                      abbreviate: { apply: false },
+                    },
+                    balance: {
+                      abbreviate: { apply: false },
+                    },
+                    usd: {
+                      abbreviate: { apply: false },
+                    },
+                  },
+                  lpToken: {
+                    input: {
+                      abbreviate: { apply: false },
+                    },
+                    balance: {
+                      abbreviate: { apply: false },
+                    },
+                    usd: {
+                      abbreviate: { apply: false },
+                    },
+                  },
+                }}
+              />
+              <FeeTierSelection
+                selectedFeeIndex={selectedFeeIndex}
+                onSelectFeeIndex={setSelectedFeeIndex}
+              />
             </div>
-
-            <FeeTierSelection
-              selectedFeeIndex={selectedFeeIndex}
-              onSelectFeeIndex={setSelectedFeeIndex}
-            />
             <CreatePoolButton
               tokenA={tokenA}
               tokenB={tokenB}
@@ -253,6 +202,7 @@ export const CreateCPMMPoolDialog = ({
               onAmountChangeB={setAmountB}
               onOpenChange={onOpenChange}
               selectedFeeIndex={selectedFeeIndex}
+              poolsData={poolsData}
             />
           </DialogBody>
         </DialogContent>

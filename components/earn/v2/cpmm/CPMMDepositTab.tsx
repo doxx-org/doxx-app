@@ -1,30 +1,36 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
 import { knownTokenProfiles } from "@/lib/config/tokens";
+import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
 import { DepositPanel } from "../DepositPanel";
+import { DepositCPMMButton } from "./DepositCPMMButton";
 
 export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
-  const [_tokenA, _setTokenA] = useState(selectedPool.lpToken.token1);
-  const [_tokenB, _setTokenB] = useState(selectedPool.lpToken.token2);
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
+  const [lpAmount, setLpAmount] = useState("");
 
   // Hooks
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
+  const provider = useProvider({ connection, wallet });
+  const doxxAmmProgram = useDoxxAmmProgram({ provider });
 
   // Fetch token balances
-  const { data: splBalances } = useAllSplBalances(
-    connection,
-    wallet?.publicKey ?? undefined,
-    knownTokenProfiles,
-  );
+  const { data: splBalances, refetch: refetchAllSplBalances } =
+    useAllSplBalances(
+      connection,
+      wallet?.publicKey ?? undefined,
+      knownTokenProfiles,
+      true,
+    );
 
   const { data: prices } = usePrices();
 
@@ -38,18 +44,39 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
     };
   }, [selectedPool]);
 
+  const handleAmountAChange = useCallback((value: string) => {
+    setTokenAAmount(parseDecimalsInput(value));
+  }, []);
+
+  const handleAmountBChange = useCallback((value: string) => {
+    setTokenBAmount(parseDecimalsInput(value));
+  }, []);
+
+  const handleAmountLpChange = useCallback((value: string) => {
+    setLpAmount(parseDecimalsInput(value));
+  }, []);
+
+  const handleDepositSuccess = useCallback(() => {
+    setTokenAAmount("");
+    setTokenBAmount("");
+    setLpAmount("");
+    refetchAllSplBalances();
+  }, [refetchAllSplBalances]);
+
   return (
     <div className="flex h-full flex-col justify-between">
       <div className="flex flex-col py-5">
         <DepositPanel
           tokenA={selectedPool.lpToken.token1}
           tokenB={selectedPool.lpToken.token2}
+          lpTokenMint={selectedPool.poolState.lpMint.toString()}
           walletBalances={splBalances}
           priceMap={prices}
           tokenAInput={tokenAAmount}
           tokenBInput={tokenBAmount}
-          onAmountAChange={setTokenAAmount}
-          onAmountBChange={setTokenBAmount}
+          onAmountAChange={handleAmountAChange}
+          onAmountBChange={handleAmountBChange}
+          onAmountLPChange={handleAmountLpChange}
         />
       </div>
       <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-5">
@@ -73,9 +100,19 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
             <p className="text-gray-200">${depositingInfo.estimatedYields}</p>
           </div>
         </div>
-        <Button className={cn(text.hsb1(), "text-green h-13 py-6")}>
-          Deposit
-        </Button>
+        <DepositCPMMButton
+          poolId={selectedPool.poolId}
+          tokenA={selectedPool.lpToken.token1}
+          tokenB={selectedPool.lpToken.token2}
+          tokenAAmount={tokenAAmount}
+          tokenBAmount={tokenBAmount}
+          lpTokenAmount={lpAmount}
+          poolState={selectedPool.poolState}
+          wallet={wallet}
+          walletBalances={splBalances}
+          doxxAmmProgram={doxxAmmProgram}
+          onSuccess={handleDepositSuccess}
+        />
       </div>
     </div>
   );
