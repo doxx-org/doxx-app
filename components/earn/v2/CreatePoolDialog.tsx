@@ -2,6 +2,7 @@ import { TokenProfile } from "@/lib/config/tokens";
 import { PoolStateWithConfig, SplBalance } from "@/lib/hooks/chain/types";
 import { CreateCPMMPoolDialog } from "../CreateCPMMPoolDialog";
 import { PoolType } from "./types";
+import { CreateCLMMPoolDialog } from "../CreateCLMMPoolDialog";
 
 interface CreatePoolDialogProps {
   isOpen: boolean;
@@ -32,6 +33,11 @@ export const CreatePoolDialog = ({
     );
   }
 
-  return "Create CLMM Pool";
-  // return <CLMMPoolDialog isOpen={isOpen} onOpenChange={onOpenChange} />;
+  return <CreateCLMMPoolDialog
+    isOpen={isOpen}
+    onOpenChange={onOpenChange}
+    splBalances={splBalances}
+    allTokenProfiles={allTokenProfiles}
+    poolsData={poolsData}
+  />
 };

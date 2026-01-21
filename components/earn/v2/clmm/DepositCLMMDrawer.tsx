@@ -11,16 +11,27 @@ import { cn } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
 import { CLMMDepositTab } from "./CLMMDepositTab";
 import { CLMMPositionsTab } from "./CLMMPositionsTab";
+import { PoolInfo } from "../PoolInfo";
 
 enum Tab {
-  CREATE = "Create",
+  DEPOSIT = "Deposit",
   POSITIONS = "Positions",
 }
 
-const tabs = [
-  { label: Tab.CREATE, component: <CLMMDepositTab /> },
-  { label: Tab.POSITIONS, component: <CLMMPositionsTab /> },
-];
+
+const PoolTabs = ({
+  activeTab,
+  selectedPool,
+}: {
+  activeTab: Tab;
+  selectedPool: Pool;
+}) => {
+  if (activeTab === Tab.DEPOSIT) {
+    return <CLMMDepositTab selectedPool={selectedPool} />;
+  }
+
+  return <CLMMPositionsTab />;
+};
 
 interface DepositCLMMDrawerProps {
   isOpen: boolean;
@@ -31,9 +42,9 @@ interface DepositCLMMDrawerProps {
 export const DepositCLMMDrawer = ({
   isOpen,
   onOpenChange,
-  selectedPool: _selectedPool,
+  selectedPool,
 }: DepositCLMMDrawerProps) => {
-  const [activeTab, setActiveTab] = useState(Tab.CREATE);
+  const [activeTab, setActiveTab] = useState(Tab.DEPOSIT);
 
   return (
     <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
@@ -43,33 +54,24 @@ export const DepositCLMMDrawer = ({
       >
         <DrawerHeader className="p-0 pl-4">
           <DrawerTitle>
-            <Tabs defaultValue={Tab.CREATE}>
+            <Tabs defaultValue={Tab.DEPOSIT}>
               <TabsList>
-                {tabs.map((tab) => (
+                {Object.values(Tab).map((tab) => (
                   <TabsTrigger
-                    key={tab.label}
-                    value={tab.label}
-                    className={cn(text.b3(), "px-2 py-4")}
-                    onClick={() => setActiveTab(tab.label)}
+                    key={tab}
+                    value={tab}
+                    className={cn(text.b3(), "px-2 py-4 leading-[18px]")}
+                    onClick={() => setActiveTab(tab)}
                   >
-                    {tab.label}
+                    {tab}
                   </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
-        {tabs.map((tab) => (
-          <div
-            className={cn(
-              "transition-all outline-none",
-              tab.label === activeTab ? "flex-1" : "hidden",
-            )}
-            key={tab.label}
-          >
-            {tab.component}
-          </div>
-        ))}
+        <PoolInfo {...selectedPool} />
+        <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
       </DrawerContent>
     </Drawer>
   );

@@ -42,59 +42,71 @@ export function PoolRow({ pool }: PoolRowProps) {
           </Avatar>
         </div>
         <div className="group flex flex-col gap-1">
-          <p className="text-left text-gray-200 transition-colors">
-            <Tooltip>
-              <TooltipTrigger>
-                <span className="cursor-help hover:text-gray-300">
-                  {lpToken.token1.symbol}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="p-3">
-                <div className="flex items-center justify-center gap-1">
-                  <Link
-                    href={`${getTokenExplorerUrl(lpToken.token1.address.toString())}`}
-                    className="hover:text-green"
-                  >
-                    {ellipseAddress(lpToken.token1.address.toString())}
-                  </Link>
-                  <CopyIcon
-                    className="active: cursor-pointer"
-                    onClick={() => {
-                      copyToClipboard(lpToken.token1.address.toString());
-                    }}
-                  />
-                </div>
-              </TooltipContent>
-            </Tooltip>{" "}
-            /{" "}
-            <Tooltip>
-              <TooltipTrigger>
-                <span className="cursor-help hover:text-gray-300">
-                  {lpToken.token2.symbol}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent className="p-3">
-                <div className="flex items-center justify-center gap-1">
-                  <Link
-                    href={`${getTokenExplorerUrl(lpToken.token2.address.toString())}`}
-                    className="hover:text-green"
-                  >
-                    {ellipseAddress(lpToken.token2.address.toString())}
-                  </Link>
-                  <CopyIcon
-                    className="active: cursor-pointer"
-                    onClick={() => {
-                      copyToClipboard(lpToken.token2.address.toString());
-                    }}
-                  />
-                </div>
-              </TooltipContent>
-            </Tooltip>
-          </p>
-          <div className="flex flex-row items-center gap-1">
-            <p className={cn(text.sb3(), "text-gray-400")}>
-              {`${normalizeBPSString(fee.toString())}% | ${ellipseAddress(poolId, 5)}`}
+          <div className="flex flex-row items-center gap-1 text-left text-gray-200 transition-colors">
+            <div className="flex flex-row items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger>
+                  <span className={cn(text.b3(), "cursor-help hover:text-gray-300")}>
+                    {lpToken.token1.symbol}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="p-3">
+                  <div className="flex items-center justify-center gap-1">
+                    <Link
+                      href={`${getTokenExplorerUrl(lpToken.token1.address.toString())}`}
+                      className="hover:text-green"
+                    >
+                      {ellipseAddress(lpToken.token1.address.toString())}
+                    </Link>
+                    <CopyIcon
+                      className="active: cursor-pointer"
+                      onClick={() => {
+                        copyToClipboard(lpToken.token1.address.toString());
+                      }}
+                    />
+                  </div>
+                </TooltipContent>
+              </Tooltip>{" "}
+              /{" "}
+              <Tooltip>
+                <TooltipTrigger>
+                  <span className={cn(text.b3(), "cursor-help hover:text-gray-300")}>
+                    {lpToken.token2.symbol}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="p-3">
+                  <div className="flex items-center justify-center gap-1">
+                    <Link
+                      href={`${getTokenExplorerUrl(lpToken.token2.address.toString())}`}
+                      className="hover:text-green"
+                    >
+                      {ellipseAddress(lpToken.token2.address.toString())}
+                    </Link>
+                    <CopyIcon
+                      className="active: cursor-pointer"
+                      onClick={() => {
+                        copyToClipboard(lpToken.token2.address.toString());
+                      }}
+                    />
+                  </div>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <span className={cn(text.sb4(), "bg-gray-900 rounded-full px-3 py-1.5 text-green")}>
+              {pool.poolType.toUpperCase()}
+            </span>
+          </div>
+          <div className="flex flex-row items-center gap-1 text-gray-400">
+            <p className={cn(text.sb3(), "text-green")}>
+              {`${normalizeBPSString(fee.toString())}%`}
             </p>
+            |
+            <Link
+              href={`${getTokenExplorerUrl(lpToken.token2.address.toString())}`}
+              className={cn(text.sb3(), "text-gray-400 hover:text-gray-300 items-center no-underline")}
+            >
+              {ellipseAddress(poolId, 5)}
+            </Link>
             <CopyIcon
               className="cursor-pointer"
               onClick={() => {

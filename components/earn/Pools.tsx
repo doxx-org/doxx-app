@@ -115,7 +115,7 @@ export function Pools() {
         poolState, // IMPORTANT: Include the actual pool state for deposit
         // TODO: fetch from pool state
         price: 0.301,
-        poolType: PoolType.CPMM, // Placeholder - fetch from pool state
+        poolType: Math.random() < 0.5 ? PoolType.CLMM : PoolType.CPMM, // Randomly assign pool type
       };
     });
   }, [poolsData, allTokenProfiles]);
