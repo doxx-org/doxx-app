@@ -29,7 +29,7 @@ const PoolTabs = ({
     return <CLMMDepositTab selectedPool={selectedPool} />;
   }
 
-  return <CLMMPositionsTab />;
+  return <CLMMPositionsTab selectedPool={selectedPool} />;
 };
 
 interface DepositCLMMDrawerProps {

@@ -134,12 +134,12 @@ export function LiquidityRangeChart({
     const clampedMin = clamp(min, domain.min, domain.max);
     const clampedMax = clamp(max, domain.min, domain.max);
 
-    if (Number.isFinite(clampedMin) && clampedMin !== min) {
-      onMinPriceChange(formatPriceInput(clampedMin));
-    }
-    if (Number.isFinite(clampedMax) && clampedMax !== max) {
-      onMaxPriceChange(formatPriceInput(clampedMax));
-    }
+    // if (Number.isFinite(clampedMin) && clampedMin !== min) {
+    //   onMinPriceChange(formatPriceInput(clampedMin));
+    // }
+    // if (Number.isFinite(clampedMax) && clampedMax !== max) {
+    //   onMaxPriceChange(formatPriceInput(clampedMax));
+    // }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [domain.min, domain.max, currentPrice]);
 
@@ -283,8 +283,8 @@ export function LiquidityRangeChart({
 
       setViewMin(nextViewMin);
       setViewMax(nextViewMax);
-      onMinPriceChange(formatPriceInput(clamp(nextSelMin, absMin, absMax)));
-      onMaxPriceChange(formatPriceInput(clamp(nextSelMax, absMin, absMax)));
+      // onMinPriceChange(formatPriceInput(clamp(nextSelMin, absMin, absMax)));
+      // onMaxPriceChange(formatPriceInput(clamp(nextSelMax, absMin, absMax)));
     };
 
     update(e.clientX);
@@ -292,6 +292,55 @@ export function LiquidityRangeChart({
     const onMove = (ev: PointerEvent) => update(ev.clientX);
     const onUp = () => {
       setIsPanning(false);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp, { once: true });
+    window.addEventListener("pointercancel", onUp, { once: true });
+  };
+
+  // Drag the green overlay to move the selected range (min/max) only.
+  const startSelectionPan = (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const el = containerRef.current;
+    if (!el) return;
+
+    try {
+      (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+
+    const rect = el.getBoundingClientRect();
+    const startX = e.clientX;
+
+    const rawMin = parseNumberSafe(minPrice) ?? currentPrice * 0.95;
+    const rawMax = parseNumberSafe(maxPrice) ?? currentPrice * 1.05;
+    const startMin = Math.min(rawMin, rawMax);
+    const startMax = Math.max(rawMin, rawMax);
+    const width = Math.max(0, startMax - startMin);
+
+    const update = (clientX: number) => {
+      if (pointersRef.current.size >= 2) return;
+      const dx = clientX - startX;
+      const dp = rect.width === 0 ? 0 : dx / rect.width;
+      const deltaPrice = dp * (domain.max - domain.min);
+
+      const nextMin = clamp(startMin + deltaPrice, absMin, absMax - width);
+      const nextMax = nextMin + width;
+
+      onMinPriceChange(formatPriceInput(nextMin));
+      onMaxPriceChange(formatPriceInput(nextMax));
+    };
+
+    update(e.clientX);
+
+    const onMove = (ev: PointerEvent) => update(ev.clientX);
+    const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -402,6 +451,32 @@ export function LiquidityRangeChart({
     onMaxPriceChange(formatPriceInput(clamp(nextSelMax, absMin, absMax)));
   };
 
+  // Pan ONLY the viewport (chart view) without changing selected min/max.
+  const panViewByDeltaPixels = (deltaPixels: number) => {
+    const el = containerRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const dp = rect.width === 0 ? 0 : deltaPixels / rect.width;
+    const deltaPrice = dp * (domain.max - domain.min);
+
+    let nextViewMin = domain.min + deltaPrice;
+    let nextViewMax = domain.max + deltaPrice;
+
+    if (nextViewMin < absMin) {
+      const shift = absMin - nextViewMin;
+      nextViewMin += shift;
+      nextViewMax += shift;
+    }
+    if (nextViewMax > absMax) {
+      const shift = absMax - nextViewMax;
+      nextViewMin += shift;
+      nextViewMax += shift;
+    }
+
+    setViewMin(nextViewMin);
+    setViewMax(nextViewMax);
+  };
+
   const zoomByWheel = (deltaY: number) => {
     // Trackpad pinch typically arrives as wheel + ctrlKey on macOS.
     // deltaY > 0 => zoom out (show more)
@@ -420,13 +495,24 @@ export function LiquidityRangeChart({
       ev.preventDefault();
       ev.stopPropagation();
 
+      // Trackpad pinch (macOS) usually comes through as ctrl+wheel.
       if (ev.ctrlKey) {
         zoomByWheel(ev.deltaY);
         return;
       }
 
-      const delta = ev.deltaX !== 0 ? ev.deltaX : ev.deltaY;
-      panByDeltaPixels(delta);
+      // Default behavior:
+      // - vertical scroll => zoom in/out
+      // - horizontal scroll => pan left/right
+      const absX = Math.abs(ev.deltaX);
+      const absY = Math.abs(ev.deltaY);
+
+      if (absY >= absX) {
+        zoomByWheel(ev.deltaY);
+      } else {
+        // Horizontal scroll should move the view only (not prices).
+        panViewByDeltaPixels(ev.deltaX);
+      }
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -480,11 +566,12 @@ export function LiquidityRangeChart({
 
         {/* Range overlay */}
         <div
-          className="border-green bg-green/15 pointer-events-none absolute top-6 bottom-7 border-x-[1.5]"
+          className="border-green bg-green/15 absolute top-6 bottom-7 border-x-[1.5] cursor-grab active:cursor-grabbing"
           style={{
             left: `${leftPct * 100}%`,
             width: `${Math.max(0, (rightPct - leftPct) * 100)}%`,
           }}
+          onPointerDown={startSelectionPan}
         />
 
         {/* Current price marker */}
@@ -546,7 +633,7 @@ export function LiquidityRangeChart({
                 className={cn(
                   text.sb3(),
                   "text-green pointer-events-none absolute top-1/2 -translate-y-1/2",
-                  minFlip ? "translate-x-0 pl-2" : "-translate-x-full pr-2",
+                  minFlip ? "translate-x-0 pl-4" : "-translate-x-full pr-4",
                 )}
                 style={{ left: `${leftPct * 100}%` }}
               >
@@ -556,7 +643,7 @@ export function LiquidityRangeChart({
                 className={cn(
                   text.sb3(),
                   "text-green pointer-events-none absolute top-1/2 -translate-y-1/2",
-                  maxFlip ? "-translate-x-full pr-2" : "translate-x-0 pl-2",
+                  maxFlip ? "-translate-x-full pr-4" : "translate-x-0 pl-4",
                 )}
                 style={{ left: `${rightPct * 100}%` }}
               >
