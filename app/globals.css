@@ -47,6 +47,7 @@
   --color-green: var(--color-green);
   --color-red: var(--color-red);
   --color-red-light: var(--color-red-light);
+  --color-orange: var(--color-orange);
   --color-black-900: var(--color-black-900);
   --color-black-800: var(--color-black-800);
   --color-black-700: var(--color-black-700);
@@ -122,9 +123,10 @@
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
 
-  --color-green: #70E57B;
+  --color-green: #70e57b;
   --color-red: #ff1744;
   --color-red-light: #ef4e4e;
+  --color-orange: #ff9466;
   --color-black-900: #000000;
   --color-black-800: #0a0a0a;
   --color-black-700: #141414;

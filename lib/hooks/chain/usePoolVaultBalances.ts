@@ -1,6 +1,6 @@
-import { Connection, PublicKey } from "@solana/web3.js";
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { getAccount } from "@solana/spl-token";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
 interface VaultBalances {
   token0Balance: bigint;
@@ -16,7 +16,11 @@ export function usePoolVaultBalances(
   token1Vault: PublicKey | undefined,
 ): UseQueryResult<VaultBalances | undefined, Error> {
   return useQuery({
-    queryKey: ["poolVaultBalances", token0Vault?.toBase58(), token1Vault?.toBase58()],
+    queryKey: [
+      "poolVaultBalances",
+      token0Vault?.toBase58(),
+      token1Vault?.toBase58(),
+    ],
     queryFn: async (): Promise<VaultBalances | undefined> => {
       if (!connection || !token0Vault || !token1Vault) return undefined;
 
@@ -40,4 +44,3 @@ export function usePoolVaultBalances(
     staleTime: 5000,
   });
 }
-

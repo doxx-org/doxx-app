@@ -20,9 +20,7 @@ if (!parsed.success) {
       format,
     );
   }
-  throw new Error(
-    "Invalid api environment variables. See logs for details.",
-  );
+  throw new Error("Invalid api environment variables. See logs for details.");
 }
 
 export const apiEnvConfig = parsed.data;

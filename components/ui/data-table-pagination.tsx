@@ -16,7 +16,7 @@ export function DataTablePagination<TData>({
         onClick={() => table.previousPage()}
         disabled={!table.getCanPreviousPage()}
         className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 bg-black-700 text-gray-400 transition-colors hover:bg-gray-800",
+          "bg-black-700 flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 text-gray-400 transition-colors hover:bg-gray-800",
           !table.getCanPreviousPage() && "cursor-not-allowed opacity-50",
         )}
       >
@@ -29,7 +29,7 @@ export function DataTablePagination<TData>({
         onClick={() => table.nextPage()}
         disabled={!table.getCanNextPage()}
         className={cn(
-          "flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 bg-black-700 text-gray-400 transition-colors hover:bg-gray-800",
+          "bg-black-700 flex h-8 w-8 items-center justify-center rounded-md border border-gray-700 text-gray-400 transition-colors hover:bg-gray-800",
           !table.getCanNextPage() && "cursor-not-allowed opacity-50",
         )}
       >

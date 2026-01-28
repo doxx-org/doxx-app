@@ -6,9 +6,9 @@ import { cn } from "@/lib/utils";
 import { DepositLPPanel } from "./DepositLPPanel";
 
 interface DepositPanelProps {
-  tokenA: TokenProfile;
-  tokenB: TokenProfile;
-  lpTokenMint: string;
+  tokenA: TokenProfile | null;
+  tokenB: TokenProfile | null;
+  lpTokenMint: string | null;
   walletBalances: BalanceMapByMint | undefined;
   priceMap: PriceMap | undefined;
   tokenAInput: string;
@@ -16,6 +16,8 @@ interface DepositPanelProps {
   onAmountAChange: (value: string) => void;
   onAmountBChange: (value: string) => void;
   onAmountLPChange: (value: string) => void;
+  className?: string;
+  ratioClassName?: string;
 }
 
 export const DepositPanel = ({
@@ -29,9 +31,11 @@ export const DepositPanel = ({
   onAmountAChange,
   onAmountBChange,
   onAmountLPChange,
+  className,
+  ratioClassName,
 }: DepositPanelProps) => {
   return (
-    <div className="flex flex-col gap-4 px-4">
+    <div className={cn("flex flex-col gap-4 px-4", className)}>
       <p className={cn(text.b4(), "leading-none text-white")}>Deposit Amount</p>
       {/* LP Token depositing panel */}
       <DepositLPPanel
@@ -48,7 +52,11 @@ export const DepositPanel = ({
       />
       {/* Deposit ratio panel */}
       <div
-        className={cn(text.sb3(), "flex w-full justify-between leading-none")}
+        className={cn(
+          text.sb3(),
+          "flex w-full justify-between leading-none",
+          ratioClassName,
+        )}
       >
         <p className="py-1.75 text-gray-500">Deposit Ratio</p>
         <div className="flex gap-1">

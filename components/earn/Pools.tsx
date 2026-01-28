@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BN } from "@coral-xyz/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import {
   RawTokenProfile,
   knownTokenProfiles,
@@ -19,14 +21,48 @@ import { Pool, createColumns } from "./PoolColumn";
 import { DepositPoolDrawer } from "./v2/DepositPoolDrawer";
 import { PoolType } from "./v2/types";
 
+const mockSelectedPool: Pool = {
+  poolId: "123",
+  fee: new BN(100),
+  lpToken: {
+    token1: {
+      address: "123",
+      name: "Token 1",
+      symbol: "T1",
+      decimals: 10,
+      displayDecimals: 10,
+    },
+    token2: {
+      address: "123",
+      name: "Token 2",
+      symbol: "T2",
+      decimals: 10,
+      displayDecimals: 10,
+    },
+  },
+  apr: 10,
+  tvl: 1000,
+  dailyVol: 1000,
+  dailyVolperTvl: 10,
+  reward24h: 1000,
+  poolState: {
+    lpMint: new PublicKey("HLaxJ13C7m6fKwrfnnzpmWXjdAH3ZL9sGR6mxZMA4tdk"),
+    token0Mint: new PublicKey("DyyHbfkCSWcHjaB8GTVCqkVFC3NpxgF9wXsEgvNLSSn1"),
+    token1Mint: new PublicKey("5mvoZPmbP7j4RQKmEwF6B94aTKoihEKo1LpVeimzexDh"),
+    // token0Vault: new PublicKey("123"),
+    // token1Vault: new PublicKey("123"),
+    // token0Program: new PublicKey("123"),
+    // token1Program: new PublicKey("123"),
+    // observationKey: new PublicKey("123"),
+    authBump: 0,
+  } as any,
+  price: 100,
+  poolType: PoolType.CLMM,
+};
+
 export function Pools() {
   const [searchValue, setSearchValue] = useState("");
-  const [_isDepositDialogOpen, _setIsDepositDialogOpen] = useState(false);
   const [selectedPool, setSelectedPool] = useState<Pool | null>(null);
-  // const [selectedPool, setSelectedPool] = useState<PoolState | null>(null);
-  // const [selectedPoolAddress, setSelectedPoolAddress] = useState<string | null>(
-  //   null,
-  // );
   const [isPoolDrawerOpen, setIsPoolDrawerOpen] = useState(false);
 
   // Hooks

@@ -9,15 +9,14 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
+import { PoolInfo } from "../PoolInfo";
 import { CLMMDepositTab } from "./CLMMDepositTab";
 import { CLMMPositionsTab } from "./CLMMPositionsTab";
-import { PoolInfo } from "../PoolInfo";
 
 enum Tab {
   DEPOSIT = "Deposit",
   POSITIONS = "Positions",
 }
-
 
 const PoolTabs = ({
   activeTab,
@@ -50,9 +49,9 @@ export const DepositCLMMDrawer = ({
     <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
       <DrawerContent
         enableOverlay={false}
-        className="bg-black-900 !top-14 !bottom-12.25 !max-w-135.75 !border-l-2 border-gray-800"
+        className="bg-black-900 !top-14 !bottom-12.25 !max-w-135.75 overflow-hidden !border-l-2 border-gray-800"
       >
-        <DrawerHeader className="p-0 pl-4">
+        <DrawerHeader className="shrink-0 p-0 pl-4">
           <DrawerTitle>
             <Tabs defaultValue={Tab.DEPOSIT}>
               <TabsList>
@@ -70,8 +69,16 @@ export const DepositCLMMDrawer = ({
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
-        <PoolInfo {...selectedPool} />
-        <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
+        {/* <div className="shrink-0">
+          <PoolInfo {...selectedPool} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
+        </div> */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <PoolInfo {...selectedPool} />
+          <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
+        </div>
       </DrawerContent>
     </Drawer>
   );

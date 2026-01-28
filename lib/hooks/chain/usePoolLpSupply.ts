@@ -1,6 +1,6 @@
-import { Connection, PublicKey } from "@solana/web3.js";
-import { useQuery, UseQueryResult } from "@tanstack/react-query";
 import { getMint } from "@solana/spl-token";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { UseQueryResult, useQuery } from "@tanstack/react-query";
 
 /**
  * Fetch the total supply of LP tokens for a pool
@@ -27,4 +27,3 @@ export function usePoolLpSupply(
     staleTime: 5000,
   });
 }
-

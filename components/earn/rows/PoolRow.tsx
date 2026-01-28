@@ -46,7 +46,9 @@ export function PoolRow({ pool }: PoolRowProps) {
             <div className="flex flex-row items-center gap-1">
               <Tooltip>
                 <TooltipTrigger>
-                  <span className={cn(text.b3(), "cursor-help hover:text-gray-300")}>
+                  <span
+                    className={cn(text.b3(), "cursor-help hover:text-gray-300")}
+                  >
                     {lpToken.token1.symbol}
                   </span>
                 </TooltipTrigger>
@@ -70,7 +72,9 @@ export function PoolRow({ pool }: PoolRowProps) {
               /{" "}
               <Tooltip>
                 <TooltipTrigger>
-                  <span className={cn(text.b3(), "cursor-help hover:text-gray-300")}>
+                  <span
+                    className={cn(text.b3(), "cursor-help hover:text-gray-300")}
+                  >
                     {lpToken.token2.symbol}
                   </span>
                 </TooltipTrigger>
@@ -92,7 +96,12 @@ export function PoolRow({ pool }: PoolRowProps) {
                 </TooltipContent>
               </Tooltip>
             </div>
-            <span className={cn(text.sb4(), "bg-gray-900 rounded-full px-3 py-1.5 text-green")}>
+            <span
+              className={cn(
+                text.sb4(),
+                "text-green rounded-full bg-gray-900 px-3 py-1.5",
+              )}
+            >
               {pool.poolType.toUpperCase()}
             </span>
           </div>
@@ -103,7 +112,10 @@ export function PoolRow({ pool }: PoolRowProps) {
             |
             <Link
               href={`${getTokenExplorerUrl(lpToken.token2.address.toString())}`}
-              className={cn(text.sb3(), "text-gray-400 hover:text-gray-300 items-center no-underline")}
+              className={cn(
+                text.sb3(),
+                "items-center text-gray-400 no-underline hover:text-gray-300",
+              )}
             >
               {ellipseAddress(poolId, 5)}
             </Link>

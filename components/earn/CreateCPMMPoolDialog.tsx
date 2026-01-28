@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { BN } from "bn.js";
 import { TokenProfile } from "@/lib/config/tokens";
 import { BalanceMapByMint, PoolStateWithConfig } from "@/lib/hooks/chain/types";
 import { usePrices } from "@/lib/hooks/usePrices";
@@ -15,7 +16,7 @@ import {
   DialogTitle,
 } from "../ui/dialog";
 import { CreatePoolButton } from "./CreatePoolButton";
-import { FeeTierSelection } from "./FeeTierSelection";
+import { FEE_TIERS, FeeTierSelection } from "./FeeTierSelection";
 import { DepositLPPanel } from "./v2/DepositLPPanel";
 
 interface CreateCPMMPoolDialogProps {
@@ -105,105 +106,131 @@ export const CreateCPMMPoolDialog = ({
     setLpTokenMint(poolData.poolState.lpMint.toString());
   }, [poolsData, tokenA, tokenB]);
 
+  const isPoolExists = useMemo(() => {
+    if (!tokenA || !tokenB || !poolsData) {
+      return undefined;
+    }
+
+    return !!poolsData?.find(
+      (c) =>
+        ((c.poolState.token0Mint.toString() === tokenA.address &&
+          c.poolState.token1Mint.toString() === tokenB.address) ||
+          (c.poolState.token1Mint.toString() === tokenA.address &&
+            c.poolState.token0Mint.toString() === tokenB.address)) &&
+        c.ammConfig.tradeFeeRate.eq(
+          new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
+        ),
+    );
+  }, [poolsData, tokenA, tokenB, selectedFeeIndex]);
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onOpenChange}>
-        <DialogContent className="flex min-h-[480px] w-[640px] !max-w-[576px] flex-col gap-0 overflow-hidden">
+        <DialogContent className="flex max-h-[calc(100vh-2rem)] min-h-[480px] w-[640px] !max-w-[576px] flex-col gap-0 overflow-hidden">
           <DialogHeader className="h-fit border-b border-gray-800 py-6">
             <DialogTitle className={cn(text.b2(), "leading-none")}>
               Create Market
             </DialogTitle>
           </DialogHeader>
-          <DialogBody className="flex flex-1 flex-col justify-between gap-4 p-3">
-            <div className="flex flex-col gap-5.5">
-              <div className="mt-2 flex flex-col gap-3">
-                <span
-                  className={cn(text.b4(), "px-3 leading-none text-gray-400")}
-                >
-                  Constant Factor AMM
-                </span>
-                <span className="w-full border-b border-gray-800" />
-                <span
-                  className={cn(text.sb3(), "px-3 leading-none text-gray-600")}
-                >
-                  Constant product pools follow the distribution XY=K.
-                </span>
+          <DialogBody className="flex flex-1 flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-3">
+              <div className="flex flex-col gap-5.5">
+                <div className="mt-2 flex flex-col gap-3">
+                  <span
+                    className={cn(text.b4(), "px-3 leading-none text-gray-400")}
+                  >
+                    Constant Factor AMM
+                  </span>
+                  <span className="w-full border-b border-gray-800" />
+                  <span
+                    className={cn(
+                      text.sb3(),
+                      "px-3 leading-none text-gray-600",
+                    )}
+                  >
+                    Constant product pools follow the distribution XY=K.
+                  </span>
+                </div>
+                {/* Token A and Token B Selection */}
+                <DepositLPPanel
+                  tokenA={tokenA}
+                  tokenB={tokenB}
+                  lpTokenMint={lpTokenMint}
+                  walletBalances={splBalances}
+                  priceMap={prices}
+                  tokenAInput={amountA}
+                  tokenBInput={amountB}
+                  onAmountAChange={(value) =>
+                    handleAmountChange(value, setAmountA)
+                  }
+                  onAmountBChange={(value) =>
+                    handleAmountChange(value, setAmountB)
+                  }
+                  onTokenASelect={() =>
+                    handleOpenTokenSelector(SelectTokenType.TOKEN_A)
+                  }
+                  onTokenBSelect={() =>
+                    handleOpenTokenSelector(SelectTokenType.TOKEN_B)
+                  }
+                  formatter={{
+                    tokenA: {
+                      input: {
+                        abbreviate: { apply: false },
+                      },
+                      balance: {
+                        abbreviate: { apply: false },
+                      },
+                      usd: {
+                        abbreviate: { apply: false },
+                      },
+                    },
+                    tokenB: {
+                      input: {
+                        abbreviate: { apply: false },
+                      },
+                      balance: {
+                        abbreviate: { apply: false },
+                      },
+                      usd: {
+                        abbreviate: { apply: false },
+                      },
+                    },
+                    lpToken: {
+                      input: {
+                        abbreviate: { apply: false },
+                      },
+                      balance: {
+                        abbreviate: { apply: false },
+                      },
+                      usd: {
+                        abbreviate: { apply: false },
+                      },
+                    },
+                  }}
+                />
+                <FeeTierSelection
+                  selectedFeeIndex={selectedFeeIndex}
+                  onSelectFeeIndex={setSelectedFeeIndex}
+                />
               </div>
-              {/* Token A and Token B Selection */}
-              <DepositLPPanel
+            </div>
+
+            <div className="border-t border-gray-800 p-3">
+              <CreatePoolButton
                 tokenA={tokenA}
                 tokenB={tokenB}
-                lpTokenMint={lpTokenMint}
-                walletBalances={splBalances}
-                priceMap={prices}
-                tokenAInput={amountA}
-                tokenBInput={amountB}
-                onAmountAChange={(value) =>
-                  handleAmountChange(value, setAmountA)
-                }
-                onAmountBChange={(value) =>
-                  handleAmountChange(value, setAmountB)
-                }
-                onTokenASelect={() =>
-                  handleOpenTokenSelector(SelectTokenType.TOKEN_A)
-                }
-                onTokenBSelect={() =>
-                  handleOpenTokenSelector(SelectTokenType.TOKEN_B)
-                }
-                formatter={{
-                  tokenA: {
-                    input: {
-                      abbreviate: { apply: false },
-                    },
-                    balance: {
-                      abbreviate: { apply: false },
-                    },
-                    usd: {
-                      abbreviate: { apply: false },
-                    },
-                  },
-                  tokenB: {
-                    input: {
-                      abbreviate: { apply: false },
-                    },
-                    balance: {
-                      abbreviate: { apply: false },
-                    },
-                    usd: {
-                      abbreviate: { apply: false },
-                    },
-                  },
-                  lpToken: {
-                    input: {
-                      abbreviate: { apply: false },
-                    },
-                    balance: {
-                      abbreviate: { apply: false },
-                    },
-                    usd: {
-                      abbreviate: { apply: false },
-                    },
-                  },
-                }}
-              />
-              <FeeTierSelection
+                amountA={amountA}
+                amountB={amountB}
+                onSelectTokenA={setTokenA}
+                onSelectTokenB={setTokenB}
+                onAmountChangeA={setAmountA}
+                onAmountChangeB={setAmountB}
+                onOpenChange={onOpenChange}
                 selectedFeeIndex={selectedFeeIndex}
-                onSelectFeeIndex={setSelectedFeeIndex}
+                poolsData={poolsData}
+                isPoolExists={isPoolExists}
               />
             </div>
-            <CreatePoolButton
-              tokenA={tokenA}
-              tokenB={tokenB}
-              amountA={amountA}
-              amountB={amountB}
-              onSelectTokenA={setTokenA}
-              onSelectTokenB={setTokenB}
-              onAmountChangeA={setAmountA}
-              onAmountChangeB={setAmountB}
-              onOpenChange={onOpenChange}
-              selectedFeeIndex={selectedFeeIndex}
-              poolsData={poolsData}
-            />
           </DialogBody>
         </DialogContent>
       </Dialog>

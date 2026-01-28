@@ -31,6 +31,7 @@ interface CreatePoolButtonProps {
   onOpenChange: (open: boolean) => void;
   selectedFeeIndex: number;
   poolsData: PoolStateWithConfig[] | undefined;
+  isPoolExists: boolean | undefined;
 }
 
 export const CreatePoolButton = ({
@@ -45,6 +46,7 @@ export const CreatePoolButton = ({
   onOpenChange,
   selectedFeeIndex,
   poolsData,
+  isPoolExists,
 }: CreatePoolButtonProps) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -174,40 +176,42 @@ export const CreatePoolButton = ({
       tokenB === null ||
       amountA === "" ||
       amountB === "" ||
-      !poolsData
+      !poolsData ||
+      isPoolExists ||
+      isPoolExists === undefined
     ) {
-      return ["Create Pool", true, undefined];
+      return ["Create", true, undefined];
     }
 
     if (isCreatingPool) {
-      return ["Creating Pool...", true, undefined];
+      return ["Creating...", true, undefined];
     }
 
-    const poolData = poolsData.find((c) => {
-      console.log(
-        "🚀 ~ c.ammConfig.tradeFeeRate:",
-        c.ammConfig.tradeFeeRate.toString(),
-      );
-      return (
-        ((c.poolState.token0Mint.toString() === tokenA.address &&
-          c.poolState.token1Mint.toString() === tokenB.address) ||
-          (c.poolState.token1Mint.toString() === tokenA.address &&
-            c.poolState.token0Mint.toString() === tokenB.address)) &&
-        c.ammConfig.tradeFeeRate.eq(
-          new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
-        )
-      );
-    });
+    // const poolData = poolsData.find((c) => {
+    //   console.log(
+    //     "🚀 ~ c.ammConfig.tradeFeeRate:",
+    //     c.ammConfig.tradeFeeRate.toString(),
+    //   );
+    //   return (
+    //     ((c.poolState.token0Mint.toString() === tokenA.address &&
+    //       c.poolState.token1Mint.toString() === tokenB.address) ||
+    //       (c.poolState.token1Mint.toString() === tokenA.address &&
+    //         c.poolState.token0Mint.toString() === tokenB.address)) &&
+    //     c.ammConfig.tradeFeeRate.eq(
+    //       new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
+    //     )
+    //   );
+    // });
 
-    if (poolData) {
-      return ["Pool already exists", true, undefined];
-    }
+    // if (poolData) {
+    //   return ["Pool already exists", true, undefined];
+    // }
 
     // if (createPoolError) {
     //   return ["Error creating Pool", true, undefined];
     // }
 
-    return ["Create Pool", false, handleCreatePool];
+    return ["Create", false, handleCreatePool];
   }, [
     tokenA,
     tokenB,

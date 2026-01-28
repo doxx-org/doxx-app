@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { knownTokenProfiles } from "@/lib/config/tokens";
 import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
@@ -10,12 +10,18 @@ import { text } from "@/lib/text";
 import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
 import { Pool } from "../../PoolColumn";
 import { DepositPanel } from "../DepositPanel";
+import { PriceMode } from "../types";
+import { CLMMPriceRange } from "./CLMMPriceRange";
 import { DepositCLMMButton } from "./DepositCLMMButton";
+import { DepositRange } from "./DepositRange";
 
 export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
   const [lpAmount, setLpAmount] = useState("");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
+  const [priceMode, setPriceMode] = useState<PriceMode>(PriceMode.FULL);
 
   // Hooks
   const { connection } = useConnection();
@@ -64,7 +70,16 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
   }, [refetchAllSplBalances]);
 
   return (
-    <div className="flex h-full flex-col justify-between">
+    <div className="flex min-h-full flex-col">
+      <DepositRange
+        priceMode={priceMode}
+        setPriceMode={setPriceMode}
+        currentPrice={selectedPool.price}
+        minPrice={minPrice}
+        maxPrice={maxPrice}
+        handleMinPriceChange={setMinPrice}
+        handleMaxPriceChange={setMaxPrice}
+      />
       <div className="flex flex-col py-5">
         <DepositPanel
           tokenA={selectedPool.lpToken.token1}
@@ -79,7 +94,7 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           onAmountLPChange={handleAmountLpChange}
         />
       </div>
-      <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-5">
+      <div className="mt-auto flex flex-col gap-5 border-t border-dashed border-gray-800 px-4 py-5">
         <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
           <div className="flex justify-between">
             <p className="text-gray-500">Total Value</p>
