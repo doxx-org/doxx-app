@@ -1,4 +1,4 @@
-// useDoxxSwapV2.ts
+// useDoxxCpSwapV2.ts
 import { useCallback, useState } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
 import {
@@ -7,8 +7,8 @@ import {
 } from "@solana/spl-token";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import { PoolState } from "@/lib/hooks/chain/types";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { CPMMPoolState } from "@/lib/hooks/chain/types";
+import { DoxxCpmmIdl } from "@/lib/idl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   PROVIDER_UNAVAILABLE_ERROR,
@@ -29,8 +29,8 @@ type SwapBaseOutputParams = {
   amountOut: BN; // human
 };
 
-export function useDoxxSwap(
-  program: Program<DoxxAmm> | undefined,
+export function useDoxxCpSwap(
+  program: Program<DoxxCpmmIdl> | undefined,
   wallet: AnchorWallet | undefined,
   onSuccess: (tx?: string) => void,
   onError: (e: Error) => void,
@@ -45,7 +45,7 @@ export function useDoxxSwap(
       params,
       kind, // "in" | "out"
     }: {
-      pool: PoolState;
+      pool: CPMMPoolState;
       params: SwapBaseInputParams | SwapBaseOutputParams;
       kind: "in" | "out";
     }) => {
@@ -193,13 +193,13 @@ export function useDoxxSwap(
   );
 
   const swapBaseInput = useCallback(
-    (pool: PoolState, params: SwapBaseInputParams) =>
+    (pool: CPMMPoolState, params: SwapBaseInputParams) =>
       buildAndSendSwap({ pool, params, kind: "in" }),
     [buildAndSendSwap],
   );
 
   const swapBaseOutput = useCallback(
-    (pool: PoolState, params: SwapBaseOutputParams) =>
+    (pool: CPMMPoolState, params: SwapBaseOutputParams) =>
       buildAndSendSwap({ pool, params, kind: "out" }),
     [buildAndSendSwap],
   );

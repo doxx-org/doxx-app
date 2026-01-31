@@ -1,16 +1,15 @@
 import { useMemo } from "react";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
-import doxxIdl from "@/lib/idl/doxx_amm.json";
+import { DoxxCpmmIdl, doxxCpmmIdl } from "@/lib/idl";
 
-export function useDoxxAmmProgram({
+export function useDoxxCpmmProgram({
   provider,
 }: {
   provider: AnchorProvider | undefined;
 }) {
   const program = useMemo(() => {
     if (!provider) return undefined;
-    return new Program<DoxxAmm>(doxxIdl, provider);
+    return new Program<DoxxCpmmIdl>(doxxCpmmIdl, provider);
   }, [provider]);
 
   return program;

@@ -52,7 +52,7 @@ export const DepositRange = ({
           group: "w-full justify-between !rounded-xl bg-gray-800",
           item: cn(
             text.b3(),
-            "hover:bg-gray-750 h-9.5 flex-1 !rounded-lg px-0 py-3 text-center",
+            "hover:bg-gray-750 h-9.5 flex-1 !rounded-lg px-0 py-3 text-center text-gray-500",
           ),
         }}
       />

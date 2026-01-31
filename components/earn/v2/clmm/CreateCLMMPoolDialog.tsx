@@ -1,33 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { BN } from "@coral-xyz/anchor";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, PoolStateWithConfig } from "@/lib/hooks/chain/types";
+import {
+  BalanceMapByMint,
+  CLMMPoolStateWithConfig,
+} from "@/lib/hooks/chain/types";
 import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
 import { cn, parseDecimalsInput } from "@/lib/utils";
-import { TokenLabel } from "../TokenLabel";
-import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
+import { TokenLabel } from "../../../TokenLabel";
+import { TokenSelectorDialog } from "../../../swap/TokenSelectorDialog";
 import {
   Dialog,
   DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
-import { CreatePoolButton } from "./CreatePoolButton";
-import { FEE_TIERS, FeeTierSelection } from "./FeeTierSelection";
-import { DepositPanel } from "./v2/DepositPanel";
-import { CLMMPriceRange } from "./v2/clmm/CLMMPriceRange";
-import { PriceMode } from "./v2/types";
+} from "../../../ui/dialog";
+import { FEE_TIERS, FeeTierSelection } from "../../FeeTierSelection";
+import { CreatePoolButton } from "../cpmm/CreateCPMMPoolButton";
+import { PriceMode } from "../types";
+import { CLMMPriceRange } from "./CLMMPriceRange";
+import { CreateCLMMPoolButton } from "./CreateCLMMPoolButton";
+import { DepositCLMMPanel } from "./DepositCLMMPanel";
 
 interface CreateCLMMPoolDialogProps {
   isOpen: boolean;
   splBalances: BalanceMapByMint | undefined;
   allTokenProfiles: TokenProfile[];
-  poolsData: PoolStateWithConfig[] | undefined;
+  poolsData: CLMMPoolStateWithConfig[] | undefined;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -45,10 +49,8 @@ export const CreateCLMMPoolDialog = ({
 }: CreateCLMMPoolDialogProps) => {
   const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
-  const [lpTokenMint, setLpTokenMint] = useState<string | null>(null);
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
-  const [amountLp, setAmountLp] = useState("");
   const [initialPrice, setInitialPrice] = useState("");
   const [priceMode, setPriceMode] = useState<PriceMode>(PriceMode.FULL);
   const [minPrice, setMinPrice] = useState("");
@@ -99,28 +101,6 @@ export const CreateCLMMPoolDialog = ({
     setIsTokenSelectorOpen(true);
   };
 
-  useEffect(() => {
-    if (!poolsData || !tokenA || !tokenB || poolsData.length === 0) {
-      setLpTokenMint("");
-      return;
-    }
-
-    const poolData = poolsData.find(
-      (c) =>
-        (c.poolState.token0Mint.toString() === tokenA.address &&
-          c.poolState.token1Mint.toString() === tokenB.address) ||
-        (c.poolState.token1Mint.toString() === tokenA.address &&
-          c.poolState.token0Mint.toString() === tokenB.address),
-    );
-
-    if (!poolData) {
-      setLpTokenMint("");
-      return;
-    }
-
-    setLpTokenMint(poolData.poolState.lpMint.toString());
-  }, [poolsData, tokenA, tokenB]);
-
   const isPoolExists = useMemo(() => {
     if (!tokenA || !tokenB || !poolsData) {
       return undefined;
@@ -128,11 +108,11 @@ export const CreateCLMMPoolDialog = ({
 
     return !!poolsData?.find(
       (c) =>
-        ((c.poolState.token0Mint.toString() === tokenA.address &&
-          c.poolState.token1Mint.toString() === tokenB.address) ||
-          (c.poolState.token1Mint.toString() === tokenA.address &&
-            c.poolState.token0Mint.toString() === tokenB.address)) &&
-        c.ammConfig.tradeFeeRate.eq(
+        ((c.poolState.tokenMint0.toString() === tokenA.address &&
+          c.poolState.tokenMint1.toString() === tokenB.address) ||
+          (c.poolState.tokenMint1.toString() === tokenA.address &&
+            c.poolState.tokenMint0.toString() === tokenB.address)) &&
+        new BN(c.ammConfig.tradeFeeRate.toString()).eq(
           new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
         ),
     );
@@ -286,17 +266,15 @@ export const CreateCLMMPoolDialog = ({
                     />
                   )}
                   <div className="flex flex-col gap-4">
-                    <DepositPanel
+                    <DepositCLMMPanel
                       tokenA={tokenA}
                       tokenB={tokenB}
-                      lpTokenMint={lpTokenMint}
                       walletBalances={splBalances}
                       priceMap={prices}
                       tokenAInput={amountA}
                       tokenBInput={amountB}
                       onAmountAChange={setAmountA}
                       onAmountBChange={setAmountB}
-                      onAmountLPChange={setAmountLp}
                       className="p-0"
                       ratioClassName="px-3"
                     />
@@ -307,7 +285,7 @@ export const CreateCLMMPoolDialog = ({
             </div>
 
             <div className="p-3">
-              <CreatePoolButton
+              <CreateCLMMPoolButton
                 tokenA={tokenA}
                 tokenB={tokenB}
                 amountA={amountA}
@@ -318,7 +296,6 @@ export const CreateCLMMPoolDialog = ({
                 onAmountChangeB={setAmountB}
                 onOpenChange={onOpenChange}
                 selectedFeeIndex={selectedFeeIndex}
-                poolsData={poolsData}
                 isPoolExists={isPoolExists}
               />
             </div>

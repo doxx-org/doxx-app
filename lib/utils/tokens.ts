@@ -1,6 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { RawTokenProfile, knownTokenProfiles } from "../config/tokens";
-import { PoolStateWithConfig } from "../hooks/chain/types";
+import { PoolToken } from "../hooks/chain/types";
 
 export function ellipseAddress(
   address: string,
@@ -11,21 +11,20 @@ export function ellipseAddress(
 }
 
 export function mapPoolTokenToProfiles(
-  poolStates: PoolStateWithConfig[],
+  poolTokens: PoolToken[],
   rawTokenProfiles: RawTokenProfile[] | undefined,
 ): RawTokenProfile[] {
   // get all token profiles from pool states
-  const allTokenProfiles = poolStates.flatMap((p) => {
-    const poolState = p.poolState;
+  const allTokenProfiles = poolTokens.flatMap((p) => {
 
     const token0Profile: RawTokenProfile = {
-      address: poolState.token0Mint.toString(),
-      decimals: poolState.mint0Decimals,
+      address: p.mint0Address,
+      decimals: p.mint0Decimals,
     };
 
     const token1Profile: RawTokenProfile = {
-      address: poolState.token1Mint.toString(),
-      decimals: poolState.mint1Decimals,
+      address: p.mint1Address,
+      decimals: p.mint1Decimals,
     };
 
     return [token0Profile, token1Profile];

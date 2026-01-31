@@ -26,17 +26,151 @@ function formatPct(n: number) {
   return `${sign}${n.toFixed(2)}%`;
 }
 
-function defaultHistogram(count: number) {
-  // deterministic-ish bell curve centered in the middle
-  const mid = (count - 1) / 2;
-  const sigma = count / 8;
-  return Array.from({ length: count }, (_, i) => {
-    const z = (i - mid) / sigma;
-    const y = Math.exp(-(z * z) / 2);
-    // add a tiny deterministic ripple so it doesn't look perfectly smooth
-    const ripple = 0.06 * Math.sin(i * 1.7) + 0.04 * Math.cos(i * 0.9);
-    return Math.max(0, y + ripple);
+function percentile(values: number[], p: number) {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const idx = clamp(p, 0, 1) * (sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo] ?? 0;
+  const t = idx - lo;
+  return (sorted[lo] ?? 0) * (1 - t) + (sorted[hi] ?? 0) * t;
+}
+
+export type LiquidityTick = {
+  tickIndex: number;
+  liquidityNet: number; // mock: number (real: bigint/string)
+};
+
+// Key Aspects of Uniswap Tick Spacing Definition:
+//     - Ticks are boundary points in price space (\(1.0001^{n}\)),
+//     - and tick spacing dictates that liquidity can only be added at tick indices divisible by this value.
+// Relationship to Fees:
+// - 0.01% Fee Tier: 1 tick spacing (highest granularity).
+// - 0.05% Fee Tier: 10 tick spacing.
+// - 0.30% Fee Tier: 60 tick spacing.
+// - 1.00% Fee Tier: 200 tick spacing.
+// Price Movement:
+// - A move of 1 tick always represents a 0.01% price change.
+// - Therefore, a tick spacing of 60 means the price moves in increments of \(60\times 0.01\%=0.60\%\).
+// Purpose:
+// - This mechanism enables concentrated liquidity while reducing gas costs for swaps and pool updates by limiting the number of initialized ticks.
+// Range:
+// - Ticks range from -887,272 to 887,272.
+export type LiquidityTickData = {
+  currentTick: number; // tick at currentPrice
+  tickSpacing: number;
+  baseLiquidity: number; // active liquidity before first initialized tick
+  ticks: LiquidityTick[]; // sorted by tickIndex
+};
+
+const LOG_1P0001 = Math.log(1.0001);
+
+function tickFromPrice(
+  price: number,
+  currentPrice: number,
+  currentTick: number,
+) {
+  const safe = Math.max(price, currentPrice * 1e-12, 1e-12);
+  const ratio = safe / Math.max(currentPrice, 1e-12);
+  return currentTick + Math.floor(Math.log(ratio) / LOG_1P0001);
+}
+
+function snapToSpacing(tick: number, spacing: number) {
+  if (spacing <= 1) return tick;
+  return Math.round(tick / spacing) * spacing;
+}
+
+function buildMockTicksFromIntervals(args: {
+  currentPrice: number;
+  currentTick: number;
+  tickSpacing: number;
+  baseLiquidity: number;
+  intervals: Array<{ fromMul: number; toMul: number; liquidity: number }>;
+}): LiquidityTickData {
+  const { currentPrice, currentTick, tickSpacing, baseLiquidity, intervals } =
+    args;
+
+  const deltas = new Map<number, number>();
+  const addDelta = (tick: number, delta: number) => {
+    deltas.set(tick, (deltas.get(tick) ?? 0) + delta);
+  };
+
+  for (const it of intervals) {
+    const fromP = currentPrice * it.fromMul;
+    const toP = currentPrice * it.toMul;
+    const a = Math.min(fromP, toP);
+    const b = Math.max(fromP, toP);
+
+    let t0 = snapToSpacing(
+      tickFromPrice(a, currentPrice, currentTick),
+      tickSpacing,
+    );
+    let t1 = snapToSpacing(
+      tickFromPrice(b, currentPrice, currentTick),
+      tickSpacing,
+    );
+
+    if (t1 === t0) t1 = t0 + tickSpacing;
+
+    addDelta(t0, it.liquidity);
+    addDelta(t1, -it.liquidity);
+  }
+
+  const ticks = Array.from(deltas.entries())
+    .map(([tickIndex, liquidityNet]) => ({ tickIndex, liquidityNet }))
+    .sort((a, b) => a.tickIndex - b.tickIndex);
+
+  return { currentTick, tickSpacing, baseLiquidity, ticks };
+}
+
+function defaultMockLiquidityData(currentPrice: number): LiquidityTickData {
+  // Uniswap-like bands: thick near price + some distant walls.
+  return buildMockTicksFromIntervals({
+    currentPrice,
+    currentTick: 0,
+    tickSpacing: 60,
+    baseLiquidity: 800,
+    intervals: [
+      { fromMul: 0.985, toMul: 1.015, liquidity: 5000 },
+      { fromMul: 0.94, toMul: 0.975, liquidity: 1800 },
+      { fromMul: 1.025, toMul: 1.08, liquidity: 2200 },
+      { fromMul: 0.7, toMul: 0.85, liquidity: 900 },
+      { fromMul: 1.15, toMul: 1.4, liquidity: 1100 },
+      { fromMul: 1.6, toMul: 2.1, liquidity: 700 },
+    ],
   });
+}
+
+function buildLiquidityQuery(data: LiquidityTickData) {
+  const ticks = [...data.ticks].sort((a, b) => a.tickIndex - b.tickIndex);
+  const idxs = ticks.map((t) => t.tickIndex);
+  const prefixNet: number[] = [];
+  let acc = 0;
+  for (const t of ticks) {
+    acc += t.liquidityNet;
+    prefixNet.push(acc);
+  }
+
+  const liquidityAtTick = (tick: number) => {
+    // last idx <= tick
+    let lo = 0;
+    let hi = idxs.length - 1;
+    let ans = -1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if ((idxs[mid] ?? 0) <= tick) {
+        ans = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    const net = ans >= 0 ? (prefixNet[ans] ?? 0) : 0;
+    return Math.max(0, data.baseLiquidity + net);
+  };
+
+  return { liquidityAtTick };
 }
 
 export interface LiquidityRangeChartProps {
@@ -47,6 +181,7 @@ export interface LiquidityRangeChartProps {
   onMaxPriceChange: (value: string) => void;
   barCount?: number;
   domainPaddingPct?: number; // initial max % (e.g. 30 => +3000%)
+  liquidityData?: LiquidityTickData; // omit to use built-in mock
   className?: string;
 }
 
@@ -58,6 +193,7 @@ export function LiquidityRangeChart({
   onMaxPriceChange,
   barCount = 48,
   domainPaddingPct = 30, // +3000% default
+  liquidityData,
   className,
 }: LiquidityRangeChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -100,48 +236,34 @@ export function LiquidityRangeChart({
     return { min, max: safeMax };
   }, [absMax, viewMax, viewMin]);
 
-  // "Price-anchored" synthetic liquidity so bars shift when viewport pans/zooms.
-  // (Until you wire real tick/liquidity data.)
+  const tickData = useMemo(() => {
+    return liquidityData ?? defaultMockLiquidityData(currentPrice);
+  }, [currentPrice, liquidityData]);
+  console.log("🚀 ~ tickData:", tickData);
+
+  // Uniswap-style: ticks -> active liquidity -> log-binned histogram.
   const bars = useMemo(() => {
-    const span = domain.max - domain.min;
-    const base = Math.max(1e-9, currentPrice);
+    const { liquidityAtTick } = buildLiquidityQuery(tickData);
+
+    // If domain.min is 0, use epsilon for log scale.
+    const eps = Math.max(currentPrice * 1e-6, 1e-12);
+    const logMin = Math.log(Math.max(domain.min, eps));
+    const logMax = Math.log(Math.max(domain.max, eps));
+    const span = Math.max(1e-12, logMax - logMin);
+
     return Array.from({ length: barCount }, (_, i) => {
-      const price = domain.min + ((i + 0.5) / barCount) * span;
-      const x = price / base; // price ratio vs current
-
-      // Peaks around current price and a wider shoulder to mimic "liquidity walls".
-      const z1 = (x - 1) / 0.06;
-      const z2 = (x - 1) / 0.18;
-      const peak = Math.exp(-(z1 * z1) / 2);
-      const shoulder = 0.45 * Math.exp(-(z2 * z2) / 2);
-
-      // Deterministic ripple based on price ratio so it is anchored to price.
-      const ripple =
-        0.12 * Math.sin(x * 13.7) +
-        0.08 * Math.cos(x * 7.3) +
-        0.05 * Math.sin(x * 31.1);
-
-      return Math.max(0, peak + shoulder + ripple);
+      const xm = (i + 0.5) / barCount;
+      const price = Math.exp(logMin + xm * span);
+      const tick = snapToSpacing(
+        tickFromPrice(price, currentPrice, tickData.currentTick),
+        tickData.tickSpacing,
+      );
+      return liquidityAtTick(tick);
     });
-  }, [barCount, currentPrice, domain.max, domain.min]);
+  }, [barCount, currentPrice, domain.max, domain.min, tickData]);
 
   const maxBar = useMemo(() => Math.max(1e-9, ...bars), [bars]);
-
-  // Keep selected min/max inside the viewport (so handles stay visible).
-  useEffect(() => {
-    const min = parsedMin ?? currentPrice * 0.95;
-    const max = parsedMax ?? currentPrice * 1.05;
-    const clampedMin = clamp(min, domain.min, domain.max);
-    const clampedMax = clamp(max, domain.min, domain.max);
-
-    // if (Number.isFinite(clampedMin) && clampedMin !== min) {
-    //   onMinPriceChange(formatPriceInput(clampedMin));
-    // }
-    // if (Number.isFinite(clampedMax) && clampedMax !== max) {
-    //   onMaxPriceChange(formatPriceInput(clampedMax));
-    // }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [domain.min, domain.max, currentPrice]);
+  const thickCutoff = useMemo(() => percentile(bars, 0.75), [bars]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -154,9 +276,22 @@ export function LiquidityRangeChart({
     return () => ro.disconnect();
   }, []);
 
-  const toPct = (price: number) =>
-    clamp((price - domain.min) / (domain.max - domain.min), 0, 1);
-  const fromPct = (pct: number) => domain.min + pct * (domain.max - domain.min);
+  // Log-scale mapping (Uniswap-like feel). When domain includes 0, use epsilon.
+  const eps = Math.max(currentPrice * 1e-6, 1e-12);
+  const logMin = Math.log(Math.max(domain.min, eps));
+  const logMax = Math.log(Math.max(domain.max, eps));
+  const logSpan = Math.max(1e-12, logMax - logMin);
+
+  const toPct = (price: number) => {
+    const p = Math.max(price, eps);
+    return clamp((Math.log(p) - logMin) / logSpan, 0, 1);
+  };
+  const fromPct = (pct: number) => {
+    const p = Math.exp(logMin + clamp(pct, 0, 1) * logSpan);
+    // If viewport includes 0, allow snapping to 0 at extreme left.
+    if (domain.min === 0 && pct <= 0.0005) return 0;
+    return p;
+  };
 
   const currentPct = toPct(currentPrice);
   const minPct = toPct(parsedMin ?? currentPrice * 0.95);
@@ -208,26 +343,35 @@ export function LiquidityRangeChart({
   };
 
   const zoomViewport = (mult: number) => {
-    const span = domain.max - domain.min;
-    const center = (domain.max + domain.min) / 2;
-    const nextSpan = clamp(span * mult, currentPrice * 1e-6, absMax - absMin);
+    // Zoom in log space so it feels like Uniswap's chart.
+    const eps = Math.max(currentPrice * 1e-6, 1e-12);
+    const vMin = Math.max(domain.min, eps);
+    const vMax = Math.max(domain.max, eps);
+    const absMinLog = Math.log(Math.max(absMin, eps));
+    const absMaxLog = Math.log(Math.max(absMax, eps));
 
-    let nextMin = center - nextSpan / 2;
-    let nextMax = center + nextSpan / 2;
+    const logMin = Math.log(vMin);
+    const logMax = Math.log(vMax);
+    const center = (logMin + logMax) / 2;
+    const span = Math.max(1e-12, logMax - logMin);
+    const nextSpan = clamp(span * mult, 1e-6, absMaxLog - absMinLog);
 
-    if (nextMin < absMin) {
-      const shift = absMin - nextMin;
-      nextMin += shift;
-      nextMax += shift;
+    let nextMinLog = center - nextSpan / 2;
+    let nextMaxLog = center + nextSpan / 2;
+
+    if (nextMinLog < absMinLog) {
+      const shift = absMinLog - nextMinLog;
+      nextMinLog += shift;
+      nextMaxLog += shift;
     }
-    if (nextMax > absMax) {
-      const shift = absMax - nextMax;
-      nextMin += shift;
-      nextMax += shift;
+    if (nextMaxLog > absMaxLog) {
+      const shift = absMaxLog - nextMaxLog;
+      nextMinLog += shift;
+      nextMaxLog += shift;
     }
 
-    setViewMin(clamp(nextMin, absMin, absMax));
-    setViewMax(clamp(nextMax, absMin, absMax));
+    setViewMin(clamp(Math.exp(nextMinLog), absMin, absMax));
+    setViewMax(clamp(Math.exp(nextMaxLog), absMin, absMax));
   };
 
   const startPan = (e: React.PointerEvent) => {
@@ -247,10 +391,15 @@ export function LiquidityRangeChart({
 
     const rect = el.getBoundingClientRect();
     const startX = e.clientX;
+    const eps = Math.max(currentPrice * 1e-6, 1e-12);
     const startViewMin = domain.min;
     const startViewMax = domain.max;
-    const startSelMin = parseNumberSafe(minPrice) ?? currentPrice * 0.95;
-    const startSelMax = parseNumberSafe(maxPrice) ?? currentPrice * 1.05;
+    const startViewMinSafe = Math.max(startViewMin, eps);
+    const startViewMaxSafe = Math.max(startViewMax, eps);
+    const startLogSpan = Math.max(
+      1e-12,
+      Math.log(startViewMaxSafe) - Math.log(startViewMinSafe),
+    );
 
     setIsPanning(true);
 
@@ -259,32 +408,22 @@ export function LiquidityRangeChart({
       if (pointersRef.current.size >= 2) return;
       const dx = clientX - startX;
       const dp = rect.width === 0 ? 0 : dx / rect.width;
-      const deltaPrice = dp * (startViewMax - startViewMin);
+      const deltaLog = dp * startLogSpan;
+      let factor = Math.exp(deltaLog);
 
-      let nextViewMin = startViewMin + deltaPrice;
-      let nextViewMax = startViewMax + deltaPrice;
-      let nextSelMin = startSelMin + deltaPrice;
-      let nextSelMax = startSelMax + deltaPrice;
-
-      if (nextViewMin < absMin) {
-        const shift = absMin - nextViewMin;
-        nextViewMin += shift;
-        nextViewMax += shift;
-        nextSelMin += shift;
-        nextSelMax += shift;
+      // Clamp factor so viewport remains within absolute bounds.
+      if (startViewMaxSafe * factor > absMax) {
+        factor = absMax / startViewMaxSafe;
       }
-      if (nextViewMax > absMax) {
-        const shift = absMax - nextViewMax;
-        nextViewMin += shift;
-        nextViewMax += shift;
-        nextSelMin += shift;
-        nextSelMax += shift;
+      if (startViewMinSafe * factor < eps) {
+        factor = eps / startViewMinSafe;
       }
 
-      setViewMin(nextViewMin);
-      setViewMax(nextViewMax);
-      // onMinPriceChange(formatPriceInput(clamp(nextSelMin, absMin, absMax)));
-      // onMaxPriceChange(formatPriceInput(clamp(nextSelMax, absMin, absMax)));
+      const nextViewMin = startViewMin === 0 ? 0 : startViewMinSafe * factor;
+      const nextViewMax = startViewMaxSafe * factor;
+
+      setViewMin(clamp(nextViewMin, absMin, absMax));
+      setViewMax(clamp(nextViewMax, absMin, absMax));
     };
 
     update(e.clientX);
@@ -322,16 +461,31 @@ export function LiquidityRangeChart({
     const rawMax = parseNumberSafe(maxPrice) ?? currentPrice * 1.05;
     const startMin = Math.min(rawMin, rawMax);
     const startMax = Math.max(rawMin, rawMax);
-    const width = Math.max(0, startMax - startMin);
+    const eps = Math.max(currentPrice * 1e-6, 1e-12);
+    const startMinSafe = Math.max(startMin, eps);
+    const startMaxSafe = Math.max(startMax, eps);
+    const startLogSpan = Math.max(
+      1e-12,
+      Math.log(Math.max(domain.max, eps)) - Math.log(Math.max(domain.min, eps)),
+    );
 
     const update = (clientX: number) => {
       if (pointersRef.current.size >= 2) return;
       const dx = clientX - startX;
       const dp = rect.width === 0 ? 0 : dx / rect.width;
-      const deltaPrice = dp * (domain.max - domain.min);
+      const deltaLog = dp * startLogSpan;
+      let factor = Math.exp(deltaLog);
 
-      const nextMin = clamp(startMin + deltaPrice, absMin, absMax - width);
-      const nextMax = nextMin + width;
+      // Clamp factor so selection stays within absolute bounds.
+      if (startMaxSafe * factor > absMax) {
+        factor = absMax / startMaxSafe;
+      }
+      if (startMinSafe * factor < eps) {
+        factor = eps / startMinSafe;
+      }
+
+      const nextMin = startMin === 0 ? 0 : startMinSafe * factor;
+      const nextMax = startMaxSafe * factor;
 
       onMinPriceChange(formatPriceInput(nextMin));
       onMaxPriceChange(formatPriceInput(nextMax));
@@ -352,12 +506,14 @@ export function LiquidityRangeChart({
   };
 
   const onPointerDownCapture = (e: React.PointerEvent) => {
+    console.log("🚀 ~ down capture e.pointerId:", e.pointerId);
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
   };
 
   const onPointerMoveCapture = (e: React.PointerEvent) => {
     const map = pointersRef.current;
     if (!map.has(e.pointerId)) return;
+    console.log("🚀 ~ map:", map);
     map.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (map.size !== 2) {
@@ -413,42 +569,8 @@ export function LiquidityRangeChart({
 
   const onPointerUpCapture = (e: React.PointerEvent) => {
     pointersRef.current.delete(e.pointerId);
+    console.log("🚀 ~ up capture e.pointerId:", e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
-  };
-
-  const panByDeltaPixels = (deltaPixels: number) => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const dp = rect.width === 0 ? 0 : deltaPixels / rect.width;
-    const deltaPrice = dp * (domain.max - domain.min);
-
-    let nextViewMin = domain.min + deltaPrice;
-    let nextViewMax = domain.max + deltaPrice;
-    let nextSelMin =
-      (parseNumberSafe(minPrice) ?? currentPrice * 0.95) + deltaPrice;
-    let nextSelMax =
-      (parseNumberSafe(maxPrice) ?? currentPrice * 1.05) + deltaPrice;
-
-    if (nextViewMin < absMin) {
-      const shift = absMin - nextViewMin;
-      nextViewMin += shift;
-      nextViewMax += shift;
-      nextSelMin += shift;
-      nextSelMax += shift;
-    }
-    if (nextViewMax > absMax) {
-      const shift = absMax - nextViewMax;
-      nextViewMin += shift;
-      nextViewMax += shift;
-      nextSelMin += shift;
-      nextSelMax += shift;
-    }
-
-    setViewMin(nextViewMin);
-    setViewMax(nextViewMax);
-    onMinPriceChange(formatPriceInput(clamp(nextSelMin, absMin, absMax)));
-    onMaxPriceChange(formatPriceInput(clamp(nextSelMax, absMin, absMax)));
   };
 
   // Pan ONLY the viewport (chart view) without changing selected min/max.
@@ -457,24 +579,32 @@ export function LiquidityRangeChart({
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const dp = rect.width === 0 ? 0 : deltaPixels / rect.width;
-    const deltaPrice = dp * (domain.max - domain.min);
 
-    let nextViewMin = domain.min + deltaPrice;
-    let nextViewMax = domain.max + deltaPrice;
+    const eps = Math.max(currentPrice * 1e-6, 1e-12);
+    const startMin = domain.min;
+    const startMax = domain.max;
+    const startMinSafe = Math.max(startMin, eps);
+    const startMaxSafe = Math.max(startMax, eps);
+    const logSpan = Math.max(
+      1e-12,
+      Math.log(startMaxSafe) - Math.log(startMinSafe),
+    );
 
-    if (nextViewMin < absMin) {
-      const shift = absMin - nextViewMin;
-      nextViewMin += shift;
-      nextViewMax += shift;
+    const deltaLog = dp * logSpan;
+    let factor = Math.exp(deltaLog);
+
+    if (startMaxSafe * factor > absMax) {
+      factor = absMax / startMaxSafe;
     }
-    if (nextViewMax > absMax) {
-      const shift = absMax - nextViewMax;
-      nextViewMin += shift;
-      nextViewMax += shift;
+    if (startMinSafe * factor < eps) {
+      factor = eps / startMinSafe;
     }
 
-    setViewMin(nextViewMin);
-    setViewMax(nextViewMax);
+    const nextMin = startMin === 0 ? 0 : startMinSafe * factor;
+    const nextMax = startMaxSafe * factor;
+
+    setViewMin(clamp(nextMin, absMin, absMax));
+    setViewMax(clamp(nextMax, absMin, absMax));
   };
 
   const zoomByWheel = (deltaY: number) => {
@@ -523,11 +653,20 @@ export function LiquidityRangeChart({
   const axisTicks = useMemo(() => {
     const ticks = 4;
     const arr: number[] = [];
+    const eps = Math.max(currentPrice * 1e-6, 1e-12);
+    const logMin = Math.log(Math.max(domain.min, eps));
+    const logMax = Math.log(Math.max(domain.max, eps));
+    const span = Math.max(1e-12, logMax - logMin);
     for (let i = 0; i < ticks; i++) {
-      arr.push(domain.min + (i / (ticks - 1)) * (domain.max - domain.min));
+      const t = i / (ticks - 1);
+      if (i === 0 && domain.min === 0) {
+        arr.push(0);
+      } else {
+        arr.push(Math.exp(logMin + t * span));
+      }
     }
     return arr;
-  }, [domain.max, domain.min]);
+  }, [currentPrice, domain.max, domain.min]);
 
   return (
     <div className={cn("w-full select-none", className)}>
@@ -550,13 +689,20 @@ export function LiquidityRangeChart({
             const hPct = clamp(v / maxBar, 0, 1);
             const barCenter = (idx + 0.5) / bars.length;
             const inRange = barCenter >= leftPct && barCenter <= rightPct;
+            const isThick = v >= thickCutoff;
             return (
               <div
                 // eslint-disable-next-line react/no-array-index-key
                 key={idx}
                 className={cn(
                   "w-full",
-                  inRange ? "bg-green/20" : "bg-white/10",
+                  inRange
+                    ? isThick
+                      ? "bg-green/30"
+                      : "bg-green/20"
+                    : isThick
+                      ? "bg-white/18"
+                      : "bg-white/10",
                 )}
                 style={{ height: `${Math.round(hPct * 100)}%` }}
               />
@@ -566,7 +712,7 @@ export function LiquidityRangeChart({
 
         {/* Range overlay */}
         <div
-          className="border-green bg-green/15 absolute top-6 bottom-7 border-x-[1.5] cursor-grab active:cursor-grabbing"
+          className="border-green bg-green/15 absolute top-6 bottom-7 cursor-grab border-x-[1.5] active:cursor-grabbing"
           style={{
             left: `${leftPct * 100}%`,
             width: `${Math.max(0, (rightPct - leftPct) * 100)}%`,

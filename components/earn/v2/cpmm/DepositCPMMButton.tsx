@@ -6,9 +6,9 @@ import { BN } from "bn.js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, PoolState } from "@/lib/hooks/chain/types";
+import { BalanceMapByMint, CPMMPoolState } from "@/lib/hooks/chain/types";
 import { useDepositCPMM } from "@/lib/hooks/chain/useDepositCPMM";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
 
@@ -19,10 +19,10 @@ interface IDepositCPMMButtonProps {
   tokenAAmount: string;
   tokenBAmount: string;
   lpTokenAmount: string;
-  poolState: PoolState;
+  poolState: CPMMPoolState;
   wallet: AnchorWallet | undefined;
   walletBalances: BalanceMapByMint | undefined;
-  doxxAmmProgram: Program<DoxxAmm> | undefined;
+  doxxAmmProgram: Program<DoxxCpmmIdl> | undefined;
   onSuccess?: () => void;
   onError?: () => void;
 }

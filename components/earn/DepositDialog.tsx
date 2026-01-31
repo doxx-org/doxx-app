@@ -9,9 +9,9 @@ import {
   TokenSymbol,
   knownTokenProfiles,
 } from "@/lib/config/tokens";
-import { PoolState } from "@/lib/hooks/chain/types";
+import { CPMMPoolState } from "@/lib/hooks/chain/types";
 import { useDeposit } from "@/lib/hooks/chain/useDeposit";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { usePoolLpSupply } from "@/lib/hooks/chain/usePoolLpSupply";
 import { usePoolVaultBalances } from "@/lib/hooks/chain/usePoolVaultBalances";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
@@ -32,7 +32,7 @@ import { TokenSelectionRow } from "./TokenSelectionRow";
 interface DepositDialogProps {
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  poolState: PoolState | null;
+  poolState: CPMMPoolState | null;
   poolStateAddress: string | null; // The public key of the pool state account
 }
 
@@ -49,7 +49,7 @@ export const DepositDialog = ({
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   // Get token profiles from pool state
   const tokenA = useMemo(() => {

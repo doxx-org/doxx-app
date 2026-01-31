@@ -5,17 +5,19 @@ import type { GetAllTokenInfosPayload } from "@/app/api/token-infos/type";
 import { RawTokenProfile, TokenProfile } from "@/lib/config/tokens";
 import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
 import { mapPoolTokenToProfiles } from "@/lib/utils/tokens";
-import { PoolStateWithConfig } from "./types";
+import { PoolToken } from "./types";
+
+interface UseGetAllTokenInfosProps {
+  poolTokens: PoolToken[] | undefined;
+  rawTokenProfiles?: RawTokenProfile[];
+}
 
 export function useGetAllTokenInfos(
-  poolStates: PoolStateWithConfig[] | undefined,
-  rawTokenProfiles?: RawTokenProfile[],
+  { poolTokens, rawTokenProfiles }: UseGetAllTokenInfosProps,
 ): UseQueryResult<TokenProfile[] | undefined, Error> {
   const allTokenProfiles: RawTokenProfile[] | undefined = useMemo(() => {
-    if (!poolStates) return undefined;
-
-    return mapPoolTokenToProfiles(poolStates, rawTokenProfiles);
-  }, [poolStates, rawTokenProfiles]);
+    return mapPoolTokenToProfiles(poolTokens ?? [], rawTokenProfiles);
+  }, [poolTokens, rawTokenProfiles]);
 
   return useQuery({
     queryKey: [

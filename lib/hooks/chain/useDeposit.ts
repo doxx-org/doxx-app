@@ -8,7 +8,7 @@ import {
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID } from "@/lib/constants";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { DoxxCpmmIdl } from "@/lib/idl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   PROVIDER_UNAVAILABLE_ERROR,
@@ -30,7 +30,7 @@ type DepositParams = {
 };
 
 export function useDeposit(
-  program: Program<DoxxAmm> | undefined,
+  program: Program<DoxxCpmmIdl> | undefined,
   wallet: AnchorWallet | undefined,
   onSuccess: (tx?: string) => void,
   onError: (e: Error) => void,

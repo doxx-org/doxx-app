@@ -16,6 +16,7 @@ interface TokenSelectionRowProps {
   balance?: number;
   usdValue?: number;
   disableTokenSelect?: boolean;
+  className?: string;
 }
 
 export const TokenSelectionRow = ({
@@ -29,9 +30,15 @@ export const TokenSelectionRow = ({
   balance = 0,
   usdValue = 0,
   disableTokenSelect = false,
+  className,
 }: TokenSelectionRowProps) => {
   return (
-    <div className="flex w-full flex-col items-start justify-start gap-4">
+    <div
+      className={cn(
+        "flex w-full flex-col items-start justify-start gap-4",
+        className,
+      )}
+    >
       <TokenLabel
         token={token}
         label={label}

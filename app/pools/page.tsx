@@ -14,9 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RawTokenProfile, knownTokenProfiles } from "@/lib/config/tokens";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
+import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { text } from "@/lib/text";
@@ -30,7 +31,7 @@ export default function Home() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   // Fetch all pools
   const {
@@ -38,16 +39,7 @@ export default function Home() {
     isLoading: _isLoadingPools,
     // TODO: add refetchAllPoolStates to the dependencies
     // refetch: refetchAllPoolStates,
-  } = useGetAllPools(doxxAmmProgram);
-  // poolsData?.map((c) => {
-  //   console.log("🚀 ~ ===:");
-  //   console.log("🚀 ~ poolsData.lpMint:", c.poolState.lpMint.toString());
-  //   console.log("🚀 ~ poolsData.ammConfig:", c.poolState.ammConfig.toString());
-  //   console.log(
-  //     "🚀 ~ poolsData.ammConfig:",
-  //     c.observationState.poolId.toString(),
-  //   );
-  // });
+  } = useGetCPMMPools(doxxAmmProgram);
 
   // Fetch token balances
   const { data: splBalances } = useAllSplBalances(
@@ -56,7 +48,6 @@ export default function Home() {
     knownTokenProfiles,
     true,
   );
-  console.log("🚀 ~ splBalances:", splBalances);
 
   const rawTokenProfilesFromSplBalances: RawTokenProfile[] | undefined =
     useMemo(() => {
@@ -72,8 +63,30 @@ export default function Home() {
       });
     }, [splBalances]);
 
+  const poolTokens = useMemo(() => {
+    return poolsData?.map((p) => {
+      return {
+        mint0Address: p.poolState.token0Mint.toString(),
+        mint0Decimals: p.poolState.mint0Decimals,
+        mint1Address: p.poolState.token1Mint.toString(),
+        mint1Decimals: p.poolState.mint1Decimals,
+      };
+    });
+  }, [poolsData]);
+
   const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
-    useGetAllTokenInfos(poolsData, rawTokenProfilesFromSplBalances);
+    useGetAllTokenInfos({
+      poolTokens,
+      rawTokenProfiles: rawTokenProfilesFromSplBalances,
+    });
+  // console.log("🚀 ~ allTokenProfiles:", allTokenProfiles);
+
+  const {
+    data: allPools,
+    isLoading: isLoadingAllPools,
+    refetch,
+  } = useGetAllPools();
+  console.log("🚀 ~ allPools:", allPools);
 
   const handleOpenCreateCLMMPoolDialog = () => {
     setIsCreatePoolOpen(true);

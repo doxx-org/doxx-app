@@ -13,7 +13,7 @@ import {
 import { copyToClipboard, text } from "@/lib/text";
 import { cn, ellipseAddress, normalizeBPSString } from "@/lib/utils";
 import { getTokenExplorerUrl } from "@/lib/utils/network";
-import { Pool } from "../PoolColumn";
+import { Pool } from "../v2/types";
 
 type PoolRowProps = {
   pool: Pool;
@@ -111,7 +111,7 @@ export function PoolRow({ pool }: PoolRowProps) {
             </p>
             |
             <Link
-              href={`${getTokenExplorerUrl(lpToken.token2.address.toString())}`}
+              href={`${getTokenExplorerUrl(poolId.toString())}`}
               className={cn(
                 text.sb3(),
                 "items-center text-gray-400 no-underline hover:text-gray-300",

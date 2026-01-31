@@ -14,7 +14,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import { addressConfig } from "@/lib/config/addresses";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { DoxxCpmmIdl } from "@/lib/idl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   PROVIDER_UNAVAILABLE_ERROR,
@@ -39,7 +39,7 @@ type CreatePoolParams = {
 };
 
 export function useCreatePool(
-  program: Program<DoxxAmm> | undefined,
+  program: Program<DoxxCpmmIdl> | undefined,
   wallet: AnchorWallet | undefined,
   onSuccess: (tx?: string) => void,
   onError: (e: Error) => void,
@@ -89,7 +89,7 @@ export function useCreatePool(
           actualInitAmount0,
           actualInitAmount1,
         ] = shouldSwap
-          ? [
+            ? [
               token1Mint,
               token0Mint,
               token1Program,
@@ -97,7 +97,7 @@ export function useCreatePool(
               initAmount1,
               initAmount0,
             ]
-          : [
+            : [
               token0Mint,
               token1Mint,
               token0Program,

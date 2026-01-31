@@ -4,9 +4,9 @@ import { getAccount } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { BPS, MAX_UINT128, ONE_E9, ZERO } from "@/lib/constants";
 import {
-  AmmConfig,
-  PoolState,
-  PoolStateWithConfig,
+  CPMMAmmConfig,
+  CPMMPoolState,
+  CPMMPoolStateWithConfig,
 } from "@/lib/hooks/chain/types";
 import { parseAmountBN } from "@/lib/utils";
 import { IUseBestRouteResponse } from "../hooks/chain/useBestRoute";
@@ -16,7 +16,7 @@ const ONE_M = new BN(1_000_000); // ppm
 
 interface IGetBestQuoteParams {
   connection: Connection;
-  pools: PoolStateWithConfig[];
+  pools: CPMMPoolStateWithConfig[];
   inputMint: PublicKey;
   outputMint: PublicKey;
   slippageBps: number; // e.g. 50 = 0.5%; Max = 10_000 = 100%
@@ -60,13 +60,13 @@ export type IGetBestQuoteResult = GetBestQuotePool & {
 };
 
 // ---------- fee helpers (ppm) ----------
-const inIs0 = (pool: PoolState, inMint: PublicKey) => {
+const inIs0 = (pool: CPMMPoolState, inMint: PublicKey) => {
   if (inMint.equals(pool.token0Mint)) return true;
   if (inMint.equals(pool.token1Mint)) return false;
   throw new Error("inMint not in pool");
 };
 
-const creatorFeeApplies = (pool: PoolState, inMint: PublicKey) => {
+const creatorFeeApplies = (pool: CPMMPoolState, inMint: PublicKey) => {
   if (!pool.enableCreatorFee) return false;
   const is0 = inIs0(pool, inMint);
   // 0 bothToken, 1 onlyToken0, 2 onlyToken1
@@ -78,8 +78,8 @@ const creatorFeeApplies = (pool: PoolState, inMint: PublicKey) => {
 };
 
 const effFeePpm = (
-  pool: PoolState,
-  ammConfig: AmmConfig,
+  pool: CPMMPoolState,
+  ammConfig: CPMMAmmConfig,
   inMint: PublicKey,
 ) => {
   let tradingFeeRate = ammConfig.tradeFeeRate; // u64 ppm in IDL
@@ -105,8 +105,8 @@ const reserves = (
 
 // ---------- single-hop quotes ----------
 function quoteOutSingle(
-  pool: PoolState,
-  ammConfig: AmmConfig,
+  pool: CPMMPoolState,
+  ammConfig: CPMMAmmConfig,
   inMint: PublicKey,
   amountIn: BN,
   reserveToken0: BN,
@@ -128,8 +128,8 @@ function quoteOutSingle(
 }
 
 function quoteInSingle(
-  pool: PoolState,
-  ammConfig: AmmConfig,
+  pool: CPMMPoolState,
+  ammConfig: CPMMAmmConfig,
   outMint: PublicKey,
   amountOut: BN,
   reserveToken0: BN,

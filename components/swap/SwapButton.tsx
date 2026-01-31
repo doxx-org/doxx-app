@@ -3,8 +3,8 @@ import { BN, Program } from "@coral-xyz/anchor";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { ZERO } from "@/lib/constants";
 import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
-import { useDoxxSwap } from "@/lib/hooks/chain/useDoxxSwap";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { useDoxxCpSwap } from "@/lib/hooks/chain/useDoxxCpSwap";
+import { DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
 import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils/style";
 import { Button } from "../ui/button";
 
 interface SwapButtonProps {
-  program: Program<DoxxAmm> | undefined;
+  program: Program<DoxxCpmmIdl> | undefined;
   bestRoute: IUseBestRouteResponse | undefined;
   isQuotingRoute: boolean;
   wallet: AnchorWallet | undefined;
@@ -40,7 +40,7 @@ export function SwapButton({
   onError,
 }: SwapButtonProps) {
   // inside a React component
-  const { swapBaseInput, swapBaseOutput, isSwapping } = useDoxxSwap(
+  const { swapBaseInput, swapBaseOutput, isSwapping } = useDoxxCpSwap(
     program,
     wallet,
     onSuccess,

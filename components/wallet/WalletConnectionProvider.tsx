@@ -37,19 +37,19 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
   // Memoize wallets array to prevent recreation on every render
   const wallets = useMemo(
     () => [
-      new PhantomWalletAdapter(),
-      new WalletConnectWalletAdapter({
-        network: network as
-          | WalletAdapterNetwork.Mainnet
-          | WalletAdapterNetwork.Devnet,
-        options: {
-          // TODO: replace with actual project id
-          projectId: "1234567890",
-        },
-      }),
+      // new PhantomWalletAdapter(),
+      // new WalletConnectWalletAdapter({
+      //   network: network as
+      //     | WalletAdapterNetwork.Mainnet
+      //     | WalletAdapterNetwork.Devnet,
+      //   options: {
+      //     // TODO: replace with actual project id
+      //     projectId: "1234567890",
+      //   },
+      // }),
       new SolflareWalletAdapter(),
-      new BitgetWalletAdapter(),
-      new CoinbaseWalletAdapter(),
+      // new BitgetWalletAdapter(),
+      // new CoinbaseWalletAdapter(),
     ],
     [],
   );

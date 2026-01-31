@@ -6,9 +6,9 @@ import { BN } from "bn.js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, PoolState } from "@/lib/hooks/chain/types";
+import { BalanceMapByMint, CLMMPoolState } from "@/lib/hooks/chain/types";
 import { useDepositCPMM } from "@/lib/hooks/chain/useDepositCPMM";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
 
@@ -19,10 +19,10 @@ interface IDepositCLMMButtonProps {
   tokenAAmount: string;
   tokenBAmount: string;
   lpTokenAmount: string;
-  poolState: PoolState;
+  poolState: CLMMPoolState | undefined;
   wallet: AnchorWallet | undefined;
   walletBalances: BalanceMapByMint | undefined;
-  doxxAmmProgram: Program<DoxxAmm> | undefined;
+  doxxAmmProgram: Program<DoxxCpmmIdl> | undefined;
   onSuccess?: () => void;
   onError?: () => void;
 }
@@ -42,8 +42,11 @@ export const DepositCLMMButton = ({
   onError,
 }: IDepositCLMMButtonProps) => {
   const [amount0, amount1, lpAmount] = useMemo(() => {
+    if (!poolState) {
+      return [new BN(0), new BN(0), new BN(0)];
+    }
     // Check which UI token corresponds to which pool token
-    const isTokenAToken0 = poolState.token0Mint.toBase58() === tokenA.address;
+    const isTokenAToken0 = poolState.tokenMint0.toBase58() === tokenA.address;
 
     // Map amounts correctly
     const actualAmount0 = isTokenAToken0 ? tokenAAmount : tokenBAmount;
@@ -61,14 +64,7 @@ export const DepositCLMMButton = ({
     const lpAmount = parseAmountBN(lpTokenAmount, 9); // LP tokens typically use 9 decimals
 
     return [amount0, amount1, lpAmount];
-  }, [
-    poolState.token0Mint,
-    tokenAAmount,
-    tokenBAmount,
-    lpTokenAmount,
-    tokenA,
-    tokenB,
-  ]);
+  }, [poolState, tokenAAmount, tokenBAmount, lpTokenAmount, tokenA, tokenB]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
@@ -164,8 +160,8 @@ export const DepositCLMMButton = ({
         uiTokenB: tokenB.symbol,
         uiAmountA: tokenAAmount,
         uiAmountB: tokenBAmount,
-        poolToken0: poolState.token0Mint.toBase58(),
-        poolToken1: poolState.token1Mint.toBase58(),
+        poolToken0: poolState?.tokenMint0.toBase58(),
+        poolToken1: poolState?.tokenMint1.toBase58(),
         // isTokenAToken0,
         actualAmount0: amount0,
         actualAmount1: amount1,

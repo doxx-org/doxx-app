@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
-import { BN } from "bn.js";
 import { toast } from "sonner";
 import { TokenProfile } from "@/lib/config/tokens";
-import { PoolStateWithConfig } from "@/lib/hooks/chain/types";
 import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
 import {
@@ -15,9 +13,9 @@ import {
   simplifyErrorMessage,
 } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
-import { Button } from "../ui/button";
-import { ConnectButtonWrapper } from "../wallet/ConnectButtonWrapper";
-import { FEE_TIERS } from "./FeeTierSelection";
+import { Button } from "../../../ui/button";
+import { ConnectButtonWrapper } from "../../../wallet/ConnectButtonWrapper";
+import { FEE_TIERS } from "../../FeeTierSelection";
 
 interface CreatePoolButtonProps {
   tokenA: TokenProfile | null;
@@ -30,7 +28,6 @@ interface CreatePoolButtonProps {
   onAmountChangeB: (amount: string) => void;
   onOpenChange: (open: boolean) => void;
   selectedFeeIndex: number;
-  poolsData: PoolStateWithConfig[] | undefined;
   isPoolExists: boolean | undefined;
 }
 
@@ -45,13 +42,12 @@ export const CreatePoolButton = ({
   onAmountChangeB,
   onOpenChange,
   selectedFeeIndex,
-  poolsData,
   isPoolExists,
 }: CreatePoolButtonProps) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   const handleSuccess = (txSignature: string | undefined) => {
     if (txSignature) {
@@ -176,11 +172,13 @@ export const CreatePoolButton = ({
       tokenB === null ||
       amountA === "" ||
       amountB === "" ||
-      !poolsData ||
-      isPoolExists ||
       isPoolExists === undefined
     ) {
       return ["Create", true, undefined];
+    }
+
+    if (isPoolExists) {
+      return ["Pool already exists", true, undefined];
     }
 
     if (isCreatingPool) {
@@ -219,7 +217,6 @@ export const CreatePoolButton = ({
     amountB,
     handleCreatePool,
     isCreatingPool,
-    poolsData,
     selectedFeeIndex,
     // createPoolError,
   ]);

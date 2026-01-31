@@ -1,14 +1,24 @@
 import { IdlAccounts } from "@coral-xyz/anchor";
-import { DoxxAmm } from "@/lib/idl/doxxIdl";
+import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 
-export type AmmConfig = IdlAccounts<DoxxAmm>["ammConfig"];
-export type PoolState = IdlAccounts<DoxxAmm>["poolState"];
-export type ObservationState = IdlAccounts<DoxxAmm>["observationState"];
+export type CPMMAmmConfig = IdlAccounts<DoxxCpmmIdl>["ammConfig"];
+export type CPMMPoolState = IdlAccounts<DoxxCpmmIdl>["poolState"];
+export type CPMMObservationState = IdlAccounts<DoxxCpmmIdl>["observationState"];
 
-export interface PoolStateWithConfig {
-  poolState: PoolState;
-  ammConfig: AmmConfig;
-  observationState: ObservationState;
+export interface CPMMPoolStateWithConfig {
+  poolState: CPMMPoolState;
+  ammConfig: CPMMAmmConfig;
+  observationState: CPMMObservationState;
+}
+
+export type CLMMAmmConfig = IdlAccounts<DoxxClmmIdl>["ammConfig"];
+export type CLMMPoolState = IdlAccounts<DoxxClmmIdl>["poolState"];
+export type CLMMObservationState = IdlAccounts<DoxxClmmIdl>["observationState"];
+
+export interface CLMMPoolStateWithConfig {
+  poolState: CLMMPoolState;
+  ammConfig: CLMMAmmConfig;
+  observationState: CLMMObservationState;
 }
 
 export type SplBalance = {
@@ -18,6 +28,13 @@ export type SplBalance = {
   decimals: number;
   tokenAccounts: string[]; // token account addresses used in the sum
 };
+
+export interface PoolToken {
+  mint0Address: string;
+  mint0Decimals: number;
+  mint1Address: string;
+  mint1Decimals: number;
+}
 
 // Token balance map by token address
 export type BalanceMapByMint = Partial<Record<string, SplBalance>>;

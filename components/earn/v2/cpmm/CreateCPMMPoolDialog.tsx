@@ -3,27 +3,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { BN } from "bn.js";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, PoolStateWithConfig } from "@/lib/hooks/chain/types";
+import {
+  BalanceMapByMint,
+  CPMMPoolStateWithConfig,
+} from "@/lib/hooks/chain/types";
 import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
 import { cn, parseDecimalsInput } from "@/lib/utils";
-import { TokenSelectorDialog } from "../swap/TokenSelectorDialog";
+import { TokenSelectorDialog } from "../../../swap/TokenSelectorDialog";
 import {
   Dialog,
   DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../ui/dialog";
-import { CreatePoolButton } from "./CreatePoolButton";
-import { FEE_TIERS, FeeTierSelection } from "./FeeTierSelection";
-import { DepositLPPanel } from "./v2/DepositLPPanel";
+} from "../../../ui/dialog";
+import { FEE_TIERS, FeeTierSelection } from "../../FeeTierSelection";
+import { DepositLPPanel } from "../DepositLPPanel";
+import { CreatePoolButton } from "./CreateCPMMPoolButton";
 
 interface CreateCPMMPoolDialogProps {
   isOpen: boolean;
   splBalances: BalanceMapByMint | undefined;
   allTokenProfiles: TokenProfile[];
-  poolsData: PoolStateWithConfig[] | undefined;
+  poolsData: CPMMPoolStateWithConfig[] | undefined;
   onOpenChange: (open: boolean) => void;
 }
 
@@ -42,7 +45,6 @@ export const CreateCPMMPoolDialog = ({
   const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
   const [lpTokenMint, setLpTokenMint] = useState<string | null>(null);
-  console.log("🚀 ~ lpTokenMint:", lpTokenMint);
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
   const [selectedTokenType, setSelectedTokenType] = useState<SelectTokenType>(
@@ -227,7 +229,6 @@ export const CreateCPMMPoolDialog = ({
                 onAmountChangeB={setAmountB}
                 onOpenChange={onOpenChange}
                 selectedFeeIndex={selectedFeeIndex}
-                poolsData={poolsData}
                 isPoolExists={isPoolExists}
               />
             </div>

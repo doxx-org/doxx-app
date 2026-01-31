@@ -8,10 +8,10 @@ import {
   getBestQuoteSingleHopExactIn,
   getBestQuoteSingleHopExactOut,
 } from "../../utils/routing";
-import { PoolStateWithConfig } from "./types";
+import { CPMMPoolStateWithConfig } from "./types";
 
 export type IUseBestRouteResponse = {
-  pool: PoolStateWithConfig;
+  pool: CPMMPoolStateWithConfig;
   swapState: SwapState;
 };
 
@@ -20,7 +20,7 @@ export type IUseBestRouteParams = {
   inputMint: PublicKey;
   outputMint: PublicKey;
   baseInput: string;
-  pools: PoolStateWithConfig[] | undefined;
+  pools: CPMMPoolStateWithConfig[] | undefined;
   isBaseExactIn: boolean;
   slippageBps?: number; // e.g. 50 = 0.5%
 };
@@ -101,12 +101,12 @@ export function useBestRoute({
 
         return bestRoute
           ? {
-              pool: bestRoute.pool,
-              swapState: {
-                ...bestRoute.swapState,
-                isBaseExactIn,
-              },
-            }
+            pool: bestRoute.pool,
+            swapState: {
+              ...bestRoute.swapState,
+              isBaseExactIn,
+            },
+          }
           : null;
       } catch (error) {
         throw new Error(simplifyRoutingErrorMsg(error));

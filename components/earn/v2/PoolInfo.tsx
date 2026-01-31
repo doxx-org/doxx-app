@@ -5,9 +5,21 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TokenProfile } from "@/lib/config/tokens";
 import { copyToClipboard, text } from "@/lib/text";
 import { cn, ellipseAddress, normalizeBPSString } from "@/lib/utils";
-import { getAccountExplorerUrl } from "@/lib/utils/network";
-import { Pool } from "../PoolColumn";
-import { PoolType } from "./types";
+import { getAddressExplorerUrl } from "@/lib/utils/network";
+import { Pool, PoolType } from "./types";
+
+interface PoolInfoProps {
+  symbol: string;
+  token1: TokenProfile;
+  token2: TokenProfile;
+  fee: number;
+  address: string;
+  apr: number;
+  poolType: PoolType;
+  tvl: number;
+  currentPrice: number;
+  reward24h: number;
+}
 
 const PoolDetail2 = ({
   tvl,
@@ -87,7 +99,7 @@ const PoolDetail1 = ({
             <div className="flex items-center gap-2">
               <a
                 className="text-gray-400 hover:cursor-pointer hover:text-gray-300"
-                href={getAccountExplorerUrl(address)}
+                href={getAddressExplorerUrl(address)}
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -118,19 +130,6 @@ const PoolDetail1 = ({
     </div>
   );
 };
-
-interface PoolInfoProps {
-  symbol: string;
-  token1: TokenProfile;
-  token2: TokenProfile;
-  fee: number;
-  address: string;
-  apr: number;
-  poolType: PoolType;
-  tvl: number;
-  currentPrice: number;
-  reward24h: number;
-}
 
 export const PoolInfo = ({
   lpToken: { token1, token2 },

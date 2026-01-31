@@ -1,18 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { knownTokenProfiles } from "@/lib/config/tokens";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
-import { Pool } from "../../PoolColumn";
-import { DepositPanel } from "../DepositPanel";
-import { PriceMode } from "../types";
-import { CLMMPriceRange } from "./CLMMPriceRange";
+import { Pool, PriceMode } from "../types";
 import { DepositCLMMButton } from "./DepositCLMMButton";
+import { DepositCLMMPanel } from "./DepositCLMMPanel";
 import { DepositRange } from "./DepositRange";
 
 export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
@@ -27,7 +24,7 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   // Fetch token balances
   const { data: splBalances, refetch: refetchAllSplBalances } =
@@ -36,7 +33,11 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
       wallet?.publicKey ?? undefined,
       knownTokenProfiles,
       true,
+      {
+        includeToken2022: true,
+      },
     );
+  console.log("🚀 ~ splBalances:", splBalances);
 
   const { data: prices } = usePrices();
 
@@ -81,20 +82,18 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
         handleMaxPriceChange={setMaxPrice}
       />
       <div className="flex flex-col py-5">
-        <DepositPanel
+        <DepositCLMMPanel
           tokenA={selectedPool.lpToken.token1}
           tokenB={selectedPool.lpToken.token2}
-          lpTokenMint={selectedPool.poolState.lpMint.toString()}
           walletBalances={splBalances}
           priceMap={prices}
           tokenAInput={tokenAAmount}
           tokenBInput={tokenBAmount}
           onAmountAChange={handleAmountAChange}
           onAmountBChange={handleAmountBChange}
-          onAmountLPChange={handleAmountLpChange}
         />
       </div>
-      <div className="mt-auto flex flex-col gap-5 border-t border-dashed border-gray-800 px-4 py-5">
+      <div className="flex flex-col gap-5 border-t border-dashed border-gray-800 px-4 py-5">
         <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
           <div className="flex justify-between">
             <p className="text-gray-500">Total Value</p>
@@ -122,7 +121,7 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           tokenAAmount={tokenAAmount}
           tokenBAmount={tokenBAmount}
           lpTokenAmount={lpAmount}
-          poolState={selectedPool.poolState}
+          poolState={selectedPool.clmmPoolState}
           wallet={wallet}
           walletBalances={splBalances}
           doxxAmmProgram={doxxAmmProgram}

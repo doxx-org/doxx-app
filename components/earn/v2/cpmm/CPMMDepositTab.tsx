@@ -2,14 +2,15 @@ import { useCallback, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Button } from "@/components/ui/button";
 import { knownTokenProfiles } from "@/lib/config/tokens";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { CPMMPoolState } from "@/lib/hooks/chain/types";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { usePrices } from "@/lib/hooks/usePrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
-import { Pool } from "../../PoolColumn";
 import { DepositPanel } from "../DepositPanel";
+import { Pool } from "../types";
 import { DepositCPMMButton } from "./DepositCPMMButton";
 
 export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
@@ -21,7 +22,7 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   // Fetch token balances
   const { data: splBalances, refetch: refetchAllSplBalances } =
@@ -30,6 +31,9 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
       wallet?.publicKey ?? undefined,
       knownTokenProfiles,
       true,
+      {
+        includeToken2022: true,
+      },
     );
 
   const { data: prices } = usePrices();
@@ -69,7 +73,7 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
         <DepositPanel
           tokenA={selectedPool.lpToken.token1}
           tokenB={selectedPool.lpToken.token2}
-          lpTokenMint={selectedPool.poolState.lpMint.toString()}
+          lpTokenMint={selectedPool.cpmmPoolState!.lpMint.toString()}
           walletBalances={splBalances}
           priceMap={prices}
           tokenAInput={tokenAAmount}
@@ -107,7 +111,7 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           tokenAAmount={tokenAAmount}
           tokenBAmount={tokenBAmount}
           lpTokenAmount={lpAmount}
-          poolState={selectedPool.poolState}
+          poolState={selectedPool.cpmmPoolState as CPMMPoolState}
           wallet={wallet}
           walletBalances={splBalances}
           doxxAmmProgram={doxxAmmProgram}

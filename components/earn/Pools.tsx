@@ -9,56 +9,19 @@ import {
   knownTokenProfiles,
   unknownToken,
 } from "@/lib/config/tokens";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
+import { useGetCLMMPools } from "@/lib/hooks/chain/useGetCLMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { DataTable } from "../ui/data-table";
 import { SearchInput } from "../ui/search-input";
 // import { CreatePoolDialog } from "./CreateCPMMPoolDialog";
-import { Pool, createColumns } from "./PoolColumn";
+import { createColumns } from "./PoolColumn";
 import { DepositPoolDrawer } from "./v2/DepositPoolDrawer";
-import { PoolType } from "./v2/types";
-
-const mockSelectedPool: Pool = {
-  poolId: "123",
-  fee: new BN(100),
-  lpToken: {
-    token1: {
-      address: "123",
-      name: "Token 1",
-      symbol: "T1",
-      decimals: 10,
-      displayDecimals: 10,
-    },
-    token2: {
-      address: "123",
-      name: "Token 2",
-      symbol: "T2",
-      decimals: 10,
-      displayDecimals: 10,
-    },
-  },
-  apr: 10,
-  tvl: 1000,
-  dailyVol: 1000,
-  dailyVolperTvl: 10,
-  reward24h: 1000,
-  poolState: {
-    lpMint: new PublicKey("HLaxJ13C7m6fKwrfnnzpmWXjdAH3ZL9sGR6mxZMA4tdk"),
-    token0Mint: new PublicKey("DyyHbfkCSWcHjaB8GTVCqkVFC3NpxgF9wXsEgvNLSSn1"),
-    token1Mint: new PublicKey("5mvoZPmbP7j4RQKmEwF6B94aTKoihEKo1LpVeimzexDh"),
-    // token0Vault: new PublicKey("123"),
-    // token1Vault: new PublicKey("123"),
-    // token0Program: new PublicKey("123"),
-    // token1Program: new PublicKey("123"),
-    // observationKey: new PublicKey("123"),
-    authBump: 0,
-  } as any,
-  price: 100,
-  poolType: PoolType.CLMM,
-};
+import { Pool, PoolType } from "./v2/types";
 
 export function Pools() {
   const [searchValue, setSearchValue] = useState("");
@@ -66,103 +29,165 @@ export function Pools() {
   const [isPoolDrawerOpen, setIsPoolDrawerOpen] = useState(false);
 
   // Hooks
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-  const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxAmmProgram({ provider });
+  // const { connection } = useConnection();
+  // const wallet = useAnchorWallet();
+  // const provider = useProvider({ connection, wallet });
+  // const doxxCpmmProgram = useDoxxCpmmProgram({ provider });
+  // const doxxClmmProgram = useDoxxClmmProgram({ provider });
 
   // Fetch all pools
-  const {
-    data: poolsData,
-    isLoading: isLoadingPools,
-    // TODO: add refetchAllPoolStates to the dependencies
-    // refetch: refetchAllPoolStates,
-  } = useGetAllPools(doxxAmmProgram);
+  // const {
+  //   data: cpmmPoolsData,
+  //   isLoading: isLoadingCpmmPools,
+  //   // TODO: add refetchAllPoolStates to the dependencies
+  //   // refetch: refetchAllPoolStates,
+  // } = useGetCPMMPools(doxxCpmmProgram);
+
+  // const {
+  //   data: clmmPoolsData,
+  //   isLoading: isLoadingClmmPools,
+  //   // TODO: add refetchAllPoolStates to the dependencies
+  //   // refetch: refetchAllPoolStates,
+  // } = useGetCLMMPools(doxxClmmProgram);
 
   // Fetch token balances
-  const { data: splBalances } = useAllSplBalances(
-    connection,
-    wallet?.publicKey ?? undefined,
-    knownTokenProfiles,
-    true,
-  );
+  // const { data: splBalances } = useAllSplBalances(
+  //   connection,
+  //   wallet?.publicKey ?? undefined,
+  //   knownTokenProfiles,
+  //   true,
+  // );
 
-  const _rawTokenProfilesFromSplBalances: RawTokenProfile[] | undefined =
-    useMemo(() => {
-      if (!splBalances) return undefined;
+  // const poolTokens = useMemo(() => {
+  //   return clmmPoolsData?.map((p) => {
+  //     return {
+  //       mint0Address: p.poolState.tokenMint0.toString(),
+  //       mint0Decimals: p.poolState.mintDecimals0,
+  //       mint1Address: p.poolState.tokenMint1.toString(),
+  //       mint1Decimals: p.poolState.mintDecimals1,
+  //     };
+  //   });
+  // }, [clmmPoolsData]);
 
-      const allBalances = Object.values(splBalances).filter((c) => !!c);
+  // const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
+  //   useGetAllTokenInfos({ poolTokens });
+  // useGetAllTokenInfos(cpmmPoolsData, rawTokenProfilesFromSplBalances);
 
-      return allBalances.map((b) => {
-        return {
-          address: b.mint,
-          decimals: b.decimals,
-        };
-      });
-    }, [splBalances]);
+  // // Transform pool data from chain to table format
+  // const transformedPools = useMemo<Pool[]>(() => {
+  //   // console.log("🚀 ~ cpmmPoolsData:", cpmmPoolsData);
+  //   // console.log("🚀 ~ clmmPoolsData:", clmmPoolsData);
+  //   if (!cpmmPoolsData || !allTokenProfiles || !clmmPoolsData) return []; // Fallback to mock data
 
-  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
-    useGetAllTokenInfos(poolsData, []);
-  // useGetAllTokenInfos(poolsData, rawTokenProfilesFromSplBalances);
+  //   const cpmmPools: Pool[] = cpmmPoolsData.map((poolData) => {
+  //     const { poolState, ammConfig } = poolData;
+  //     // console.log(
+  //     //   "🚀 ~ poolState.poolId:",
+  //     //   poolData.observationState.poolId.toString(),
+  //     // );
+  //     // console.log("🚀 ~ poolState.lpmint:", poolState.lpMint.toString());
 
-  // Transform pool data from chain to table format
-  const transformedPools = useMemo<Pool[]>(() => {
-    if (!poolsData || !allTokenProfiles) return []; // Fallback to mock data
+  //     // Find token profiles
+  //     const token0Profile = allTokenProfiles.find(
+  //       (t) => t.address === poolState.token0Mint.toBase58(),
+  //     ) ?? {
+  //       ...unknownToken,
+  //       address: poolState.token0Mint.toBase58(),
+  //     };
+  //     const token1Profile = allTokenProfiles.find(
+  //       (t) => t.address === poolState.token1Mint.toBase58(),
+  //     ) ?? {
+  //       ...unknownToken,
+  //       address: poolState.token1Mint.toBase58(),
+  //     };
 
-    return poolsData.map((poolData, index) => {
-      const { poolState, ammConfig } = poolData;
-      console.log(
-        "🚀 ~ poolState.poolId:",
-        poolData.observationState.poolId.toString(),
-      );
-      console.log("🚀 ~ poolState.lpmint:", poolState.lpMint.toString());
+  //     const poolAddress = poolData.observationState.poolId;
 
-      // Find token profiles
-      const token0Profile = allTokenProfiles.find(
-        (t) => t.address === poolState.token0Mint.toBase58(),
-      ) ?? {
-        ...unknownToken,
-        address: poolState.token0Mint.toBase58(),
-      };
-      const token1Profile = allTokenProfiles.find(
-        (t) => t.address === poolState.token1Mint.toBase58(),
-      ) ?? {
-        ...unknownToken,
-        address: poolState.token1Mint.toBase58(),
-      };
+  //     // Calculate fee percentage from tradeFeeRate (basis points)
+  //     // const feePercent = normalizeBPSString(ammConfig.tradeFeeRate.toString());
 
-      const poolAddress = poolData.observationState.poolId;
+  //     return {
+  //       poolId: poolAddress.toBase58(),
+  //       fee: ammConfig.tradeFeeRate,
+  //       lpToken: {
+  //         token1: token0Profile,
+  //         token2: token1Profile,
+  //       },
+  //       apr: 10, // Placeholder - calculate from fees/TVL
+  //       tvl: 0, // Placeholder - fetch from vault balances
+  //       dailyVol: 0, // Placeholder - fetch from analytics
+  //       dailyVolperTvl: 0, // Placeholder
+  //       reward24h: 0.001, // Placeholder - fetch from analytics
+  //       cpmmPoolState: poolState, // IMPORTANT: Include the actual pool state for deposit
+  //       // TODO: fetch from pool state
+  //       price: 0.301,
+  //       poolType: PoolType.CPMM, // Randomly assign pool type
+  //     };
+  //   });
 
-      // Calculate fee percentage from tradeFeeRate (basis points)
-      // const feePercent = normalizeBPSString(ammConfig.tradeFeeRate.toString());
+  //   const clmmPools: Pool[] = clmmPoolsData.map((poolData) => {
+  //     const { poolState, ammConfig } = poolData;
+  //     // console.log(
+  //     //   "🚀 ~ poolState.poolId:",
+  //     //   poolData.observationState.poolId.toString(),
+  //     // );
+  //     // console.log("🚀 ~ poolState.lpmint:", poolState. lpMint.toString());
 
-      return {
-        poolId: poolAddress.toBase58(),
-        fee: ammConfig.tradeFeeRate,
-        lpToken: {
-          token1: token0Profile,
-          token2: token1Profile,
-        },
-        apr: 10, // Placeholder - calculate from fees/TVL
-        tvl: 0, // Placeholder - fetch from vault balances
-        dailyVol: 0, // Placeholder - fetch from analytics
-        dailyVolperTvl: 0, // Placeholder
-        reward24h: 0.001, // Placeholder - fetch from analytics
-        poolState, // IMPORTANT: Include the actual pool state for deposit
-        // TODO: fetch from pool state
-        price: 0.301,
-        poolType: Math.random() < 0.5 ? PoolType.CLMM : PoolType.CPMM, // Randomly assign pool type
-      };
-    });
-  }, [poolsData, allTokenProfiles]);
+  //     // Find token profiles
+  //     const token0Profile = allTokenProfiles.find(
+  //       (t) => t.address === poolState.tokenMint0.toBase58(),
+  //     ) ?? {
+  //       ...unknownToken,
+  //       address: poolState.tokenMint0.toBase58(),
+  //     };
+  //     const token1Profile = allTokenProfiles.find(
+  //       (t) => t.address === poolState.tokenMint1.toBase58(),
+  //     ) ?? {
+  //       ...unknownToken,
+  //       address: poolState.tokenMint1.toBase58(),
+  //     };
 
-  const isLoading = useMemo(() => {
-    return isLoadingPools || isLoadingAllTokenProfiles;
-  }, [isLoadingPools, isLoadingAllTokenProfiles]);
+  //     const poolAddress = poolData.observationState.poolId;
+
+  //     return {
+  //       poolId: poolAddress.toBase58(),
+  //       fee: new BN(ammConfig.tradeFeeRate.toString()),
+  //       lpToken: {
+  //         token1: token0Profile,
+  //         token2: token1Profile,
+  //       },
+  //       apr: 10, // Placeholder - calculate from fees/TVL
+  //       tvl: 0, // Placeholder - fetch from vault balances
+  //       dailyVol: 0, // Placeholder - fetch from analytics
+  //       dailyVolperTvl: 0, // Placeholder
+  //       reward24h: 0.001, // Placeholder - fetch from analytics
+  //       clmmPoolState: poolState, // IMPORTANT: Include the actual pool state for deposit
+  //       // TODO: fetch from pool state
+  //       price: 0.301,
+  //       poolType: PoolType.CLMM, // Randomly assign pool type
+  //     };
+  //   });
+
+  //   return [...cpmmPools, ...clmmPools];
+  // }, [cpmmPoolsData, clmmPoolsData, allTokenProfiles]);
+  // console.log("🚀 ~ transformedPools:", transformedPools);
+
+  const {
+    data: allPools,
+    isLoading: isLoadingAllPools,
+    refetch: refetchAllPools,
+  } = useGetAllPools();
+  console.log("🚀 ~ isLoadingAllPools:", isLoadingAllPools);
+  console.log("🚀 ~ allPools:", allPools);
+
+  // const isLoading = useMemo(() => {
+  //   return (
+  //     isLoadingCpmmPools || isLoadingClmmPools || isLoadingAllTokenProfiles
+  //   );
+  // }, [isLoadingCpmmPools, , isLoadingClmmPools, isLoadingAllTokenProfiles]);
 
   const handleOpenDeposit = (pool: Pool) => {
     setSelectedPool(pool);
-    // setSelectedPoolAddress(poolAddress);
     setIsPoolDrawerOpen(true);
   };
 
@@ -170,31 +195,13 @@ export function Pools() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* <div className="flex flex-row items-center justify-between">
-        <h1 className={cn(text.it1(), "text-green")}>All Pools</h1>
-        <Button
-          className={cn(
-            text.hsb2(),
-            "text-green flex flex-row items-center justify-center gap-2 rounded-2xl",
-          )}
-          onClick={() => setIsCreatePoolOpen(true)}
-        >
-          <Plus className="mt-1" />
-          Create Pool
-        </Button>
-      </div> */}
       <div className="h-full min-h-[660px] w-full">
-        {/* {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <span className="text-gray-400">Loading pools...</span>
-          </div>
-        ) : ( */}
         <DataTable
           columns={poolColumns}
-          data={transformedPools} // seems like real data didn't work.
+          data={allPools ?? []}
           globalFilter={searchValue}
           pageSize={10}
-          isLoading={isLoading}
+          isLoading={isLoadingAllPools}
           searchInput={
             <SearchInput
               value={searchValue}
@@ -203,7 +210,6 @@ export function Pools() {
             />
           }
         />
-        {/* )} */}
       </div>
 
       {isPoolDrawerOpen && selectedPool && (
@@ -213,26 +219,6 @@ export function Pools() {
           selectedPool={selectedPool}
         />
       )}
-
-      {/* Create Pool Dialog
-      {isCreatePoolOpen && !isLoadingAllTokenProfiles && allTokenProfiles && (
-        <CreatePoolDialog
-          isOpen={isCreatePoolOpen}
-          splBalances={splBalances}
-          allTokenProfiles={allTokenProfiles}
-          onOpenChange={setIsCreatePoolOpen}
-        />
-      )} */}
-
-      {/* Deposit Dialog
-      {isDepositDialogOpen && (
-        <DepositDialog
-          isOpen={isDepositDialogOpen}
-          onOpenChange={setIsDepositDialogOpen}
-          poolState={selectedPool}
-          poolStateAddress={selectedPoolAddress}
-        />
-      )} */}
     </div>
   );
 }

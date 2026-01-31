@@ -1,7 +1,11 @@
 import { TokenProfile } from "@/lib/config/tokens";
-import { PoolStateWithConfig, SplBalance } from "@/lib/hooks/chain/types";
-import { CreateCLMMPoolDialog } from "../CreateCLMMPoolDialog";
-import { CreateCPMMPoolDialog } from "../CreateCPMMPoolDialog";
+import {
+  CLMMPoolStateWithConfig,
+  CPMMPoolStateWithConfig,
+  SplBalance,
+} from "@/lib/hooks/chain/types";
+import { CreateCLMMPoolDialog } from "./clmm/CreateCLMMPoolDialog";
+import { CreateCPMMPoolDialog } from "./cpmm/CreateCPMMPoolDialog";
 import { PoolType } from "./types";
 
 interface CreatePoolDialogProps {
@@ -10,7 +14,7 @@ interface CreatePoolDialogProps {
   splBalances: Partial<Record<string, SplBalance>> | undefined;
   createPoolType: PoolType;
   allTokenProfiles: TokenProfile[];
-  poolsData: PoolStateWithConfig[] | undefined;
+  poolsData: CPMMPoolStateWithConfig[] | CLMMPoolStateWithConfig[] | undefined;
 }
 
 export const CreatePoolDialog = ({
@@ -28,7 +32,7 @@ export const CreatePoolDialog = ({
         onOpenChange={onOpenChange}
         splBalances={splBalances}
         allTokenProfiles={allTokenProfiles}
-        poolsData={poolsData}
+        poolsData={poolsData as CPMMPoolStateWithConfig[] | undefined}
       />
     );
   }
@@ -39,7 +43,7 @@ export const CreatePoolDialog = ({
       onOpenChange={onOpenChange}
       splBalances={splBalances}
       allTokenProfiles={allTokenProfiles}
-      poolsData={poolsData}
+      poolsData={poolsData as CLMMPoolStateWithConfig[] | undefined}
     />
   );
 };

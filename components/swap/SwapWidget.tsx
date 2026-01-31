@@ -25,9 +25,10 @@ import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
 import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
-import { useDoxxAmmProgram } from "@/lib/hooks/chain/useDoxxAmmProgram";
+import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
+import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDebounce } from "@/lib/hooks/useDebounce";
@@ -99,7 +100,7 @@ export function SwapWidget() {
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
 
-  const doxxAmmProgram = useDoxxAmmProgram({
+  const doxxCpmmProgram = useDoxxCpmmProgram({
     provider,
   });
 
@@ -108,17 +109,34 @@ export function SwapWidget() {
   }, [slippage]);
 
   const {
-    data: allPoolStates,
-    isLoading: isLoadingAllPoolStates,
-    refetch: refetchAllPoolStates,
-    isRefetching: isRefetchingAllPoolStates,
-  } = useGetAllPools(doxxAmmProgram);
+    data: cpmmPoolStates,
+    isLoading: isLoadingCPMMPoolStates,
+    refetch: refetchCPMMPoolStates,
+    isRefetching: isRefetchingCPMMPoolStates,
+  } = useGetCPMMPools(doxxCpmmProgram);
+
+  const {
+    data: allPools,
+    // isLoading: isLoadingAllPools,
+    // refetch: refetchAllPools,
+  } = useGetAllPools();
+
+  const poolTokens = useMemo(() => {
+    return allPools?.map((p) => {
+      return {
+        mint0Address: p.lpToken.token1.address,
+        mint0Decimals: p.lpToken.token1.decimals,
+        mint1Address: p.lpToken.token2.address,
+        mint1Decimals: p.lpToken.token2.decimals,
+      };
+    });
+  }, [allPools]);
 
   const {
     data: allTokenProfiles,
     isLoading: isLoadingAllTokenProfiles,
     error: errorAllTokenProfiles,
-  } = useGetAllTokenInfos(allPoolStates);
+  } = useGetAllTokenInfos({ poolTokens });
 
   // get all spl balances
   const {
@@ -141,7 +159,7 @@ export function SwapWidget() {
     connection,
     inputMint: new PublicKey(sellToken.address),
     outputMint: new PublicKey(buyToken.address),
-    pools: allPoolStates,
+    pools: cpmmPoolStates,
     baseInput,
     isBaseExactIn,
     slippageBps,
@@ -185,7 +203,7 @@ export function SwapWidget() {
       isLoadingBestRoute ||
       isTyping ||
       isRefetchingBestRoute ||
-      isRefetchingAllPoolStates // TODO: consider how to ignore this because it fetches all pool states
+      isRefetchingCPMMPoolStates // TODO: consider how to ignore this because it fetches all pool states
     );
   }, [
     isLoadingBestRoute,
@@ -194,7 +212,7 @@ export function SwapWidget() {
     sellAmount,
     buyAmount,
     isRefetchingBestRoute,
-    isRefetchingAllPoolStates,
+    isRefetchingCPMMPoolStates,
   ]);
 
   const isActionable = useMemo(() => {
@@ -202,14 +220,14 @@ export function SwapWidget() {
       !isLoadingAllTokenProfiles &&
       !errorAllTokenProfiles &&
       !isLoadingSplBalances &&
-      !isLoadingAllPoolStates
+      !isLoadingCPMMPoolStates
     );
   }, [
     isLoadingAllTokenProfiles,
     errorAllTokenProfiles,
     // isFetchingBestRoute,
     isLoadingSplBalances,
-    isLoadingAllPoolStates,
+    isLoadingCPMMPoolStates,
   ]);
 
   // Callbacks
@@ -288,9 +306,9 @@ export function SwapWidget() {
   }, [displayToken0Balance, handleSellInputChange]);
 
   const handleRefreshBestRoute = useCallback(() => {
-    refetchAllPoolStates();
+    refetchCPMMPoolStates();
     refetchBestRoute();
-  }, [refetchAllPoolStates, refetchBestRoute]);
+  }, [refetchCPMMPoolStates, refetchBestRoute]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
@@ -303,12 +321,12 @@ export function SwapWidget() {
       // delay to refetch balances and pool states
       setTimeout(() => {
         refetchSplBalances();
-        refetchAllPoolStates();
+        refetchCPMMPoolStates();
         setSellAmount("");
         setBuyAmount("");
       }, 2000);
     },
-    [refetchSplBalances, refetchAllPoolStates],
+    [refetchSplBalances, refetchCPMMPoolStates],
   );
 
   const handleError = (error: Error) => {
@@ -452,7 +470,7 @@ export function SwapWidget() {
               errorAllTokenProfiles,
               errorBestRoute,
             }}
-            program={doxxAmmProgram}
+            program={doxxCpmmProgram}
             bestRoute={bestRoute ?? undefined}
             isActionable={isActionable}
             isQuotingRoute={isFetchingBestRoute}
