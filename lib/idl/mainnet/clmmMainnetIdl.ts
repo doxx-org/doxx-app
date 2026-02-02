@@ -57,7 +57,7 @@ export type DoxxClmmMainnet = {
           address: "11111111111111111111111111111111"
         },
         {
-          name: "token_program",
+          name: "tokenProgram",
           docs: ["Token/Token2022 program to close token/mint account"]
         }
       ],
@@ -150,12 +150,12 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["The SPL program to perform token transfers"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["The SPL program 2022 to perform token transfers"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         }
@@ -232,12 +232,12 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["The SPL program to perform token transfers"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["The SPL program 2022 to perform token transfers"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         }
@@ -293,16 +293,16 @@ export type DoxxClmmMainnet = {
           "docs": ["The mint of reward token vault"]
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["Token program 2022"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "memo_program",
+          "name": "memoProgram",
           "docs": ["memo program"],
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
         }
@@ -366,7 +366,7 @@ export type DoxxClmmMainnet = {
           "type": "u16"
         },
         {
-          "name": "tick_spacing",
+          "name": "tickSpacing",
           "type": "u16"
         },
         {
@@ -582,7 +582,7 @@ export type DoxxClmmMainnet = {
       ],
       "args": [
         {
-          "name": "sqrt_price_x64",
+          "name": "sqrtPriceX64",
           "type": "u128"
         },
         {
@@ -704,7 +704,7 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["SPL program to transfer out tokens"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
@@ -791,17 +791,17 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["SPL program to transfer out tokens"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["Token program 2022"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "memo_program",
+          "name": "memoProgram",
           "docs": ["memo program"],
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
         },
@@ -897,7 +897,7 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["Program to create mint account and mint tokens"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
@@ -985,12 +985,12 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["Program to create mint account and mint tokens"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["Token program 2022"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
@@ -1293,7 +1293,7 @@ export type DoxxClmmMainnet = {
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["Program to create mint account and mint tokens"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1510,7 +1510,7 @@ export type DoxxClmmMainnet = {
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["Program to create mint account and mint tokens"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1525,7 +1525,7 @@ export type DoxxClmmMainnet = {
           "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["Program to create mint account and mint tokens"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
@@ -1716,7 +1716,7 @@ export type DoxxClmmMainnet = {
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["Program to transfer for token account"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1726,7 +1726,7 @@ export type DoxxClmmMainnet = {
           "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": [
             "Program to create NFT mint/token account and transfer for token22 account"
           ],
@@ -1826,12 +1826,12 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["Token program"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["Token program 2022"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         }
@@ -1889,22 +1889,22 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "input_token_account",
+          "name": "inputTokenAccount",
           "docs": ["The user token account for input token"],
           "writable": true
         },
         {
-          "name": "output_token_account",
+          "name": "outputTokenAccount",
           "docs": ["The user token account for output token"],
           "writable": true
         },
         {
-          "name": "input_vault",
+          "name": "inputVault",
           "docs": ["The vault token account for input token"],
           "writable": true
         },
         {
-          "name": "output_vault",
+          "name": "outputVault",
           "docs": ["The vault token account for output token"],
           "writable": true
         },
@@ -1916,7 +1916,7 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["SPL program for token transfers"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
@@ -1964,7 +1964,7 @@ export type DoxxClmmMainnet = {
           "signer": true
         },
         {
-          "name": "input_token_account",
+          "name": "inputTokenAccount",
           "docs": ["The token account that pays input tokens for the swap"],
           "writable": true
         },
@@ -1974,17 +1974,17 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["SPL program for token transfers"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["SPL program 2022 for token transfers"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "memo_program",
+          "name": "memoProgram",
           "docs": ["Memo program"],
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
         }
@@ -2001,7 +2001,7 @@ export type DoxxClmmMainnet = {
       ]
     },
     {
-      "name": "swap_v2",
+      "name": "swapV2",
       "docs": [
         "Swaps one token for as much as possible of another token across a single pool, support token program 2022",
         "",
@@ -2033,22 +2033,22 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "input_token_account",
+          "name": "inputTokenAccount",
           "docs": ["The user token account for input token"],
           "writable": true
         },
         {
-          "name": "output_token_account",
+          "name": "outputTokenAccount",
           "docs": ["The user token account for output token"],
           "writable": true
         },
         {
-          "name": "input_vault",
+          "name": "inputVault",
           "docs": ["The vault token account for input token"],
           "writable": true
         },
         {
-          "name": "output_vault",
+          "name": "outputVault",
           "docs": ["The vault token account for output token"],
           "writable": true
         },
@@ -2060,26 +2060,26 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "docs": ["SPL program for token transfers"],
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "token_program_2022",
+          "name": "tokenProgram2022",
           "docs": ["SPL program 2022 for token transfers"],
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "memo_program",
+          "name": "memoProgram",
           "docs": ["Memo program"],
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
         },
         {
-          "name": "input_vault_mint",
+          "name": "inputVaultMint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "output_vault_mint",
+          "name": "outputVaultMint",
           "docs": ["The mint of token vault 1"]
         }
       ],
@@ -2627,7 +2627,7 @@ export type DoxxClmmMainnet = {
             "type": "u32"
           },
           {
-            "name": "tick_spacing",
+            "name": "tickSpacing",
             "docs": ["The tick spacing"],
             "type": "u16"
           },
@@ -2762,7 +2762,7 @@ export type DoxxClmmMainnet = {
             "type": "u32"
           },
           {
-            "name": "tick_spacing",
+            "name": "tickSpacing",
             "type": "u16"
           },
           {
@@ -3301,7 +3301,7 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "tick_spacing",
+            "name": "tickSpacing",
             "docs": ["The minimum number of ticks between initialized ticks"],
             "type": "u16"
           },
@@ -3311,7 +3311,7 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "sqrt_price_x64",
+            "name": "sqrtPriceX64",
             "docs": ["The initial sqrt price of the pool, as a Q64.64"],
             "type": "u128"
           },
@@ -3401,7 +3401,7 @@ export type DoxxClmmMainnet = {
             type: "u8"
           },
           {
-            name: "tick_spacing",
+            name: "tickSpacing",
             docs: ["The minimum number of ticks between initialized ticks"],
             type: "u16"
           },
@@ -3411,14 +3411,14 @@ export type DoxxClmmMainnet = {
             type: "u128"
           },
           {
-            name: "sqrt_price_x64",
+            name: "sqrtPriceX64",
             docs: [
               "The current price of the pool as a sqrt(token_1/token_0) Q64.64 value"
             ],
             type: "u128"
           },
           {
-            name: "tick_current",
+            name: "tickCurrent",
             docs: [
               "The current tick of the pool, i.e. according to the last tick transition that was run."
             ],
@@ -3817,7 +3817,7 @@ export type DoxxClmmMainnet = {
             "type": "bool"
           },
           {
-            "name": "sqrt_price_x64",
+            "name": "sqrtPriceX64",
             "docs": ["The sqrt(price) of the pool after the swap, as a Q64.64"],
             "type": "u128"
           },

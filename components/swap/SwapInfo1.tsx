@@ -130,11 +130,15 @@ export function SwapInfo1({
           ) : (
             <p>
               {bestRoute
-                ? `${normalizeBN(bestRoute.swapState.minMaxAmount, 9, {
+                ? `${normalizeBN(
+                    bestRoute.swapState.minMaxAmount,
+                    isBaseExactIn ? buyToken.decimals : sellToken.decimals,
+                    {
                     displayDecimals: isBaseExactIn
                       ? buyToken.displayDecimals
                       : sellToken.displayDecimals,
-                  })} ${isBaseExactIn ? buyToken.symbol : sellToken.symbol}`
+                    },
+                  )} ${isBaseExactIn ? buyToken.symbol : sellToken.symbol}`
                 : "-"}
             </p>
           )}

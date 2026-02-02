@@ -1,4 +1,4 @@
-// useDoxxCpSwapV2.ts
+// useDoxxCpmmSwapV2.ts
 import { useCallback, useState } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
 import {
@@ -29,7 +29,7 @@ type SwapBaseOutputParams = {
   amountOut: BN; // human
 };
 
-export function useDoxxCpSwap(
+export function useDoxxCpmmSwap(
   program: Program<DoxxCpmmIdl> | undefined,
   wallet: AnchorWallet | undefined,
   onSuccess: (tx?: string) => void,

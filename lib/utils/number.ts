@@ -32,6 +32,10 @@ export function toBNWithDecimals(
   return toBN(v).mul(toBN(10 ** decimals));
 }
 
+// parse human readable amount to BN
+// e.g. parseAmountBN("1", 9) -> 1e9
+//      parseAmountBN("0.1", 9) -> 0.1e9
+//      parseAmountBN("0.11111", 9) -> 0.11111e9
 export function parseAmountBN(stringAmount: string, decimals: number): BN {
   const [integerPart, fractionalPart = ""] = stringAmount.split(".");
   const normalizedFractionalPart = fractionalPart
@@ -81,7 +85,7 @@ function formatAmountBN(
 // e.g. "1000" -> "0.1"
 //      = 1000 / 10000 = 0.1
 export function normalizeBPSString(bpsString: string): string {
-  return normalizeBN(parseAmountBN(bpsString, 2), 4, {
+  return normalizeBN(toBN(bpsString), 4, {
     minCap: parseAmountBN("0.01", 4),
   });
 }
@@ -103,11 +107,16 @@ export function normalizeBN(
   decimals: number,
   {
     displayDecimals = decimals,
-    minCap = MINIMUM_CAP_E9,
-    maxCap = ONE_MILLION_E9,
+    minCap,
+    maxCap,
   }: NormalizeBNOptions = {},
 ): string {
   // Convert to string and pad with zeros if needed
+  minCap = minCap ?? parseAmountBN("0.01", decimals);
+  maxCap = maxCap ?? parseAmountBN(
+    "1000000",
+    decimals,
+  );
   try {
     if (amount.lt(minCap)) {
       return "<" + formatAmountBN(minCap, decimals);

@@ -37,7 +37,6 @@ interface AccountDataParsed {
   type: string;
 }
 
-
 // Perf caches (module-level, survives hook re-renders)
 // - Mint decimals never change; cache them to avoid re-fetching on every refetch.
 const mintDecimalsCache = new Map<string, number>();

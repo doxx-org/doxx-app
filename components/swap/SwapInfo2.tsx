@@ -1,6 +1,7 @@
 import Info from "@/assets/icons/info.svg";
 import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
 import { ellipseAddress, normalizeBPSString } from "@/lib/utils";
+import { getAddressExplorerUrl } from "@/lib/utils/network";
 import { Link } from "../Link";
 import { Underlined } from "../Underlined";
 import { Skeleton } from "../ui/skeleton";
@@ -39,7 +40,7 @@ export function SwapInfo2({
               {bestRoute ? (
                 <Tooltip>
                   <TooltipTrigger>
-                    <Underlined>CPMM</Underlined>
+                    <Underlined>{bestRoute.poolType}</Underlined>
                   </TooltipTrigger>
                   <TooltipContent className="flex flex-col gap-1">
                     <div>
@@ -52,10 +53,24 @@ export function SwapInfo2({
                     <div>
                       AMM ID:{" "}
                       <Link
-                        href={`https://solscan.io/account/${bestRoute.pool.poolState.ammConfig.toString()}`}
+                        href={getAddressExplorerUrl(
+                          bestRoute.pool.poolState.ammConfig.toString(),
+                        )}
                       >
                         {ellipseAddress(
                           bestRoute.pool.poolState.ammConfig.toString(),
+                        )}
+                      </Link>
+                    </div>
+                    <div>
+                      Pool ID:{" "}
+                      <Link
+                        href={getAddressExplorerUrl(
+                          bestRoute.pool.observationState.poolId.toString(),
+                        )}
+                      >
+                        {ellipseAddress(
+                          bestRoute.pool.observationState.poolId.toString(),
                         )}
                       </Link>
                     </div>

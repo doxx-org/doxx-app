@@ -25,16 +25,23 @@ import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
 import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
+import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
+import { useGetCLMMPools } from "@/lib/hooks/chain/useGetCLMMPools";
 import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
-import { cn, normalizeBN, parseDecimalsInput } from "@/lib/utils";
+import {
+  cn,
+  normalizeBN,
+  parseAmountBN,
+  parseDecimalsInput,
+} from "@/lib/utils";
 import { simplifyErrorMessage } from "@/lib/utils/errors/error";
 import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
 import { Button } from "../ui/button";
@@ -103,6 +110,9 @@ export function SwapWidget() {
   const doxxCpmmProgram = useDoxxCpmmProgram({
     provider,
   });
+  const doxxClmmProgram = useDoxxClmmProgram({
+    provider,
+  });
 
   const slippageBps = useMemo(() => {
     return Number(slippage) * 100;
@@ -114,6 +124,13 @@ export function SwapWidget() {
     refetch: refetchCPMMPoolStates,
     isRefetching: isRefetchingCPMMPoolStates,
   } = useGetCPMMPools(doxxCpmmProgram);
+
+  const {
+    data: clmmPoolStates,
+    isLoading: isLoadingCLMMPoolStates,
+    refetch: refetchCLMMPoolStates,
+    isRefetching: isRefetchingCLMMPoolStates,
+  } = useGetCLMMPools(doxxClmmProgram);
 
   const {
     data: allPools,
@@ -147,6 +164,7 @@ export function SwapWidget() {
     connection,
     wallet?.publicKey ?? undefined,
     allTokenProfiles,
+    true,
   );
 
   const {
@@ -159,7 +177,8 @@ export function SwapWidget() {
     connection,
     inputMint: new PublicKey(sellToken.address),
     outputMint: new PublicKey(buyToken.address),
-    pools: cpmmPoolStates,
+    cpmmPools: cpmmPoolStates,
+    clmmPools: clmmPoolStates,
     baseInput,
     isBaseExactIn,
     slippageBps,
@@ -191,10 +210,14 @@ export function SwapWidget() {
     ];
   }, [splBalances, sellToken.address, buyToken.address]);
 
-  const isFetchingBestRoute = useMemo(() => {
-    const isEmptyInput =
+  const isEmptyInput = useMemo(() => {
+    return (
       (isBaseExactIn && sellAmount === "") ||
-      (!isBaseExactIn && buyAmount === "");
+      (!isBaseExactIn && buyAmount === "")
+    );
+  }, [isBaseExactIn, sellAmount, buyAmount]);
+
+  const isFetchingBestRoute = useMemo(() => {
     if (isEmptyInput) {
       return false;
     }
@@ -203,16 +226,16 @@ export function SwapWidget() {
       isLoadingBestRoute ||
       isTyping ||
       isRefetchingBestRoute ||
-      isRefetchingCPMMPoolStates // TODO: consider how to ignore this because it fetches all pool states
+      isRefetchingCPMMPoolStates ||
+      isRefetchingCLMMPoolStates
     );
   }, [
     isLoadingBestRoute,
     isTyping,
-    isBaseExactIn,
-    sellAmount,
-    buyAmount,
+    isEmptyInput,
     isRefetchingBestRoute,
     isRefetchingCPMMPoolStates,
+    isRefetchingCLMMPoolStates,
   ]);
 
   const isActionable = useMemo(() => {
@@ -220,7 +243,8 @@ export function SwapWidget() {
       !isLoadingAllTokenProfiles &&
       !errorAllTokenProfiles &&
       !isLoadingSplBalances &&
-      !isLoadingCPMMPoolStates
+      !isLoadingCPMMPoolStates &&
+      !isLoadingCLMMPoolStates
     );
   }, [
     isLoadingAllTokenProfiles,
@@ -228,6 +252,7 @@ export function SwapWidget() {
     // isFetchingBestRoute,
     isLoadingSplBalances,
     isLoadingCPMMPoolStates,
+    isLoadingCLMMPoolStates,
   ]);
 
   // Callbacks
@@ -307,8 +332,9 @@ export function SwapWidget() {
 
   const handleRefreshBestRoute = useCallback(() => {
     refetchCPMMPoolStates();
+    refetchCLMMPoolStates();
     refetchBestRoute();
-  }, [refetchCPMMPoolStates, refetchBestRoute]);
+  }, [refetchCPMMPoolStates, refetchCLMMPoolStates, refetchBestRoute]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
@@ -322,11 +348,12 @@ export function SwapWidget() {
       setTimeout(() => {
         refetchSplBalances();
         refetchCPMMPoolStates();
+        refetchCLMMPoolStates();
         setSellAmount("");
         setBuyAmount("");
       }, 2000);
     },
-    [refetchSplBalances, refetchCPMMPoolStates],
+    [refetchSplBalances, refetchCPMMPoolStates, refetchCLMMPoolStates],
   );
 
   const handleError = (error: Error) => {
@@ -470,7 +497,9 @@ export function SwapWidget() {
               errorAllTokenProfiles,
               errorBestRoute,
             }}
-            program={doxxCpmmProgram}
+            cpmmProgram={doxxCpmmProgram}
+            clmmProgram={doxxClmmProgram}
+            connection={connection}
             bestRoute={bestRoute ?? undefined}
             isActionable={isActionable}
             isQuotingRoute={isFetchingBestRoute}

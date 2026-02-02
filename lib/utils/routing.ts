@@ -7,12 +7,13 @@ import {
   CPMMAmmConfig,
   CPMMPoolState,
   CPMMPoolStateWithConfig,
+  CLMMPoolStateWithConfig,
 } from "@/lib/hooks/chain/types";
 import { parseAmountBN } from "@/lib/utils";
-import { IUseBestRouteResponse } from "../hooks/chain/useBestRoute";
 import { RoutingError } from "./errors/routing-error";
 
 const ONE_M = new BN(1_000_000); // ppm
+const TWO_POW_128 = new BN(1).ushln(128);
 
 interface IGetBestQuoteParams {
   connection: Connection;
@@ -36,7 +37,9 @@ export interface SwapState {
   priceImpact: BN;
 }
 
-type GetBestQuotePool = Pick<IUseBestRouteResponse, "pool">;
+type GetBestQuotePool = {
+  pool: CPMMPoolStateWithConfig;
+};
 
 type GetBestQuoteSwapStateBase = Omit<
   SwapState,
@@ -247,7 +250,7 @@ export async function getBestQuoteSingleHopExactIn(
     // if new amount out is greater than previous best amount out, update best
     if (
       !best ||
-      newAmountOut.lt(best.swapState.token1Amount) ||
+      newAmountOut.gt(best.swapState.token1Amount) ||
       minAmountOut.gt(best.swapState.minAmountOut)
     ) {
       // amount out per one token in
@@ -355,9 +358,10 @@ export async function getBestQuoteSingleHopExactOut(
     }
 
     // format amount into token decimals
+    const outIsToken1 = outputMint.equals(poolState.token1Mint);
     const amountOutTokenDecimals = parseAmountBN(
       amountOut,
-      poolState.mint1Decimals,
+      outIsToken1 ? poolState.mint1Decimals : poolState.mint0Decimals,
     );
     if (amountOutTokenDecimals.lte(ZERO)) {
       continue;
@@ -394,12 +398,12 @@ export async function getBestQuoteSingleHopExactOut(
       // amount out per one token in
       const amountOutPerOneTokenIn = amountOutTokenDecimals
         .mul(ONE_E9)
-        .div(amountOutTokenDecimals);
+        .div(newAmountIn);
 
       // amount in per one token out
-      const amountInPerOneTokenOut = amountOutTokenDecimals
-        .mul(ONE_E9)
-        .div(newAmountIn);
+      const amountInPerOneTokenOut = newAmountIn.mul(ONE_E9).div(
+        amountOutTokenDecimals,
+      );
 
       // TODO: handle this
       const priceImpact = newAmountIn
@@ -432,6 +436,210 @@ export async function getBestQuoteSingleHopExactOut(
     best.swapState.maxAmountIn.gte(MAX_UINT128)
   ) {
     throw new Error(RoutingError.NO_BEST_QUOTE_FOUND);
+  }
+
+  return best;
+}
+
+// ==============================================
+// CLMM (spot) quotes (single hop)
+// NOTE: This is a lightweight approximation using current sqrtPriceX64.
+// It does NOT walk ticks, so large trades may deviate.
+// ==============================================
+
+interface IGetBestQuoteClmmParams {
+  pools: CLMMPoolStateWithConfig[];
+  inputMint: PublicKey;
+  outputMint: PublicKey;
+  slippageBps: number;
+}
+
+type GetBestQuoteClmmPool = {
+  pool: CLMMPoolStateWithConfig;
+};
+
+type GetBestQuoteClmmExactInResult = GetBestQuoteClmmPool & {
+  swapState: GetBestQuoteSwapStateBase & { minAmountOut: BN };
+};
+
+type GetBestQuoteClmmExactOutResult = GetBestQuoteClmmPool & {
+  swapState: GetBestQuoteSwapStateBase & { maxAmountIn: BN };
+};
+
+function clmmInputWithFee(amountIn: BN, tradeFeeRate: BN) {
+  // tradeFeeRate is in ppm (1e-6) per Raydium-style docs
+  const fee = tradeFeeRate.gt(ONE_M) ? ONE_M : tradeFeeRate;
+  return amountIn.mul(ONE_M.sub(fee)).div(ONE_M);
+}
+
+function clmmAmountOutFromSqrtPriceX64(params: {
+  amountIn: BN;
+  sqrtPriceX64: BN;
+  zeroForOne: boolean;
+}): BN {
+  const { amountIn, sqrtPriceX64, zeroForOne } = params;
+  if (amountIn.isZero()) return ZERO;
+  const priceX128 = sqrtPriceX64.mul(sqrtPriceX64); // Q128.128
+  if (priceX128.isZero()) return ZERO;
+
+  // token0 -> token1 (zeroForOne): out = in * price
+  if (zeroForOne) {
+    return amountIn.mul(priceX128).div(TWO_POW_128);
+  }
+
+  // token1 -> token0 (oneForZero): out = in / price
+  return amountIn.mul(TWO_POW_128).div(priceX128);
+}
+
+function clmmAmountInFromSqrtPriceX64(params: {
+  amountOut: BN;
+  sqrtPriceX64: BN;
+  zeroForOne: boolean;
+}): BN {
+  const { amountOut, sqrtPriceX64, zeroForOne } = params;
+  if (amountOut.isZero()) return ZERO;
+  const priceX128 = sqrtPriceX64.mul(sqrtPriceX64); // Q128.128
+  if (priceX128.isZero()) return MAX_UINT128;
+
+  // want token1 out, paying token0 in (zeroForOne): out = in * price => in = out / price
+  if (zeroForOne) {
+    return amountOut.mul(TWO_POW_128).div(priceX128);
+  }
+
+  // want token0 out, paying token1 in (oneForZero): out = in / price => in = out * price
+  return amountOut.mul(priceX128).div(TWO_POW_128);
+}
+
+export async function getBestQuoteClmmSingleHopExactIn(
+  opts: IGetBestQuoteClmmParams & { amountIn: string },
+): Promise<GetBestQuoteClmmExactInResult | undefined> {
+  const { pools, inputMint, outputMint, amountIn, slippageBps } = opts;
+  let best: GetBestQuoteClmmExactInResult | undefined;
+
+  for (const pool of pools) {
+    const poolState = pool.poolState;
+
+    // skip if swap disabled: status bit4 (value 16)
+    if ((poolState.status & 0b1_0000) !== 0) continue;
+    console.log("🚀 ~ poolState.liquidity:", poolState.liquidity.toString())
+    // skip empty liquidity pools (swap will fail due to missing tick arrays / no active liquidity)
+    if (poolState.liquidity.eq(ZERO)) continue;
+
+    const matchesPair =
+      (poolState.tokenMint0.equals(inputMint) &&
+        poolState.tokenMint1.equals(outputMint)) ||
+      (poolState.tokenMint1.equals(inputMint) &&
+        poolState.tokenMint0.equals(outputMint));
+    if (!matchesPair) continue;
+
+    const inputDecimals = poolState.tokenMint0.equals(inputMint)
+      ? poolState.mintDecimals0
+      : poolState.mintDecimals1;
+    const outputDecimals = poolState.tokenMint0.equals(inputMint)
+      ? poolState.mintDecimals1
+      : poolState.mintDecimals0;
+
+    const amountInTokenDecimals = parseAmountBN(amountIn, inputDecimals);
+    if (amountInTokenDecimals.lte(ZERO)) continue;
+
+    const amountInAfterFee = clmmInputWithFee(
+      amountInTokenDecimals,
+      new BN(pool.ammConfig.tradeFeeRate.toString()),
+    );
+    const zeroForOne = inputMint.equals(poolState.tokenMint0);
+    const amountOut = clmmAmountOutFromSqrtPriceX64({
+      amountIn: amountInAfterFee,
+      sqrtPriceX64: new BN(poolState.sqrtPriceX64.toString()),
+      zeroForOne,
+    });
+    if (amountOut.lte(ZERO)) continue;
+
+    const minAmountOut = amountOut.muln(BPS - slippageBps).divn(BPS);
+    if (minAmountOut.lte(ZERO)) continue;
+
+    if (!best || minAmountOut.gt(best.swapState.minAmountOut)) {
+      const amountOutPerOneTokenIn = amountOut.mul(ONE_E9).div(amountInTokenDecimals);
+      const amountInPerOneTokenOut = amountInTokenDecimals.mul(ONE_E9).div(amountOut);
+      const swapState: GetBestQuoteSwapStateBase = {
+        token0: inputMint,
+        token1: outputMint,
+        token0Amount: amountInTokenDecimals,
+        token1Amount: amountOut,
+        token0Decimals: inputDecimals,
+        token1Decimals: outputDecimals,
+        amountOutPerOneTokenIn,
+        amountInPerOneTokenOut,
+        priceImpact: ZERO,
+      };
+      best = { pool, swapState: { ...swapState, minAmountOut } };
+    }
+  }
+
+  return best;
+}
+
+export async function getBestQuoteClmmSingleHopExactOut(
+  opts: IGetBestQuoteClmmParams & { amountOut: string },
+): Promise<GetBestQuoteClmmExactOutResult | undefined> {
+  const { pools, inputMint, outputMint, amountOut, slippageBps } = opts;
+  let best: GetBestQuoteClmmExactOutResult | undefined;
+
+  for (const pool of pools) {
+    const poolState = pool.poolState;
+
+    if ((poolState.status & 0b1_0000) !== 0) continue;
+    if (poolState.liquidity.eq(ZERO)) continue;
+
+    const matchesPair =
+      (poolState.tokenMint0.equals(inputMint) &&
+        poolState.tokenMint1.equals(outputMint)) ||
+      (poolState.tokenMint1.equals(inputMint) &&
+        poolState.tokenMint0.equals(outputMint));
+    if (!matchesPair) continue;
+
+    const inputDecimals = poolState.tokenMint0.equals(inputMint)
+      ? poolState.mintDecimals0
+      : poolState.mintDecimals1;
+    const outputDecimals = poolState.tokenMint0.equals(inputMint)
+      ? poolState.mintDecimals1
+      : poolState.mintDecimals0;
+
+    const amountOutTokenDecimals = parseAmountBN(amountOut, outputDecimals);
+    if (amountOutTokenDecimals.lte(ZERO)) continue;
+
+    const zeroForOne = inputMint.equals(poolState.tokenMint0);
+    const amountInNoFee = clmmAmountInFromSqrtPriceX64({
+      amountOut: amountOutTokenDecimals,
+      sqrtPriceX64: new BN(poolState.sqrtPriceX64.toString()),
+      zeroForOne,
+    });
+    if (amountInNoFee.lte(ZERO) || amountInNoFee.gte(MAX_UINT128)) continue;
+
+    const fee = new BN(pool.ammConfig.tradeFeeRate.toString());
+    const denom = ONE_M.sub(fee.gt(ONE_M) ? ONE_M : fee);
+    const amountIn = denom.isZero()
+      ? MAX_UINT128
+      : amountInNoFee.mul(ONE_M).div(denom);
+
+    const maxAmountIn = amountIn.muln(BPS + slippageBps).divn(BPS);
+    if (maxAmountIn.lte(ZERO) || maxAmountIn.gte(MAX_UINT128)) continue;
+
+    if (!best || maxAmountIn.lt(best.swapState.maxAmountIn)) {
+      const amountOutPerOneTokenIn = amountOutTokenDecimals.mul(ONE_E9).div(amountIn);
+      const amountInPerOneTokenOut = amountIn.mul(ONE_E9).div(amountOutTokenDecimals);
+      const swapState: GetBestQuoteSwapStateBase = {
+        token0: inputMint,
+        token1: outputMint,
+        token0Amount: amountIn,
+        token1Amount: amountOutTokenDecimals,
+        token0Decimals: inputDecimals,
+        token1Decimals: outputDecimals,
+        amountOutPerOneTokenIn,
+        amountInPerOneTokenOut,
+        priceImpact: ZERO,
+      };
+      best = { pool, swapState: { ...swapState, maxAmountIn } };
+    }
   }
 
   return best;
