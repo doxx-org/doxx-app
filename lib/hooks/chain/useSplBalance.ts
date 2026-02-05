@@ -228,10 +228,33 @@ async function mapTokenBalanceFromRawAccounts(
 
   // 1) Aggregate raw token amounts by mint
   for (const { pubkey, account, programId } of rawResp.value) {
-    const ta = unpackAccount(pubkey, account, programId);
+    // Some RPCs/providers occasionally return non-token accounts here (e.g. System Program owned).
+    // `unpackAccount` will throw `TokenInvalidAccountOwnerError` in that case, so we defensively skip.
+    const effectiveProgramId =
+      account.owner.equals(TOKEN_PROGRAM_ID) || account.owner.equals(TOKEN_2022_PROGRAM_ID)
+        ? account.owner
+        : programId;
+
+    if (
+      !effectiveProgramId.equals(TOKEN_PROGRAM_ID) &&
+      !effectiveProgramId.equals(TOKEN_2022_PROGRAM_ID)
+    ) {
+      continue;
+    }
+
+    if (!account.owner.equals(effectiveProgramId)) {
+      continue;
+    }
+
+    let ta: ReturnType<typeof unpackAccount>;
+    try {
+      ta = unpackAccount(pubkey, account, effectiveProgramId);
+    } catch {
+      continue;
+    }
     if (skipZeroBalances && ta.amount === 0n) continue;
     const mintStr = ta.mint.toBase58();
-    programIdByMint.set(mintStr, programId);
+    programIdByMint.set(mintStr, effectiveProgramId);
 
     const prev = balanceMap[mintStr] ?? {
       mint: mintStr,
