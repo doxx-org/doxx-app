@@ -44,6 +44,7 @@ import {
 } from "@/lib/utils";
 import { simplifyErrorMessage } from "@/lib/utils/errors/error";
 import { SwapSuccessToast, SwapUnknownErrorToast } from "../toast/Swap";
+import { CheckSignatureTimeoutToast } from "../toast/Toast";
 import { Button } from "../ui/button";
 import { Separator } from "../ui/separator";
 import { SwapButton } from "./SwapButton";
@@ -357,7 +358,12 @@ export function SwapWidget() {
     [refetchSplBalances, refetchCPMMPoolStates, refetchCLMMPoolStates],
   );
 
-  const handleError = (error: Error) => {
+  const handleError = (error: Error, txSignature?: string) => {
+    if (error.message === "TransactionNotFoundOnChain" && txSignature) {
+      toast.error(<CheckSignatureTimeoutToast signature={txSignature} />);
+    } else {
+      toast.error(simplifyErrorMessage(error, "Swap failed"));
+    }
     toast.error(simplifyErrorMessage(error, "Swap failed"));
   };
 

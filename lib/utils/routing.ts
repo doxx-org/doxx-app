@@ -448,6 +448,8 @@ export async function getBestQuoteSingleHopExactOut(
 // ==============================================
 
 interface IGetBestQuoteClmmParams {
+  connection: Connection;
+  clmmProgramId: PublicKey;
   pools: CLMMPoolStateWithConfig[];
   inputMint: PublicKey;
   outputMint: PublicKey;
@@ -465,6 +467,39 @@ type GetBestQuoteClmmExactInResult = GetBestQuoteClmmPool & {
 type GetBestQuoteClmmExactOutResult = GetBestQuoteClmmPool & {
   swapState: GetBestQuoteSwapStateBase & { maxAmountIn: BN };
 };
+
+// CLMM tick array PDA uses big-endian i32 seed.
+function i32ToBeBytes(num: number): Buffer {
+  const arr = new ArrayBuffer(4);
+  const view = new DataView(arr);
+  view.setInt32(0, num, false);
+  return Buffer.from(arr);
+}
+
+const CLMM_TICK_ARRAY_SIZE = 60;
+const CLMM_TICK_ARRAY_SEED = Buffer.from("tick_array", "utf8");
+
+function getClmmTickArrayStartIndex(params: {
+  tickCurrent: number;
+  tickSpacing: number;
+}) {
+  const { tickCurrent, tickSpacing } = params;
+  const arraySpacing = tickSpacing * CLMM_TICK_ARRAY_SIZE;
+  if (arraySpacing === 0) return 0;
+  return Math.floor(tickCurrent / arraySpacing) * arraySpacing;
+}
+
+function getClmmTickArrayAddress(params: {
+  poolId: PublicKey;
+  startTickIndex: number;
+  programId: PublicKey;
+}): PublicKey {
+  const { poolId, startTickIndex, programId } = params;
+  return PublicKey.findProgramAddressSync(
+    [CLMM_TICK_ARRAY_SEED, poolId.toBuffer(), i32ToBeBytes(startTickIndex)],
+    programId,
+  )[0];
+}
 
 function clmmInputWithFee(amountIn: BN, tradeFeeRate: BN) {
   // tradeFeeRate is in ppm (1e-6) per Raydium-style docs
@@ -513,24 +548,51 @@ function clmmAmountInFromSqrtPriceX64(params: {
 export async function getBestQuoteClmmSingleHopExactIn(
   opts: IGetBestQuoteClmmParams & { amountIn: string },
 ): Promise<GetBestQuoteClmmExactInResult | undefined> {
-  const { pools, inputMint, outputMint, amountIn, slippageBps } = opts;
+  const { connection, clmmProgramId, pools, inputMint, outputMint, amountIn, slippageBps } = opts;
   let best: GetBestQuoteClmmExactInResult | undefined;
 
+  // Pre-filter candidates and batch-check existence of current tick array PDA.
+  const candidates: CLMMPoolStateWithConfig[] = [];
+  const tickArrayPdas: PublicKey[] = [];
   for (const pool of pools) {
+    const ps = pool.poolState;
+    if ((ps.status & 0b1_0000) !== 0) continue;
+    if (ps.liquidity.eq(ZERO)) continue;
+
+    const matchesPair =
+      (ps.tokenMint0.equals(inputMint) && ps.tokenMint1.equals(outputMint)) ||
+      (ps.tokenMint1.equals(inputMint) && ps.tokenMint0.equals(outputMint));
+    if (!matchesPair) continue;
+
+    const start = getClmmTickArrayStartIndex({
+      tickCurrent: ps.tickCurrent,
+      tickSpacing: ps.tickSpacing,
+    });
+    candidates.push(pool);
+    tickArrayPdas.push(
+      getClmmTickArrayAddress({
+        poolId: pool.observationState.poolId,
+        startTickIndex: start,
+        programId: clmmProgramId,
+      }),
+    );
+  }
+
+  const tickArrayInfos =
+    tickArrayPdas.length > 0
+      ? await connection.getMultipleAccountsInfo(tickArrayPdas)
+      : [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    // Skip pools where the *current* tick array account doesn't exist.
+    // These pools will fail swapping with "Missing current tick array account".
+    if (!tickArrayInfos[i]) continue;
+
+    const pool = candidates[i];
     const poolState = pool.poolState;
 
     // skip if swap disabled: status bit4 (value 16)
     if ((poolState.status & 0b1_0000) !== 0) continue;
-    console.log("🚀 ~ poolState.liquidity:", poolState.liquidity.toString())
-    // skip empty liquidity pools (swap will fail due to missing tick arrays / no active liquidity)
-    if (poolState.liquidity.eq(ZERO)) continue;
-
-    const matchesPair =
-      (poolState.tokenMint0.equals(inputMint) &&
-        poolState.tokenMint1.equals(outputMint)) ||
-      (poolState.tokenMint1.equals(inputMint) &&
-        poolState.tokenMint0.equals(outputMint));
-    if (!matchesPair) continue;
 
     const inputDecimals = poolState.tokenMint0.equals(inputMint)
       ? poolState.mintDecimals0
@@ -581,21 +643,47 @@ export async function getBestQuoteClmmSingleHopExactIn(
 export async function getBestQuoteClmmSingleHopExactOut(
   opts: IGetBestQuoteClmmParams & { amountOut: string },
 ): Promise<GetBestQuoteClmmExactOutResult | undefined> {
-  const { pools, inputMint, outputMint, amountOut, slippageBps } = opts;
+  const { connection, clmmProgramId, pools, inputMint, outputMint, amountOut, slippageBps } = opts;
   let best: GetBestQuoteClmmExactOutResult | undefined;
 
+  const candidates: CLMMPoolStateWithConfig[] = [];
+  const tickArrayPdas: PublicKey[] = [];
   for (const pool of pools) {
+    const ps = pool.poolState;
+    if ((ps.status & 0b1_0000) !== 0) continue;
+    if (ps.liquidity.eq(ZERO)) continue;
+
+    const matchesPair =
+      (ps.tokenMint0.equals(inputMint) && ps.tokenMint1.equals(outputMint)) ||
+      (ps.tokenMint1.equals(inputMint) && ps.tokenMint0.equals(outputMint));
+    if (!matchesPair) continue;
+
+    const start = getClmmTickArrayStartIndex({
+      tickCurrent: ps.tickCurrent,
+      tickSpacing: ps.tickSpacing,
+    });
+    candidates.push(pool);
+    tickArrayPdas.push(
+      getClmmTickArrayAddress({
+        poolId: pool.observationState.poolId,
+        startTickIndex: start,
+        programId: clmmProgramId,
+      }),
+    );
+  }
+
+  const tickArrayInfos =
+    tickArrayPdas.length > 0
+      ? await connection.getMultipleAccountsInfo(tickArrayPdas)
+      : [];
+
+  for (let i = 0; i < candidates.length; i++) {
+    if (!tickArrayInfos[i]) continue;
+
+    const pool = candidates[i];
     const poolState = pool.poolState;
 
     if ((poolState.status & 0b1_0000) !== 0) continue;
-    if (poolState.liquidity.eq(ZERO)) continue;
-
-    const matchesPair =
-      (poolState.tokenMint0.equals(inputMint) &&
-        poolState.tokenMint1.equals(outputMint)) ||
-      (poolState.tokenMint1.equals(inputMint) &&
-        poolState.tokenMint0.equals(outputMint));
-    if (!matchesPair) continue;
 
     const inputDecimals = poolState.tokenMint0.equals(inputMint)
       ? poolState.mintDecimals0

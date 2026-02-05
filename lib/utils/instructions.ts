@@ -1,12 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import {
+  CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED,
   ORACLE_SEED,
   POOL_AUTH_SEED,
   POOL_LPMINT_SEED,
   POOL_SEED,
   POOL_VAULT_SEED,
+  PROTOCOL_POSITION_SEED,
+  SEED_POSITION,
+  TICK_ARRAY_SEED,
 } from "@/lib/constants";
+import { i32ToBeBytes, u16ToBytes } from "./decode";
+import { DoxxClmmIdl } from "../idl";
 
 export function getPoolAddress(
   ammConfig: PublicKey,
@@ -68,13 +74,6 @@ export function getOrcleAccountAddress(
   return [address, bump];
 }
 
-function u16ToBytes(num: number) {
-  const arr = new ArrayBuffer(2);
-  const view = new DataView(arr);
-  view.setUint16(0, num, false);
-  return new Uint8Array(arr);
-}
-
 export function getAmmConfigAddress(
   index: number,
   programId: PublicKey,
@@ -87,4 +86,69 @@ export function getAmmConfigAddress(
     programId,
   );
   return [address, bump];
+}
+
+// ======================================================
+//                        CLMM
+// ======================================================
+export function getClmmTickArrayAddress(params: {
+  pool: PublicKey;
+  startTickIndex: number;
+  programId: PublicKey;
+}): [PublicKey, number] {
+  const { pool, startTickIndex, programId } = params;
+  return PublicKey.findProgramAddressSync(
+    // NOTE: This CLMM program encodes numeric PDA seed args as big-endian bytes
+    // (same as the u16 amm_config index seed in this repo).
+    [TICK_ARRAY_SEED, pool.toBuffer(), i32ToBeBytes(startTickIndex)],
+    programId,
+  );
+}
+
+export function getClmmTickArrayBitmapExtensionAddress(params: {
+  pool: PublicKey;
+  programId: PublicKey;
+}): [PublicKey, number] {
+  const { pool, programId } = params;
+  return PublicKey.findProgramAddressSync(
+    [CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED, pool.toBuffer()],
+    programId,
+  );
+}
+
+export function getProtocolPositionAddress(params: {
+  pool: PublicKey;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
+  programId: PublicKey;
+}): [PublicKey, number] {
+  const { pool, tickLowerIndex, tickUpperIndex, programId } = params;
+  return PublicKey.findProgramAddressSync(
+    [
+      PROTOCOL_POSITION_SEED,
+      pool.toBuffer(),
+      // NOTE: This CLMM program encodes numeric PDA seed args as big-endian bytes
+      // (same as the u16 amm_config index seed in this repo).
+      i32ToBeBytes(tickLowerIndex),
+      i32ToBeBytes(tickUpperIndex),
+    ],
+    programId,
+  );
+}
+
+export function getPersonalPositionAddress(
+  programId: PublicKey,
+  positionNftMint: PublicKey,
+): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [SEED_POSITION, positionNftMint.toBuffer()],
+    programId,
+  )[0];
+}
+
+export function idlHasAccount(idl: DoxxClmmIdl, ixName: string, accountName: string) {
+  const ix = (idl?.instructions as any[] | undefined)?.find(
+    (i) => i?.name === ixName,
+  );
+  return !!ix?.accounts?.some((a: any) => a?.name === accountName);
 }

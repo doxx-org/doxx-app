@@ -1,4 +1,4 @@
-import { Pool } from "../PoolColumn";
+import { Pool } from "@/components/earn/v2/types";
 import { DepositCLMMDrawer } from "./clmm/DepositCLMMDrawer";
 import { DepositCPMMDrawer } from "./cpmm/DepositCPMMDrawer";
 import { PoolType } from "./types";

@@ -79,6 +79,7 @@ export function useGetCLMMPools(
           }
 
           return {
+            poolId: observationState.poolId,
             poolState: { ...poolState.account },
             ammConfig,
             observationState,

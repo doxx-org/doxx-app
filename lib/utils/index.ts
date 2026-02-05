@@ -4,3 +4,4 @@ export * from "./number";
 export * from "./style";
 export * from "./instructions";
 export * from "./errors/error";
+export * from "./decode";

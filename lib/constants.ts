@@ -32,7 +32,7 @@ export const TOKEN_2022_PROGRAM_ID = new PublicKey(
 );
 
 // ==============================================
-// Bytes code for amm instruction seeds
+// Bytes code for cpmm instruction seeds
 // ==============================================
 export const POOL_LPMINT_SEED = Buffer.from(
   utils.bytes.utf8.encode("pool_lp_mint"),
@@ -50,3 +50,24 @@ export const ORACLE_SEED = Buffer.from(utils.bytes.utf8.encode("observation"));
 // Display Number constants
 // ==============================================
 export const MAXIMUM_100_MILLION = 1_000_000_000;
+
+// ==============================================
+// CLMM constants
+// ==============================================
+export const TWO_POW_128 = 1n << 128n;
+// Raydium CLMM tick range (see IDL errors 6008/6009)
+export const CLMM_MIN_TICK = -443_636;
+export const CLMM_MAX_TICK = 443_636;
+export const LOG_1P0001 = Math.log(1.0001);
+export const CLMM_TICK_ARRAY_SIZE = 60;
+export const TICK_ARRAY_SEED = Buffer.from("tick_array", "utf8");
+export const PROTOCOL_POSITION_SEED = Buffer.from("protocol_position", "utf8");
+export const SEED_POSITION = Buffer.from("position", "utf8");
+export const CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED = Buffer.from(
+  // "pool_tick_array_bitmap_extension"
+  [
+    112, 111, 111, 108, 95, 116, 105, 99, 107, 95, 97, 114, 114, 97, 121, 95,
+    98, 105, 116, 109, 97, 112, 95, 101, 120, 116, 101, 110, 115, 105, 111,
+    110,
+  ],
+);

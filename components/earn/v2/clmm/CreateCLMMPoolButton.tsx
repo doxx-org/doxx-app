@@ -2,6 +2,8 @@ import { useCallback, useMemo } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
+import { CreatePoolSuccessToast } from "@/components/toast/CreatePool";
+import { CheckSignatureTimeoutToast } from "@/components/toast/Toast";
 import { TokenProfile } from "@/lib/config/tokens";
 import { useCreateClmmPoolAndPosition } from "@/lib/hooks/chain/useCreateClmmPoolAndPosition";
 import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
@@ -58,9 +60,7 @@ export const CreateCLMMPoolButton = ({
 
   const handleSuccess = (txSignature: string | undefined) => {
     if (txSignature) {
-      toast.success(
-        `Pool created successfully! TX: ${txSignature.slice(0, 8)}...`,
-      );
+      toast.success(<CreatePoolSuccessToast txSignature={txSignature} />);
     } else {
       toast.success("Pool created successfully!");
     }
@@ -74,8 +74,12 @@ export const CreateCLMMPoolButton = ({
     onOpenChange(false);
   };
 
-  const handleError = (error: Error) => {
-    toast.error(simplifyErrorMessage(error, "Pool creation failed"));
+  const handleError = (error: Error, txSignature?: string) => {
+    if (error.message === "TransactionNotFoundOnChain" && txSignature) {
+      toast.error(<CheckSignatureTimeoutToast signature={txSignature} />);
+    } else {
+      toast.error(simplifyErrorMessage(error, "Pool creation failed"));
+    }
   };
 
   const {
@@ -142,7 +146,6 @@ export const CreateCLMMPoolButton = ({
       try {
         const configAccount =
           await doxxClmmProgram.account.ammConfig.fetch(ammConfig);
-        console.log("🚀 ~ configAccount:", configAccount);
         console.log("AMM Config found:", {
           index: configAccount.index,
           tradeFeeRate: configAccount.tradeFeeRate.toString(),

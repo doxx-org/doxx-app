@@ -79,6 +79,7 @@ export function useGetCPMMPools(
           }
 
           return {
+            poolId: observationState.poolId,
             poolState: { ...poolState.account },
             ammConfig,
             observationState,

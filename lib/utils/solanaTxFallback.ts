@@ -1,7 +1,7 @@
 import { Connection } from "@solana/web3.js";
 import { CHAIN, clientEnvConfig } from "@/lib/config/envConfig";
 
-export function getFallbackRpcForEnv(): string | undefined {
+function getFallbackRpcForEnv(): string | undefined {
   // IMPORTANT: only use Solana public fallback when we are actually on Solana.
   // For Solayer, broadcasting/confirming against Solana RPC will always fail.
   if (clientEnvConfig.NEXT_PUBLIC_CHAIN !== CHAIN.SOLANA) return undefined;
@@ -53,8 +53,7 @@ export async function pollSignatureStatusWithFallback(params: {
 }) {
   const { primary, signature, timeoutMs } = params;
   const fallbackEndpoint = getFallbackRpcForEnv();
-  const primaryEndpoint = (primary as unknown as { rpcEndpoint?: string })
-    .rpcEndpoint;
+  const primaryEndpoint = primary.rpcEndpoint;
 
   // Try primary briefly first
   let primaryStatus: string | undefined;

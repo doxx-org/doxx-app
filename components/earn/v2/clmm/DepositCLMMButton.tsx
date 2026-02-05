@@ -1,13 +1,12 @@
 import { useCallback, useMemo } from "react";
 import { Program } from "@coral-xyz/anchor";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { toast } from "sonner";
+import { DepositPoolSuccessToast } from "@/components/toast/DepositPool";
 import { Button } from "@/components/ui/button";
 import { TokenProfile } from "@/lib/config/tokens";
 import { BalanceMapByMint, CLMMPoolState } from "@/lib/hooks/chain/types";
-import { useDepositCPMM } from "@/lib/hooks/chain/useDepositCPMM";
 import { DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
@@ -69,21 +68,7 @@ export const DepositCLMMButton = ({
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
       if (txSignature) {
-        const explorerUrl = `https://solscan.io/tx/${txSignature}?cluster=testnet`;
-        toast.success(
-          <div>
-            Deposit successful!
-            <a
-              href={explorerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-2 underline"
-            >
-              View on Solscan
-            </a>
-          </div>,
-          { duration: 10000 },
-        );
+        toast.success(<DepositPoolSuccessToast txSignature={txSignature} />);
       } else {
         toast.success("Deposit successful!");
       }

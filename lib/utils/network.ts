@@ -2,7 +2,6 @@ import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { CHAIN, clientEnvConfig } from "../config/envConfig";
 
 export function getAddressExplorerUrl(address: string): string {
-  console.log("🚀 ~ address:", address)
   switch (clientEnvConfig.NEXT_PUBLIC_CHAIN) {
     case CHAIN.SOLANA:
       return getSolanaAccountExplorerUrl(address);

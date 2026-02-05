@@ -2,6 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
+import { CreatePoolSuccessToast } from "@/components/toast/CreatePool";
 import { TokenProfile } from "@/lib/config/tokens";
 import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
@@ -51,9 +52,7 @@ export const CreatePoolButton = ({
 
   const handleSuccess = (txSignature: string | undefined) => {
     if (txSignature) {
-      toast.success(
-        `Pool created successfully! TX: ${txSignature.slice(0, 8)}...`,
-      );
+      toast.success(<CreatePoolSuccessToast txSignature={txSignature} />);
     } else {
       toast.success("Pool created successfully!");
     }

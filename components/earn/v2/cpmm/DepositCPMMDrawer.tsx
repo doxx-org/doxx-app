@@ -8,7 +8,7 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { Pool } from "../../PoolColumn";
+import { Pool } from "@/components/earn/v2/types";
 import { PoolInfo } from "../PoolInfo";
 import { CPMMDepositTab } from "./CPMMDepositTab";
 import { CPMMPositionsTab } from "./CPMMPositionsTab";
