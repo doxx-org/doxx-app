@@ -175,6 +175,7 @@ export function SwapWidget() {
     refetch: refetchBestRoute,
   } = useBestRoute({
     connection,
+    clmmProgramId: doxxClmmProgram?.programId,
     inputMint: new PublicKey(sellToken.address),
     outputMint: new PublicKey(buyToken.address),
     cpmmPools: cpmmPoolStates,

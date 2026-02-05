@@ -11,6 +11,7 @@ import {
 } from "../../utils/routing";
 import { CLMMPoolStateWithConfig, CPMMPoolStateWithConfig } from "./types";
 import { useMemo } from "react";
+import { PoolType } from "@/components/earn/v2/types";
 
 export type RoutePoolType = "CPMM" | "CLMM";
 
@@ -22,6 +23,7 @@ export type IUseBestRouteResponse = {
 
 export type IUseBestRouteParams = {
   connection: Connection;
+  clmmProgramId?: PublicKey;
   inputMint: PublicKey;
   outputMint: PublicKey;
   baseInput: string;
@@ -33,6 +35,7 @@ export type IUseBestRouteParams = {
 
 export function useBestRoute({
   connection,
+  clmmProgramId,
   inputMint,
   outputMint,
   baseInput,
@@ -93,7 +96,10 @@ export function useBestRoute({
             })(),
             (async () => {
               if (!clmmPools || clmmPools.length === 0) return undefined;
+              if (!clmmProgramId) return undefined;
               return await getBestQuoteClmmSingleHopExactIn({
+                connection,
+                clmmProgramId,
                 pools: clmmPools,
                 inputMint,
                 outputMint,
@@ -106,12 +112,12 @@ export function useBestRoute({
           const best =
             cpmmQuote && clmmQuote
               ? cpmmQuote.swapState.minAmountOut.gte(clmmQuote.swapState.minAmountOut)
-                ? { poolType: "CPMM" as const, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
-                : { poolType: "CLMM" as const, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+                ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
+                : { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
               : cpmmQuote
-                ? { poolType: "CPMM" as const, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
+                ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
                 : clmmQuote
-                  ? { poolType: "CLMM" as const, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+                  ? { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
                   : undefined;
 
           if (!best) return null;
@@ -146,7 +152,10 @@ export function useBestRoute({
           })(),
           (async () => {
             if (!clmmPools || clmmPools.length === 0) return undefined;
+            if (!clmmProgramId) return undefined;
             return await getBestQuoteClmmSingleHopExactOut({
+              connection,
+              clmmProgramId,
               pools: clmmPools,
               inputMint,
               outputMint,
@@ -159,12 +168,12 @@ export function useBestRoute({
         const best =
           cpmmQuote && clmmQuote
             ? cpmmQuote.swapState.maxAmountIn.lte(clmmQuote.swapState.maxAmountIn)
-              ? { poolType: "CPMM" as const, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
-              : { poolType: "CLMM" as const, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+              ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
+              : { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
             : cpmmQuote
-              ? { poolType: "CPMM" as const, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
+              ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
               : clmmQuote
-                ? { poolType: "CLMM" as const, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+                ? { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
                 : undefined;
 
         if (!best) return null;

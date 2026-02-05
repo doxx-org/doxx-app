@@ -19,7 +19,12 @@ import {
   PROVIDER_UNAVAILABLE_ERROR,
 } from "@/lib/utils";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@/lib/constants";
+import { CHAIN, clientEnvConfig } from "@/lib/config/envConfig";
 import { getPoolAddress } from "@/lib/utils/instructions";
+import {
+  broadcastRawTxToFallback,
+  pollSignatureStatusWithFallback,
+} from "@/lib/utils/solanaTxFallback";
 
 const MEMO_PROGRAM_ID = new PublicKey(
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
@@ -48,10 +53,11 @@ type SwapBaseOutputParams = {
   amountOut: BN; // in token decimals format
 };
 
-function i32ToLeBytes(num: number) {
+// NOTE: This CLMM program encodes numeric PDA seed args as big-endian bytes.
+function i32ToBeBytes(num: number) {
   const arr = new ArrayBuffer(4);
   const view = new DataView(arr);
-  view.setInt32(0, num, true);
+  view.setInt32(0, num, false);
   return Buffer.from(arr);
 }
 
@@ -90,7 +96,7 @@ function getClmmTickArrayAddress(params: {
 }): [PublicKey, number] {
   const { pool, startTickIndex, programId } = params;
   return PublicKey.findProgramAddressSync(
-    [CLMM_TICK_ARRAY_SEED, pool.toBuffer(), i32ToLeBytes(startTickIndex)],
+    [CLMM_TICK_ARRAY_SEED, pool.toBuffer(), i32ToBeBytes(startTickIndex)],
     programId,
   );
 }
@@ -298,7 +304,57 @@ export function useDoxxClmmSwap(
           .instruction();
 
         const tx = new Transaction().add(...cuIxs, ...ataIxs, ix);
-        const sig = await provider.sendAndConfirm?.(tx, []);
+        tx.feePayer = wallet.publicKey;
+        const isSolayer = clientEnvConfig.NEXT_PUBLIC_CHAIN === CHAIN.SOLAYER;
+
+        const signAndSend = async () => {
+          const { blockhash } = await connection.getLatestBlockhash("confirmed");
+          tx.recentBlockhash = blockhash;
+          const signed = await wallet.signTransaction(tx);
+          const raw = signed.serialize();
+          const sig = await connection.sendRawTransaction(raw, {
+            skipPreflight: isSolayer,
+            preflightCommitment: "confirmed",
+            maxRetries: 5,
+          });
+          return { sig, raw };
+        };
+
+        const isBlockhashNotFound = (e: unknown) => {
+          const msg =
+            e && typeof e === "object" && "message" in e
+              ? String((e as any).message)
+              : String(e);
+          return /blockhash not found/i.test(msg);
+        };
+
+        let sig: string;
+        let raw: Uint8Array;
+        try {
+          ({ sig, raw } = await signAndSend());
+        } catch (e) {
+          if (isBlockhashNotFound(e)) {
+            ({ sig, raw } = await signAndSend());
+          } else {
+            throw e;
+          }
+        }
+
+        // Best-effort broadcast to fallback public RPC as well (helps when primary RPC fails to propagate).
+        await broadcastRawTxToFallback({ rawTx: raw, signature: sig });
+
+        // Confirm via primary RPC, then fallback RPC (to avoid false "not found" cases).
+        const { status, endpoint } = await pollSignatureStatusWithFallback({
+          primary: connection,
+          signature: sig,
+          timeoutMs: 120_000,
+        });
+        if (!status && !isSolayer) {
+          throw new Error(
+            `Swap broadcast returned a signature, but it could not be found on primary or fallback RPC within timeout. ` +
+              `Signature: ${sig}. Primary RPC: ${String((connection as any).rpcEndpoint ?? "unknown")}. Fallback RPC: ${endpoint}.`,
+          );
+        }
         onSuccess(sig);
         setIsSwapping(false);
         return sig;

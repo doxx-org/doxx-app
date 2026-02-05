@@ -3,29 +3,31 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
 import { TokenProfile } from "@/lib/config/tokens";
-import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
-import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
+import { useCreateClmmPoolAndPosition } from "@/lib/hooks/chain/useCreateClmmPoolAndPosition";
+import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
-import {
-  getAmmConfigAddress,
-  parseAmountBN,
-  simplifyErrorMessage,
-} from "@/lib/utils";
+import { getAmmConfigAddress, simplifyErrorMessage } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
 import { Button } from "../../../ui/button";
 import { ConnectButtonWrapper } from "../../../wallet/ConnectButtonWrapper";
 import { FEE_TIERS } from "../../FeeTierSelection";
+import { PriceMode } from "../types";
 
 interface CreateCLMMPoolButtonProps {
   tokenA: TokenProfile | null;
   tokenB: TokenProfile | null;
   amountA: string;
   amountB: string;
+  initialPrice: string;
+  priceMode: PriceMode;
+  minPrice: string;
+  maxPrice: string;
   onSelectTokenA: (token: TokenProfile | null) => void;
   onSelectTokenB: (token: TokenProfile | null) => void;
   onAmountChangeA: (amount: string) => void;
   onAmountChangeB: (amount: string) => void;
+  onInitialPriceChange: (value: string) => void;
   onOpenChange: (open: boolean) => void;
   selectedFeeIndex: number;
   isPoolExists: boolean | undefined;
@@ -36,10 +38,15 @@ export const CreateCLMMPoolButton = ({
   tokenB,
   amountA,
   amountB,
+  initialPrice,
+  priceMode,
+  minPrice,
+  maxPrice,
   onSelectTokenA,
   onSelectTokenB,
   onAmountChangeA,
   onAmountChangeB,
+  onInitialPriceChange,
   onOpenChange,
   selectedFeeIndex,
   isPoolExists,
@@ -47,7 +54,7 @@ export const CreateCLMMPoolButton = ({
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
+  const doxxClmmProgram = useDoxxClmmProgram({ provider });
 
   const handleSuccess = (txSignature: string | undefined) => {
     if (txSignature) {
@@ -63,6 +70,7 @@ export const CreateCLMMPoolButton = ({
     onSelectTokenB(null);
     onAmountChangeA("");
     onAmountChangeB("");
+    onInitialPriceChange("");
     onOpenChange(false);
   };
 
@@ -71,30 +79,56 @@ export const CreateCLMMPoolButton = ({
   };
 
   const {
-    createPool,
+    createPoolAndPosition,
     isCreating: isCreatingPool,
     // createError: createPoolError,
-  } = useCreatePool(doxxAmmProgram, wallet, handleSuccess, handleError);
+  } = useCreateClmmPoolAndPosition(
+    connection,
+    doxxClmmProgram,
+    wallet,
+    handleSuccess,
+    handleError,
+  );
+
+  const hasValidRange =
+    priceMode === PriceMode.FULL
+      ? true
+      : minPrice !== "" &&
+        maxPrice !== "" &&
+        parseFloat(minPrice) > 0 &&
+        parseFloat(maxPrice) > 0;
 
   const isCreatePoolEnabled =
     tokenA &&
     tokenB &&
+    initialPrice &&
+    parseFloat(initialPrice) > 0 &&
     amountA &&
     amountB &&
     parseFloat(amountA) > 0 &&
     parseFloat(amountB) > 0 &&
+    hasValidRange &&
     !isCreatingPool;
 
   const handleCreatePool = useCallback(async () => {
-    if (!tokenA || !tokenB || !amountA || !amountB || !doxxAmmProgram) {
-      toast.error("Please select both tokens and enter amounts");
+    if (
+      !tokenA ||
+      !tokenB ||
+      !initialPrice ||
+      !amountA ||
+      !amountB ||
+      !doxxClmmProgram
+    ) {
+      toast.error(
+        "Please select both tokens and enter price + deposit amounts",
+      );
       return;
     }
 
     try {
       const [ammConfig] = getAmmConfigAddress(
         selectedFeeIndex,
-        doxxAmmProgram.programId,
+        doxxClmmProgram.programId,
       );
 
       console.log(
@@ -107,17 +141,30 @@ export const CreateCLMMPoolButton = ({
       // Verify AMM config exists
       try {
         const configAccount =
-          await doxxAmmProgram.account.ammConfig.fetch(ammConfig);
+          await doxxClmmProgram.account.ammConfig.fetch(ammConfig);
+        console.log("🚀 ~ configAccount:", configAccount);
         console.log("AMM Config found:", {
           index: configAccount.index,
           tradeFeeRate: configAccount.tradeFeeRate.toString(),
-          disableCreatePool: configAccount.disableCreatePool,
+          tickSpacing: configAccount.tickSpacing,
         });
 
-        if (configAccount.disableCreatePool) {
-          toast.error("Pool creation is disabled for this fee tier");
-          return;
-        }
+        // Create pool + initial position (liquidity) in one tx
+        await createPoolAndPosition({
+          ammConfig,
+          tickSpacing: configAccount.tickSpacing,
+          tokenAMint: new PublicKey(tokenA.address),
+          tokenBMint: new PublicKey(tokenB.address),
+          tokenADecimals: tokenA.decimals,
+          tokenBDecimals: tokenB.decimals,
+          initialPriceAperB: initialPrice,
+          amountA,
+          amountB,
+          priceMode,
+          minPriceAperB: minPrice,
+          maxPriceAperB: maxPrice,
+        });
+        return;
       } catch (configError) {
         console.error("AMM Config fetch error:", configError);
         toast.error(
@@ -125,33 +172,6 @@ export const CreateCLMMPoolButton = ({
         );
         return;
       }
-
-      // Note: Fee account may not exist until first pool is created - this is normal
-      // console.log("Using fee account:", addressConfig.contracts.createPoolFee);
-
-      // Convert amounts to BN with proper decimals
-      const initAmount0 = parseAmountBN(amountA, tokenA.decimals);
-      const initAmount1 = parseAmountBN(amountB, tokenB.decimals);
-
-      console.log("Creating pool with:", {
-        tokenA: tokenA.symbol,
-        tokenB: tokenB.symbol,
-        amountA,
-        amountB,
-        feeIndex: selectedFeeIndex,
-        feeTier: FEE_TIERS[selectedFeeIndex].fee + "%",
-        ammConfig: ammConfig.toBase58(),
-        initAmount0: initAmount0.toString(),
-        initAmount1: initAmount1.toString(),
-      });
-
-      await createPool({
-        ammConfig: ammConfig,
-        token0Mint: new PublicKey(tokenA.address),
-        token1Mint: new PublicKey(tokenB.address),
-        initAmount0,
-        initAmount1,
-      });
     } catch (error) {
       console.log("Pool creation error:", error);
       // Error is already handled by handleError callback
@@ -161,17 +181,23 @@ export const CreateCLMMPoolButton = ({
     tokenB,
     amountA,
     amountB,
-    doxxAmmProgram,
+    initialPrice,
+    priceMode,
+    minPrice,
+    maxPrice,
+    doxxClmmProgram,
     selectedFeeIndex,
-    createPool,
+    createPoolAndPosition,
   ]);
 
   const [label, disabled, handleCreateCLMMPoolButton] = useMemo(() => {
     if (
       tokenA === null ||
       tokenB === null ||
+      initialPrice === "" ||
       amountA === "" ||
       amountB === "" ||
+      !hasValidRange ||
       isPoolExists === undefined
     ) {
       return ["Create", true, undefined];
@@ -213,8 +239,14 @@ export const CreateCLMMPoolButton = ({
   }, [
     tokenA,
     tokenB,
+    initialPrice,
     amountA,
     amountB,
+    priceMode,
+    minPrice,
+    maxPrice,
+    hasValidRange,
+    isPoolExists,
     handleCreatePool,
     isCreatingPool,
     selectedFeeIndex,

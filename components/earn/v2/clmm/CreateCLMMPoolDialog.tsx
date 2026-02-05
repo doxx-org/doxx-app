@@ -21,7 +21,6 @@ import {
   DialogTitle,
 } from "../../../ui/dialog";
 import { FEE_TIERS, FeeTierSelection } from "../../FeeTierSelection";
-import { CreatePoolButton } from "../cpmm/CreateCPMMPoolButton";
 import { PriceMode } from "../types";
 import { CLMMPriceRange } from "./CLMMPriceRange";
 import { CreateCLMMPoolButton } from "./CreateCLMMPoolButton";
@@ -80,13 +79,6 @@ export const CreateCLMMPoolDialog = ({
       setTokenB(token);
     }
     setIsTokenSelectorOpen(false);
-  };
-
-  const handleAmountChange = (
-    value: string,
-    setAmount: (value: string) => void,
-  ) => {
-    setAmount(parseDecimalsInput(value));
   };
 
   const handlePriceInputChange = (
@@ -290,10 +282,15 @@ export const CreateCLMMPoolDialog = ({
                 tokenB={tokenB}
                 amountA={amountA}
                 amountB={amountB}
+                initialPrice={initialPrice}
+                priceMode={priceMode}
+                minPrice={minPrice}
+                maxPrice={maxPrice}
                 onSelectTokenA={setTokenA}
                 onSelectTokenB={setTokenB}
                 onAmountChangeA={setAmountA}
                 onAmountChangeB={setAmountB}
+                onInitialPriceChange={setInitialPrice}
                 onOpenChange={onOpenChange}
                 selectedFeeIndex={selectedFeeIndex}
                 isPoolExists={isPoolExists}

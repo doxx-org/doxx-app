@@ -13,7 +13,12 @@ import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   PROVIDER_UNAVAILABLE_ERROR,
 } from "@/lib/utils";
+import { CHAIN, clientEnvConfig } from "@/lib/config/envConfig";
 import { getPoolAddress } from "@/lib/utils/instructions";
+import {
+  broadcastRawTxToFallback,
+  pollSignatureStatusWithFallback,
+} from "@/lib/utils/solanaTxFallback";
 
 type SwapBaseInputParams = {
   inputMint: PublicKey;
@@ -175,7 +180,58 @@ export function useDoxxCpmmSwap(
         }
 
         const tx = new Transaction().add(...cuIxs, ...ataIxs, ix);
-        const sig = await provider.sendAndConfirm?.(tx, []);
+        const connection = provider.connection;
+        tx.feePayer = wallet.publicKey;
+        const isSolayer = clientEnvConfig.NEXT_PUBLIC_CHAIN === CHAIN.SOLAYER;
+
+        const signAndSend = async () => {
+          const { blockhash } = await connection.getLatestBlockhash("confirmed");
+          tx.recentBlockhash = blockhash;
+          const signed = await wallet.signTransaction(tx);
+          const raw = signed.serialize();
+          const sig = await connection.sendRawTransaction(raw, {
+            skipPreflight: isSolayer,
+            preflightCommitment: "confirmed",
+            maxRetries: 5,
+          });
+          return { sig, raw };
+        };
+
+        const isBlockhashNotFound = (e: unknown) => {
+          const msg =
+            e && typeof e === "object" && "message" in e
+              ? String((e as any).message)
+              : String(e);
+          return /blockhash not found/i.test(msg);
+        };
+
+        let sig: string;
+        let raw: Uint8Array;
+        try {
+          ({ sig, raw } = await signAndSend());
+        } catch (e) {
+          if (isBlockhashNotFound(e)) {
+            ({ sig, raw } = await signAndSend());
+          } else {
+            throw e;
+          }
+        }
+
+        // Best-effort broadcast to fallback public RPC as well (helps when primary RPC fails to propagate).
+        await broadcastRawTxToFallback({ rawTx: raw, signature: sig });
+
+        // Confirm via primary RPC, then fallback RPC (to avoid false "not found" cases).
+        const { status, endpoint } = await pollSignatureStatusWithFallback({
+          primary: connection,
+          signature: sig,
+          timeoutMs: 120_000,
+        });
+        if (!status && !isSolayer) {
+          throw new Error(
+            `Swap broadcast returned a signature, but it could not be found on primary or fallback RPC within timeout. ` +
+              `Signature: ${sig}. Primary RPC: ${String((connection as any).rpcEndpoint ?? "unknown")}. Fallback RPC: ${endpoint}.`,
+          );
+        }
         onSuccess(sig);
         setIsSwapping(false);
         return sig;

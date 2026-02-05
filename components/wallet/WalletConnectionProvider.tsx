@@ -61,7 +61,14 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
   if (!mounted) return null;
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
+    <ConnectionProvider
+      endpoint={endpoint}
+      config={{
+        commitment: "confirmed",
+        // Default is ~30s; Solayer devnet RPC can be slower.
+        confirmTransactionInitialTimeout: 120_000,
+      }}
+    >
       <WalletProvider
         wallets={wallets}
         autoConnect

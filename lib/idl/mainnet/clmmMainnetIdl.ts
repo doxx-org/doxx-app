@@ -26,17 +26,17 @@ export type DoxxClmmMainnet = {
           signer: true
         },
         {
-          name: "position_nft_mint",
+          name: "positionNftMint",
           docs: ["Mint address bound to the personal position."],
           writable: true
         },
         {
-          name: "position_nft_account",
+          name: "positionNftAccount",
           docs: ["User token account where position NFT be minted to"],
           writable: true
         },
         {
-          name: "personal_position",
+          name: "personalPosition",
           writable: true,
           pda: {
             seeds: [
@@ -46,13 +46,13 @@ export type DoxxClmmMainnet = {
               },
               {
                 kind: "account",
-                path: "position_nft_mint"
+                path: "positionNftMint"
               }
             ]
           }
         },
         {
-          name: "system_program",
+          name: "systemProgram",
           docs: ["System program to close the position state account"],
           address: "11111111111111111111111111111111"
         },
@@ -64,7 +64,7 @@ export type DoxxClmmMainnet = {
       args: []
     },
     {
-      name: "close_protocol_position",
+      name: "closeProtocolPosition",
       docs: [
         "The CLMM protocol decides to discard the protocol position account, which can reduce users' opening costs.",
         "After the original protocol position account is closed, the gas fee will be refunded to the user who created it.",
@@ -83,7 +83,7 @@ export type DoxxClmmMainnet = {
           address: "5Md7gtPXr3KWLqdvUMXLJT9D2sGzUnGoWw9gzkuQFmmT"
         },
         {
-          name: "protocol_position",
+          name: "protocolPosition",
           writable: true
         }
       ],
@@ -128,11 +128,11 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "vault_0_mint",
+          "name": "vault0Mint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "vault_1_mint",
+          "name": "vault1Mint",
           "docs": ["The mint of token vault 1"]
         },
         {
@@ -210,11 +210,11 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "vault_0_mint",
+          "name": "vault0Mint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "vault_1_mint",
+          "name": "vault1Mint",
           "docs": ["The mint of token vault 1"]
         },
         {
@@ -356,7 +356,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -418,14 +418,14 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "create_pool",
+      "name": "createPool",
       "docs": [
         "Creates a pool for the given token pair and the initial price",
         "",
@@ -438,7 +438,7 @@ export type DoxxClmmMainnet = {
       "discriminator": [233, 146, 209, 142, 207, 104, 64, 188],
       "accounts": [
         {
-          "name": "pool_creator",
+          "name": "poolCreator",
           "docs": ["Address paying to create the pool. Can be anyone"],
           "writable": true,
           "signer": true
@@ -451,26 +451,26 @@ export type DoxxClmmMainnet = {
           "name": "poolState",
           "docs": ["Initialize an account to store the pool state"],
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108]
-              },
-              {
-                "kind": "account",
-                "path": "ammConfig"
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint0"
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint1"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [112, 111, 111, 108]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "ammConfig"
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "tokenMint0"
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "tokenMint1"
+          //     }
+          //   ]
+          // }
         },
         {
           "name": "tokenMint0",
@@ -483,93 +483,93 @@ export type DoxxClmmMainnet = {
         {
           "name": "tokenVault0",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108, 95, 118, 97, 117, 108, 116]
-              },
-              {
-                "kind": "account",
-                "path": "poolState"
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint0"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [112, 111, 111, 108, 95, 118, 97, 117, 108, 116]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "poolState"
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "tokenMint0"
+          //     }
+          //   ]
+          // }
         },
         {
           "name": "tokenVault1",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 111, 108, 95, 118, 97, 117, 108, 116]
-              },
-              {
-                "kind": "account",
-                "path": "poolState"
-              },
-              {
-                "kind": "account",
-                "path": "tokenMint1"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [112, 111, 111, 108, 95, 118, 97, 117, 108, 116]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "poolState"
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "tokenMint1"
+          //     }
+          //   ]
+          // }
         },
         {
           "name": "observationState",
           "docs": ["Initialize an account to store oracle observations"],
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [111, 98, 115, 101, 114, 118, 97, 116, 105, 111, 110]
-              },
-              {
-                "kind": "account",
-                "path": "poolState"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [111, 98, 115, 101, 114, 118, 97, 116, 105, 111, 110]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "poolState"
+          //     }
+          //   ]
+          // }
         },
         {
-          "name": "tick_array_bitmap",
+          "name": "tickArrayBitmap",
           "docs": [
             "Initialize an account to store if a tick array is initialized."
           ],
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  112, 111, 111, 108, 95, 116, 105, 99, 107, 95, 97, 114, 114,
-                  97, 121, 95, 98, 105, 116, 109, 97, 112, 95, 101, 120, 116,
-                  101, 110, 115, 105, 111, 110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "poolState"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [
+          //         112, 111, 111, 108, 95, 116, 105, 99, 107, 95, 97, 114, 114,
+          //         97, 121, 95, 98, 105, 116, 109, 97, 112, 95, 101, 120, 116,
+          //         101, 110, 115, 105, 111, 110
+          //       ]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "poolState"
+          //     }
+          //   ]
+          // }
         },
         {
-          "name": "token_program_0",
+          "name": "tokenProgram0",
           "docs": ["Spl token program or token program 2022"]
         },
         {
-          "name": "token_program_1",
+          "name": "tokenProgram1",
           "docs": ["Spl token program or token program 2022"]
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "docs": ["To create a new program account"],
           "address": "11111111111111111111111111111111"
         },
@@ -630,7 +630,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -662,7 +662,7 @@ export type DoxxClmmMainnet = {
           "docs": ["The token account for the tokenized position"]
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["Decrease liquidity for this position"],
           "writable": true
         },
@@ -671,7 +671,7 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
           "name": "tokenVault0",
@@ -684,12 +684,12 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "docs": ["Stores init state for the lower tick"],
           "writable": true
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "docs": ["Stores init state for the upper tick"],
           "writable": true
         },
@@ -749,7 +749,7 @@ export type DoxxClmmMainnet = {
           "docs": ["The token account for the tokenized position"]
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["Decrease liquidity for this position"],
           "writable": true
         },
@@ -758,7 +758,7 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
           "name": "tokenVault0",
@@ -771,12 +771,12 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "docs": ["Stores init state for the lower tick"],
           "writable": true
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "docs": ["Stores init state for the upper tick"],
           "writable": true
         },
@@ -806,11 +806,11 @@ export type DoxxClmmMainnet = {
           "address": "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
         },
         {
-          "name": "vault_0_mint",
+          "name": "vault0Mint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "vault_1_mint",
+          "name": "vault1Mint",
           "docs": ["The mint of token vault 1"]
         }
       ],
@@ -859,30 +859,30 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["Increase liquidity for this position"],
           "writable": true
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "docs": ["Stores init state for the lower tick"],
           "writable": true
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "docs": ["Stores init state for the upper tick"],
           "writable": true
         },
         {
-          "name": "token_account_0",
+          "name": "tokenAccount0",
           "docs": ["The payer's token account for token_0"],
           "writable": true
         },
         {
-          "name": "token_account_1",
+          "name": "tokenAccount1",
           "docs": ["The token account spending token_1 to mint the position"],
           "writable": true
         },
@@ -947,30 +947,30 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["Increase liquidity for this position"],
           "writable": true
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "docs": ["Stores init state for the lower tick"],
           "writable": true
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "docs": ["Stores init state for the upper tick"],
           "writable": true
         },
         {
-          "name": "token_account_0",
+          "name": "tokenAccount0",
           "docs": ["The payer's token account for token_0"],
           "writable": true
         },
         {
-          "name": "token_account_1",
+          "name": "tokenAccount1",
           "docs": ["The token account spending token_1 to mint the position"],
           "writable": true
         },
@@ -995,11 +995,11 @@ export type DoxxClmmMainnet = {
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "vault_0_mint",
+          "name": "vault0Mint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "vault_1_mint",
+          "name": "vault1Mint",
           "docs": ["The mint of token vault 1"]
         }
       ],
@@ -1102,7 +1102,7 @@ export type DoxxClmmMainnet = {
           "name": "reward_token_program"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
@@ -1122,9 +1122,9 @@ export type DoxxClmmMainnet = {
       ]
     },
     {
-      "name": "open_position",
+      "name": "openPosition",
       "docs": [
-        "#[deprecated(note = \"Use `open_position_with_token22_nft` instead.\")]",
+        "#[deprecated(note = \"Use `openPositionWithToken22Nft` instead.\")]",
         "Creates a new position wrapped in a NFT",
         "",
         "# Arguments",
@@ -1148,16 +1148,16 @@ export type DoxxClmmMainnet = {
           "signer": true
         },
         {
-          "name": "position_nft_owner"
+          "name": "positionNftOwner"
         },
         {
-          "name": "position_nft_mint",
+          "name": "positionNftMint",
           "docs": ["Unique token mint address"],
           "writable": true,
           "signer": true
         },
         {
-          "name": "position_nft_account",
+          "name": "positionNftAccount",
           "docs": [
             "Token account where position NFT will be minted",
             "This account created in the contract by cpi to avoid large stack variables"
@@ -1167,7 +1167,7 @@ export type DoxxClmmMainnet = {
             "seeds": [
               {
                 "kind": "account",
-                "path": "position_nft_owner"
+                "path": "positionNftOwner"
               },
               {
                 "kind": "const",
@@ -1179,7 +1179,7 @@ export type DoxxClmmMainnet = {
               },
               {
                 "kind": "account",
-                "path": "position_nft_mint"
+                "path": "positionNftMint"
               }
             ],
             "program": {
@@ -1203,10 +1203,10 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1226,7 +1226,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1246,7 +1246,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["personal position state"],
           "writable": true,
           "pda": {
@@ -1257,18 +1257,18 @@ export type DoxxClmmMainnet = {
               },
               {
                 "kind": "account",
-                "path": "position_nft_mint"
+                "path": "positionNftMint"
               }
             ]
           }
         },
         {
-          "name": "token_account_0",
+          "name": "tokenAccount0",
           "docs": ["The token_0 account deposit token to the pool"],
           "writable": true
         },
         {
-          "name": "token_account_1",
+          "name": "tokenAccount1",
           "docs": ["The token_1 account deposit token to the pool"],
           "writable": true
         },
@@ -1288,7 +1288,7 @@ export type DoxxClmmMainnet = {
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "docs": ["Program to create the position manager state account"],
           "address": "11111111111111111111111111111111"
         },
@@ -1342,7 +1342,7 @@ export type DoxxClmmMainnet = {
     {
       "name": "open_position_v2",
       "docs": [
-        "#[deprecated(note = \"Use `open_position_with_token22_nft` instead.\")]",
+        "#[deprecated(note = \"Use `openPositionWithToken22Nft` instead.\")]",
         "Creates a new position wrapped in a NFT, support Token2022",
         "",
         "# Arguments",
@@ -1368,23 +1368,23 @@ export type DoxxClmmMainnet = {
           "signer": true
         },
         {
-          "name": "position_nft_owner"
+          "name": "positionNftOwner"
         },
         {
-          "name": "position_nft_mint",
+          "name": "positionNftMint",
           "docs": ["Unique token mint address"],
           "writable": true,
           "signer": true
         },
         {
-          "name": "position_nft_account",
+          "name": "positionNftAccount",
           "docs": ["Token account where position NFT will be minted"],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "account",
-                "path": "position_nft_owner"
+                "path": "positionNftOwner"
               },
               {
                 "kind": "const",
@@ -1396,7 +1396,7 @@ export type DoxxClmmMainnet = {
               },
               {
                 "kind": "account",
-                "path": "position_nft_mint"
+                "path": "positionNftMint"
               }
             ],
             "program": {
@@ -1420,10 +1420,10 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1443,7 +1443,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "writable": true,
           "pda": {
             "seeds": [
@@ -1463,7 +1463,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["personal position state"],
           "writable": true,
           "pda": {
@@ -1474,18 +1474,18 @@ export type DoxxClmmMainnet = {
               },
               {
                 "kind": "account",
-                "path": "position_nft_mint"
+                "path": "positionNftMint"
               }
             ]
           }
         },
         {
-          "name": "token_account_0",
+          "name": "tokenAccount0",
           "docs": ["The token_0 account deposit token to the pool"],
           "writable": true
         },
         {
-          "name": "token_account_1",
+          "name": "tokenAccount1",
           "docs": ["The token_1 account deposit token to the pool"],
           "writable": true
         },
@@ -1505,7 +1505,7 @@ export type DoxxClmmMainnet = {
           "address": "SysvarRent111111111111111111111111111111111"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "docs": ["Program to create the position manager state account"],
           "address": "11111111111111111111111111111111"
         },
@@ -1530,11 +1530,11 @@ export type DoxxClmmMainnet = {
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "vault_0_mint",
+          "name": "vault0Mint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "vault_1_mint",
+          "name": "vault1Mint",
           "docs": ["The mint of token vault 1"]
         }
       ],
@@ -1580,7 +1580,7 @@ export type DoxxClmmMainnet = {
       ]
     },
     {
-      "name": "open_position_with_token22_nft",
+      "name": "openPositionWithToken22Nft",
       "docs": [
         "Creates a new position wrapped in a Token2022 NFT without relying on metadata_program and metadata_account, reduce the cost for user to create a personal position.",
         "",
@@ -1607,16 +1607,16 @@ export type DoxxClmmMainnet = {
           "signer": true
         },
         {
-          "name": "position_nft_owner"
+          "name": "positionNftOwner"
         },
         {
-          "name": "position_nft_mint",
+          "name": "positionNftMint",
           "docs": ["Unique token mint address, initialize in contract"],
           "writable": true,
           "signer": true
         },
         {
-          "name": "position_nft_account",
+          "name": "positionNftAccount",
           "writable": true
         },
         {
@@ -1625,72 +1625,72 @@ export type DoxxClmmMainnet = {
           "writable": true
         },
         {
-          "name": "protocol_position"
+          "name": "protocolPosition"
         },
         {
-          "name": "tick_array_lower",
+          "name": "tickArrayLower",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [116, 105, 99, 107, 95, 97, 114, 114, 97, 121]
-              },
-              {
-                "kind": "account",
-                "path": "poolState"
-              },
-              {
-                "kind": "arg",
-                "path": "tick_array_lower_start_index"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [116, 105, 99, 107, 95, 97, 114, 114, 97, 121]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "poolState"
+          //     },
+          //     {
+          //       "kind": "arg",
+          //       "path": "tick_array_lower_start_index"
+          //     }
+          //   ]
+          // }
         },
         {
-          "name": "tick_array_upper",
+          "name": "tickArrayUpper",
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [116, 105, 99, 107, 95, 97, 114, 114, 97, 121]
-              },
-              {
-                "kind": "account",
-                "path": "poolState"
-              },
-              {
-                "kind": "arg",
-                "path": "tick_array_upper_start_index"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [116, 105, 99, 107, 95, 97, 114, 114, 97, 121]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "poolState"
+          //     },
+          //     {
+          //       "kind": "arg",
+          //       "path": "tick_array_upper_start_index"
+          //     }
+          //   ]
+          // }
         },
         {
-          "name": "personal_position",
+          "name": "personalPosition",
           "docs": ["personal position state"],
           "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 111, 115, 105, 116, 105, 111, 110]
-              },
-              {
-                "kind": "account",
-                "path": "position_nft_mint"
-              }
-            ]
-          }
+          // "pda": {
+          //   "seeds": [
+          //     {
+          //       "kind": "const",
+          //       "value": [112, 111, 115, 105, 116, 105, 111, 110]
+          //     },
+          //     {
+          //       "kind": "account",
+          //       "path": "positionNftMint"
+          //     }
+          //   ]
+          // }
         },
         {
-          "name": "token_account_0",
+          "name": "tokenAccount0",
           "docs": ["The token_0 account deposit token to the pool"],
           "writable": true
         },
         {
-          "name": "token_account_1",
+          "name": "tokenAccount1",
           "docs": ["The token_1 account deposit token to the pool"],
           "writable": true
         },
@@ -1711,7 +1711,7 @@ export type DoxxClmmMainnet = {
         //   "address": "SysvarRent111111111111111111111111111111111"
         // },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "docs": ["Program to create the position manager state account"],
           "address": "11111111111111111111111111111111"
         },
@@ -1733,11 +1733,11 @@ export type DoxxClmmMainnet = {
           "address": "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
         },
         {
-          "name": "vault_0_mint",
+          "name": "vault0Mint",
           "docs": ["The mint of token vault 0"]
         },
         {
-          "name": "vault_1_mint",
+          "name": "vault1Mint",
           "docs": ["The mint of token vault 1"]
         }
       ],
@@ -2214,7 +2214,7 @@ export type DoxxClmmMainnet = {
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -2662,7 +2662,7 @@ export type DoxxClmmMainnet = {
         "kind": "struct",
         "fields": [
           {
-            "name": "position_nft_mint",
+            "name": "positionNftMint",
             "docs": [
               "The ID of the token for which underlying tokens were collected"
             ],
@@ -2844,7 +2844,7 @@ export type DoxxClmmMainnet = {
         "kind": "struct",
         "fields": [
           {
-            "name": "position_nft_mint",
+            "name": "positionNftMint",
             "docs": ["The ID of the token for which liquidity was decreased"],
             "type": "pubkey"
           },
@@ -2905,7 +2905,7 @@ export type DoxxClmmMainnet = {
         "kind": "struct",
         "fields": [
           {
-            "name": "position_nft_mint",
+            "name": "positionNftMint",
             "docs": ["The ID of the token for which liquidity was increased"],
             "type": "pubkey"
           },
@@ -3505,7 +3505,7 @@ export type DoxxClmmMainnet = {
             }
           },
           {
-            name: "tick_array_bitmap",
+            name: "tickArrayBitmap",
             docs: ["Packed initialized tick array state"],
             type: {
               array: ["u64", 16]
@@ -3770,7 +3770,7 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "token_account_0",
+            "name": "tokenAccount0",
             "docs": [
               "The payer token account in zero for one swaps, or the recipient token account",
               "in one for zero swaps"
@@ -3778,7 +3778,7 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "token_account_1",
+            "name": "tokenAccount1",
             "docs": [
               "The payer token account in one for zero swaps, or the recipient token account",
               "in zero for one swaps"
