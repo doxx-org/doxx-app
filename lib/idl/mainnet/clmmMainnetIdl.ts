@@ -1921,7 +1921,7 @@ export type DoxxClmmMainnet = {
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "tick_array",
+          "name": "tickArray",
           "writable": true
         }
       ],

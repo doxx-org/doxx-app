@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import {
   ColumnDef,
   PaginationState,
@@ -54,6 +54,7 @@ interface DataTableProps<TData, TValue> {
   };
   isLoading?: boolean;
   onSelectRow?: (row: TData) => void;
+  onGlobalFilterChange?: (value: string) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -66,6 +67,7 @@ export function DataTable<TData, TValue>({
   isShowPagination = true,
   isLoading = false,
   onSelectRow,
+  onGlobalFilterChange,
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -77,25 +79,22 @@ export function DataTable<TData, TValue>({
   // const scrollContainerRef = useRef<HTMLDivElement>(null);
   // const isLoadingRef = useRef(false);
 
-  const table = useNoMemo(() =>
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useReactTable({
-      data,
-      columns,
-      getCoreRowModel: getCoreRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
-      getPaginationRowModel: getPaginationRowModel(),
-      onSortingChange: setSorting,
-      onPaginationChange: setPagination,
-      onGlobalFilterChange: () => {},
-      state: {
-        sorting,
-        globalFilter,
-        pagination,
-      },
-    }),
-  );
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    onGlobalFilterChange,
+    state: {
+      sorting,
+      globalFilter,
+      pagination,
+    },
+  });
 
   // // Reset loaded pages when data or filters change
   // useEffect(() => {

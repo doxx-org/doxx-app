@@ -18,8 +18,8 @@ export const FEE_TIERS = [
   },
   {
     index: 1,
-    fee: 0.15,
-    label: "0.15% fee",
+    fee: 0.3,
+    label: "0.3% fee",
     description: "Best for very stable pairs",
   },
   {

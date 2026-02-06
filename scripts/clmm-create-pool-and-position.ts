@@ -953,6 +953,90 @@ async function main() {
 
   console.log("chosen base_flag:", baseFlag ? "true (base token0)" : "false (base token1)");
 
+  // --- Bootstrap position (for Full range) ---
+  // Full-range positions only initialize the *edge* tick arrays, which often leaves the *current* tick array
+  // (used by swaps) uninitialized. To make the pool swappable right after creation, we open a tiny
+  // additional position spanning two tick arrays around the initial tick.
+  const shouldBootstrapTickArrays = mode === "Full";
+  const bootstrapLiquidity = liquidity; // keep 0; program derives liquidity from max amounts + base_flag
+  const bootstrapAmount0MaxAllowed = (() => {
+    const tiny = amount0MaxAllowed.div(new BN(10_000)); // 0.01% of user's max (best-effort)
+    if (!tiny.isZero()) return tiny;
+    if (amount0MaxAllowed.isZero()) return new BN(0);
+    return new BN(1);
+  })();
+  const bootstrapAmount1MaxAllowed = (() => {
+    const tiny = amount1MaxAllowed.div(new BN(10_000)); // 0.01% of user's max (best-effort)
+    if (!tiny.isZero()) return tiny;
+    if (amount1MaxAllowed.isZero()) return new BN(0);
+    return new BN(1);
+  })();
+
+  // Compute the initial/current tick from the user-provided initial price.
+  const currentTickIndexRaw = tickFromPriceAperB({
+    priceAperB: Number(price),
+    tokenAMint: tokenA,
+    tokenBMint: tokenB,
+    tokenADecimals: decA,
+    tokenBDecimals: decB,
+    tokenMint0: mint0,
+    tokenMint1: mint1,
+  });
+  const currentTickIndex = clampTick(
+    Math.floor(currentTickIndexRaw / tickSpacing) * tickSpacing,
+    tickSpacing,
+  );
+
+  const tickArraySpan = tickSpacing * CLMM_TICK_ARRAY_SIZE;
+  const currentTickArrayStart = tickArrayStartIndex(currentTickIndex, tickSpacing);
+  const maxTickInCurrentArray = currentTickArrayStart + tickArraySpan - tickSpacing;
+  const candidateUpper = clampTick(currentTickIndex + tickSpacing, tickSpacing);
+
+  const bootstrapTickLower = clampTick(
+    candidateUpper <= maxTickInCurrentArray
+      ? currentTickIndex - tickArraySpan // previous + current
+      : currentTickIndex - tickSpacing, // current + next (edge case)
+    tickSpacing,
+  );
+  const bootstrapTickUpper = candidateUpper;
+
+  const bootstrapTaLowerStart = tickArrayStartIndex(bootstrapTickLower, tickSpacing);
+  const bootstrapTaUpperStart = tickArrayStartIndex(bootstrapTickUpper, tickSpacing);
+  const bootstrapTickArrayLower = pdaTickArray(programId, poolState, bootstrapTaLowerStart);
+  const bootstrapTickArrayUpper = pdaTickArray(programId, poolState, bootstrapTaUpperStart);
+  const bootstrapProtocolPosition =
+    protocolPositionCandidates(programId, poolState, bootstrapTickLower, bootstrapTickUpper)[0]!;
+
+  const bootstrapPositionNftMint = shouldBootstrapTickArrays ? Keypair.generate() : undefined;
+  const bootstrapPositionNftAccount = bootstrapPositionNftMint
+    ? getAssociatedTokenAddressSync(
+        bootstrapPositionNftMint.publicKey,
+        positionNftOwner,
+        false,
+        TOKEN_2022_PROGRAM_ID,
+      )
+    : undefined;
+  const bootstrapPersonalPosition = bootstrapPositionNftMint
+    ? pdaPersonalPosition(programId, bootstrapPositionNftMint.publicKey)
+    : undefined;
+
+  if (shouldBootstrapTickArrays) {
+    console.log("\n--- bootstrap (swap-safety) ---");
+    console.log("currentTickIndex:", currentTickIndex);
+    console.log("bootstrapTickLower:", bootstrapTickLower, "bootstrapTickUpper:", bootstrapTickUpper);
+    console.log(
+      "bootstrapTickArrayLowerStart:",
+      bootstrapTaLowerStart,
+      "bootstrapTickArrayUpperStart:",
+      bootstrapTaUpperStart,
+    );
+    console.log("bootstrapTickArrayLower:", bootstrapTickArrayLower.toBase58());
+    console.log("bootstrapTickArrayUpper:", bootstrapTickArrayUpper.toBase58());
+    console.log("bootstrapProtocolPosition:", bootstrapProtocolPosition.toBase58());
+    console.log("bootstrapAmount0MaxAllowed:", bootstrapAmount0MaxAllowed.toString());
+    console.log("bootstrapAmount1MaxAllowed:", bootstrapAmount1MaxAllowed.toString());
+  }
+
   for (const protocolPosition of protocolPositions) {
     console.log("\n--- trying protocol_position:", protocolPosition.toBase58(), "---");
 
@@ -1001,13 +1085,57 @@ async function main() {
 
     let openPosIx = await buildOpenPosIx();
 
-    const instructions = [...cuIxs, ...ataIxs, createPoolIx, openPosIx];
+    const bootstrapOpenPosIx =
+      shouldBootstrapTickArrays && bootstrapPositionNftMint
+        ? await program.methods
+            .openPositionWithToken22Nft(
+              bootstrapTickLower,
+              bootstrapTickUpper,
+              bootstrapTaLowerStart,
+              bootstrapTaUpperStart,
+              bootstrapLiquidity,
+              bootstrapAmount0MaxAllowed,
+              bootstrapAmount1MaxAllowed,
+              withMetadata,
+              baseFlag,
+            )
+            .accounts({
+              payer: payer.publicKey,
+              positionNftOwner: positionNftOwner,
+              positionNftMint: bootstrapPositionNftMint.publicKey,
+              positionNftAccount: bootstrapPositionNftAccount!,
+              poolState,
+              protocolPosition: bootstrapProtocolPosition,
+              tickArrayLower: bootstrapTickArrayLower,
+              tickArrayUpper: bootstrapTickArrayUpper,
+              personalPosition: bootstrapPersonalPosition!,
+              tokenAccount0: ownerToken0,
+              tokenAccount1: ownerToken1,
+              tokenVault0: vault0,
+              tokenVault1: vault1,
+              vault0Mint: mint0,
+              vault1Mint: mint1,
+            })
+            .instruction()
+        : undefined;
+
+    const instructions = [
+      ...cuIxs,
+      ...ataIxs,
+      createPoolIx,
+      ...(bootstrapOpenPosIx ? [bootstrapOpenPosIx] : []),
+      openPosIx,
+    ];
 
     const txCombined = new Transaction().add(...instructions);
     txCombined.feePayer = payer.publicKey;
     const { blockhash } = await connection.getLatestBlockhash("processed");
     txCombined.recentBlockhash = blockhash;
-    txCombined.partialSign(payer, positionNftMint);
+    txCombined.partialSign(
+      payer,
+      ...(bootstrapPositionNftMint ? [bootstrapPositionNftMint] : []),
+      positionNftMint,
+    );
 
     if (!doSend) {
       if (doSplit) {
@@ -1061,17 +1189,42 @@ async function main() {
       const tx1 = new Transaction().add(...cuIxs, ...ataIxs, createPoolIx);
       await sendTx(connection, payer, tx1, "create_pool (phase1)");
 
-      const tx2 = new Transaction().add(...cuIxs, openPosIx);
+      if (bootstrapOpenPosIx && bootstrapPositionNftMint) {
+        const tx2 = new Transaction().add(...cuIxs, bootstrapOpenPosIx);
+        await sendTx(
+          connection,
+          payer,
+          tx2,
+          "bootstrap_open_position (phase2)",
+          [bootstrapPositionNftMint],
+        );
+        const tx3 = new Transaction().add(...cuIxs, openPosIx);
+        await sendTx(
+          connection,
+          payer,
+          tx3,
+          "open_position_with_token22_nft_full_range (phase3)",
+          [positionNftMint],
+        );
+      } else {
+        const tx2 = new Transaction().add(...cuIxs, openPosIx);
+        await sendTx(
+          connection,
+          payer,
+          tx2,
+          "open_position_with_token22_nft (phase2)",
+          [positionNftMint],
+        );
+      }
+    } else {
+      // Sign inside sendTx after blockhash is set.
       await sendTx(
         connection,
         payer,
-        tx2,
-        "open_position_with_token22_nft (phase2)",
-        [positionNftMint],
+        txCombined,
+        "combined",
+        [...(bootstrapPositionNftMint ? [bootstrapPositionNftMint] : []), positionNftMint],
       );
-    } else {
-      // Sign inside sendTx after blockhash is set.
-      await sendTx(connection, payer, txCombined, "combined", [positionNftMint]);
     }
 
     // If we successfully sent, stop probing.

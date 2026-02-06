@@ -166,5 +166,7 @@ export function useGetAllPools() {
       refetchAllTokenProfiles();
       result.refetch();
     },
+    cpmmPoolsData,
+    clmmPoolsData
   };
 }

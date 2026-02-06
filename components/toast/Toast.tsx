@@ -1,7 +1,7 @@
 import { CopyIcon } from "lucide-react";
 import { copyToClipboard } from "@/lib/text";
 import { ellipseAddress } from "@/lib/utils";
-import { getAddressExplorerUrl } from "@/lib/utils/network";
+import { getTxExplorerUrl } from "@/lib/utils/network";
 import { Link } from "../Link";
 
 export const CheckSignatureTimeoutToast = ({
@@ -17,7 +17,7 @@ export const CheckSignatureTimeoutToast = ({
       </span>
       <span>
         TX:{" "}
-        <Link href={getAddressExplorerUrl(signature)} className="text-blue-500">
+        <Link href={getTxExplorerUrl(signature)} className="text-blue-500">
           {ellipseAddress(signature, 4)}
         </Link>
         <CopyIcon

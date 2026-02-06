@@ -11,6 +11,7 @@ import {
   Keypair,
   PublicKey,
   Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { CLMM_MAX_TICK, CLMM_MIN_TICK, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, TWO_POW_128 } from "@/lib/constants";
 import { CHAIN, clientEnvConfig } from "@/lib/config/envConfig";
@@ -38,8 +39,10 @@ import {
 } from "@/lib/utils/instructions";
 import { parseAmountBN } from "@/lib/utils";
 import { toast } from "sonner";
+import { PriceMode } from "@/components/earn/v2/types";
 
-type PriceMode = "Full" | "Custom";
+const CLMM_TICK_ARRAY_SIZE = 60;
+const LEGACY_TX_MAX_BYTES = 1232; // common wallet-adapter legacy tx cap
 
 type CreateClmmPoolAndPositionParams = {
   ammConfig: PublicKey;
@@ -99,7 +102,11 @@ async function pollSignatureStatus(params: {
     });
     const s0 = st.value[0];
     if (s0) {
-      if (s0.err) throw new Error(JSON.stringify(s0.err));
+      if (s0.err) {
+        throw new Error(
+          `TransactionFailed:${signature}:${JSON.stringify(s0.err)}`,
+        );
+      }
       if (s0.confirmationStatus) return s0.confirmationStatus;
     }
 
@@ -110,7 +117,11 @@ async function pollSignatureStatus(params: {
         maxSupportedTransactionVersion: 0,
       });
       if (tx?.meta) {
-        if (tx.meta.err) throw new Error(JSON.stringify(tx.meta.err));
+        if (tx.meta.err) {
+          throw new Error(
+            `TransactionFailed:${signature}:${JSON.stringify(tx.meta.err)}`,
+          );
+        }
         return "confirmed";
       }
     } catch {
@@ -131,39 +142,6 @@ function getFallbackRpcForNetwork(): string | undefined {
   return "https://api.mainnet-beta.solana.com";
 }
 
-async function pollSignatureStatusWithFallback(params: {
-  primary: Connection;
-  signature: string;
-  timeoutMs: number;
-}) {
-  const { primary, signature, timeoutMs } = params;
-  const fallbackEndpoint = getFallbackRpcForNetwork();
-  const primaryEndpoint = primary.rpcEndpoint;
-
-  // Try primary first
-  const primaryStatus = await pollSignatureStatus({
-    connection: primary,
-    signature,
-    // Some RPCs return a signature but fail to propagate reliably.
-    // Keep this short so we can quickly fall back to a public RPC.
-    timeoutMs: Math.min(timeoutMs, 6_000),
-  });
-  if (primaryStatus) return { status: primaryStatus, endpoint: primaryEndpoint ?? "primary" };
-
-  if (fallbackEndpoint) {
-    // Then try fallback RPC (often what explorers effectively rely on)
-    const fallback = new Connection(fallbackEndpoint, "confirmed");
-    const fallbackStatus = await pollSignatureStatus({
-      connection: fallback,
-      signature,
-      timeoutMs,
-    });
-    if (fallbackStatus) return { status: fallbackStatus, endpoint: fallbackEndpoint };
-  }
-
-  return { status: undefined, endpoint: primaryEndpoint ?? "primary" };
-}
-
 async function broadcastRawTxToFallback(params: {
   rawTx: Uint8Array;
   signature: string;
@@ -181,6 +159,27 @@ async function broadcastRawTxToFallback(params: {
     console.log("Broadcasted tx to fallback RPC:", fallbackEndpoint, signature);
   } catch (e) {
     console.warn("Failed to broadcast tx to fallback RPC:", fallbackEndpoint, e);
+  }
+}
+
+function estimateLegacyTxSize(params: {
+  feePayer: PublicKey;
+  recentBlockhash: string;
+  instructions: TransactionInstruction[];
+  signers?: Keypair[];
+}) {
+  const { feePayer, recentBlockhash, instructions, signers = [] } = params;
+  try {
+    const tx = new Transaction().add(...instructions);
+    tx.feePayer = feePayer;
+    tx.recentBlockhash = recentBlockhash;
+    if (signers.length > 0) tx.partialSign(...signers);
+    // Signature bytes are a fixed-width part of the serialized tx; content doesn't change size.
+    return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).length;
+  } catch {
+    // `Transaction.serialize` throws when the legacy tx is too large.
+    // For sizing/planning purposes, treat this as "definitely too large".
+    return Number.POSITIVE_INFINITY;
   }
 }
 
@@ -369,6 +368,23 @@ export function useCreateClmmPoolAndPosition(
           tickUpperIndex = tickLowerIndex + tickSpacing;
         }
 
+        // For "Full range" positions, the program will only initialize the lower/upper tick arrays.
+        // That often leaves the *current* tick array (used by swap) uninitialized, making the pool "not swappable".
+        // We bootstrap by opening a tiny additional position that initializes the current tick array PDA.
+        const currentTickIndexRaw = tickFromPriceAperB({
+          priceAperB: Number(initialPriceAperB),
+          tokenAMint,
+          tokenBMint,
+          tokenADecimals,
+          tokenBDecimals,
+          tokenMint0,
+          tokenMint1,
+        });
+        const currentTickIndex = clampTick(
+          Math.floor(currentTickIndexRaw / tickSpacing) * tickSpacing,
+          tickSpacing,
+        );
+
         const tickArrayLowerStartIndex = tickArrayStartIndex(
           tickLowerIndex,
           tickSpacing,
@@ -481,6 +497,81 @@ export function useCreateClmmPoolAndPosition(
           );
         })();
 
+        const shouldBootstrapTickArrays = priceMode === "Full";
+        const bootstrapAmount0MaxAllowed = (() => {
+          const tiny = amount0MaxAllowed.div(new BN(10_000)); // 0.01% of user's max (best-effort)
+          if (!tiny.isZero()) return tiny;
+          if (amount0MaxAllowed.isZero()) return new BN(0);
+          return new BN(1);
+        })();
+        const bootstrapAmount1MaxAllowed = (() => {
+          const tiny = amount1MaxAllowed.div(new BN(10_000)); // 0.01% of user's max (best-effort)
+          if (!tiny.isZero()) return tiny;
+          if (amount1MaxAllowed.isZero()) return new BN(0);
+          return new BN(1);
+        })();
+
+        // Bootstrap range:
+        // - lower is forced into the *previous* tick-array, so tick_array_lower != tick_array_upper
+        // - upper is in the *current* tick-array, so the current tick array PDA gets initialized
+        const tickArraySpan = tickSpacing * CLMM_TICK_ARRAY_SIZE;
+        const currentTickArrayStart = tickArrayStartIndex(currentTickIndex, tickSpacing);
+        const maxTickInCurrentArray = currentTickArrayStart + tickArraySpan - tickSpacing;
+        const candidateUpper = clampTick(currentTickIndex + tickSpacing, tickSpacing);
+
+        // Normal case: upper stays inside current tick-array -> initialize previous + current tick arrays.
+        // Edge case (current tick at end of array): candidateUpper moves into next tick-array -> initialize current + next.
+        const bootstrapTickLowerIndex = clampTick(
+          candidateUpper <= maxTickInCurrentArray
+            ? currentTickIndex - tickArraySpan
+            : currentTickIndex - tickSpacing,
+          tickSpacing,
+        );
+        const bootstrapTickUpperIndex = candidateUpper;
+        if (shouldBootstrapTickArrays && bootstrapTickUpperIndex <= bootstrapTickLowerIndex) {
+          throw new Error("Unable to derive bootstrap tick range for full-range pool initialization");
+        }
+
+        const bootstrapTickArrayLowerStartIndex = tickArrayStartIndex(
+          bootstrapTickLowerIndex,
+          tickSpacing,
+        );
+        const bootstrapTickArrayUpperStartIndex = tickArrayStartIndex(
+          bootstrapTickUpperIndex,
+          tickSpacing,
+        );
+        const [bootstrapTickArrayLower] = getClmmTickArrayAddress({
+          pool: poolState,
+          startTickIndex: bootstrapTickArrayLowerStartIndex,
+          programId: program.programId,
+        });
+        const [bootstrapTickArrayUpper] = getClmmTickArrayAddress({
+          pool: poolState,
+          startTickIndex: bootstrapTickArrayUpperStartIndex,
+          programId: program.programId,
+        });
+        const [bootstrapProtocolPosition] = getProtocolPositionAddress({
+          pool: poolState,
+          tickLowerIndex: bootstrapTickLowerIndex,
+          tickUpperIndex: bootstrapTickUpperIndex,
+          programId: program.programId,
+        });
+
+        const bootstrapPositionNftMint = shouldBootstrapTickArrays
+          ? Keypair.generate()
+          : undefined;
+        const bootstrapPositionNftAccount = bootstrapPositionNftMint
+          ? getAssociatedTokenAddressSync(
+            bootstrapPositionNftMint.publicKey,
+            wallet.publicKey,
+            false,
+            TOKEN_2022_PROGRAM_ID,
+          )
+          : undefined;
+        const bootstrapPersonalPosition = bootstrapPositionNftMint
+          ? getPersonalPositionAddress(program.programId, bootstrapPositionNftMint.publicKey)
+          : undefined;
+
         const positionNftMint = Keypair.generate();
         const positionNftOwner = wallet.publicKey;
         const positionNftAccount = getAssociatedTokenAddressSync(
@@ -531,89 +622,207 @@ export function useCreateClmmPoolAndPosition(
           })
           .instruction();
 
-        const instructions = [...cuIxs, ...ataIxs, createPoolIx, openPosIx];
-        const txCombined = new Transaction().add(...instructions);
-        txCombined.feePayer = wallet.publicKey;
+        const bootstrapOpenPosIx = shouldBootstrapTickArrays
+          ? await program.methods
+            .openPositionWithToken22Nft(
+              bootstrapTickLowerIndex,
+              bootstrapTickUpperIndex,
+              bootstrapTickArrayLowerStartIndex,
+              bootstrapTickArrayUpperStartIndex,
+              liquidity,
+              bootstrapAmount0MaxAllowed,
+              bootstrapAmount1MaxAllowed,
+              withMetadata,
+              baseFlag,
+            )
+            .accounts({
+              payer: wallet.publicKey,
+              positionNftOwner: positionNftOwner,
+              positionNftMint: bootstrapPositionNftMint!.publicKey,
+              positionNftAccount: bootstrapPositionNftAccount!,
+              poolState,
+              protocolPosition: bootstrapProtocolPosition,
+              tickArrayLower: bootstrapTickArrayLower,
+              tickArrayUpper: bootstrapTickArrayUpper,
+              personalPosition: bootstrapPersonalPosition!,
+              tokenAccount0: ownerToken0,
+              tokenAccount1: ownerToken1,
+              tokenVault0: tokenVault0,
+              tokenVault1: tokenVault1,
+              vault0Mint: tokenMint0,
+              vault1Mint: tokenMint1,
+            })
+            .instruction()
+          : undefined;
+
         const isSolayer = clientEnvConfig.NEXT_PUBLIC_CHAIN === CHAIN.SOLAYER;
 
-        // const signAndSend = async () => {
-        // Use confirmed for better cross-node compatibility on some RPCs.
-        const { blockhash } = await connection.getLatestBlockhash("confirmed");
-        txCombined.recentBlockhash = blockhash;
+        // Split into multiple transactions when needed to fit wallet tx-size limits.
+        const sendAndPoll = async (args: {
+          instructions: TransactionInstruction[];
+          signers?: Keypair[];
+          label: string;
+        }) => {
+          const { instructions, signers = [], label } = args;
+          const tx = new Transaction().add(...instructions);
+          tx.feePayer = wallet.publicKey;
+          const { blockhash } = await connection.getLatestBlockhash("confirmed");
+          tx.recentBlockhash = blockhash;
+          if (signers.length > 0) tx.partialSign(...signers);
+          const signed = await wallet.signTransaction(tx);
+          const raw = signed.serialize();
+          const sig = await connection.sendRawTransaction(raw, {
+            // Solayer RPCs can be flaky with simulate/preflight; skip it there.
+            skipPreflight: isSolayer,
+            preflightCommitment: "confirmed",
+            maxRetries: 5,
+          });
 
-        // Avoid Anchor's fixed ~30s confirmation timeout by sending + polling ourselves.
-        // Important: sign all required signers BEFORE serialization.
-        // `open_position_with_token22_nft` requires the position NFT mint keypair as a signer.
-        txCombined.partialSign(positionNftMint);
-        const signed = await wallet.signTransaction(txCombined);
-        const raw = signed.serialize();
-        const sig = await connection.sendRawTransaction(raw, {
-          // Solayer RPCs can be flaky with simulate/preflight; skip it there.
-          skipPreflight: isSolayer,
-          preflightCommitment: "confirmed",
-          maxRetries: 5,
-        });
-        // };
+          try {
+            const status = await pollSignatureStatus({
+              connection,
+              signature: sig,
+              timeoutMs: 120_000,
+            });
+            if (!status) {
+              onError(new Error(`TransactionNotFoundOnChain:${label}`), sig);
+              return undefined;
+            }
+          } catch (e) {
+            // Try to fetch logs for a better error message.
+            try {
+              const txInfo = await connection.getTransaction(sig, {
+                commitment: "confirmed",
+                maxSupportedTransactionVersion: 0,
+              });
+              const logs = txInfo?.meta?.logMessages ?? [];
+              const err = txInfo?.meta?.err;
+              const tail = logs.slice(-60).join("\n");
+              const wrapped = new Error(
+                `TxFailed:${label}:${sig}:${JSON.stringify(err ?? String(e))}\n` +
+                (tail ? `--- logs (tail) ---\n${tail}` : ""),
+              );
+              onError(wrapped, sig);
+              throw wrapped;
+            } catch {
+              const wrapped = new Error(
+                `TxFailed:${label}:${sig}:${e instanceof Error ? e.message : String(e)}`,
+              );
+              onError(wrapped, sig);
+              throw wrapped;
+            }
+          }
+          return sig;
+        };
 
-        // const isBlockhashNotFound = (e: unknown) => {
-        //   const msg =
-        //     e && typeof e === "object" && "message" in e
-        //       ? String((e as any).message)
-        //       : String(e);
-        //   return /blockhash not found/i.test(msg);
-        // };
 
-        // let sig: string;
-        // let raw: Uint8Array;
-        // try {
-        //   ({ sig, raw } = await signAndSend());
-        // } catch (e) {
-        //   // If the user took too long approving, the blockhash can expire.
-        //   // Retry once with a fresh blockhash and re-sign.
-        //   if (isBlockhashNotFound(e)) {
-        //     ({ sig, raw } = await signAndSend());
-        //   } else {
-        //     throw e;
-        //   }
-        // }
+        // Pre-plan tx splits based on estimated legacy serialized size.
+        const { blockhash: sizingBlockhash } = await connection.getLatestBlockhash("confirmed");
 
-        // // Best-effort broadcast to fallback public RPC as well (helps when primary RPC fails to propagate).
-        // await broadcastRawTxToFallback({ rawTx: raw, signature: sig });
+        const pickCu = (base: TransactionInstruction[], signers?: Keypair[]) => {
+          const withCu = [...cuIxs, ...base];
+          const sizeWithCu = estimateLegacyTxSize({
+            feePayer: wallet.publicKey,
+            recentBlockhash: sizingBlockhash,
+            instructions: withCu,
+            signers,
+          });
+          if (sizeWithCu <= LEGACY_TX_MAX_BYTES) return withCu;
 
-        // console.log("🚀 ~ sig:", sig)
-        // // Confirm at processed first to avoid needless expiry, then fetch logs via getTransaction.
-        // const conf = await connection.confirmTransaction(
-        //   { signature: sig, blockhash, lastValidBlockHeight },
-        //   "processed",
-        // );
-        // console.log("🚀 ~ conf:", conf)
+          const sizeNoCu = estimateLegacyTxSize({
+            feePayer: wallet.publicKey,
+            recentBlockhash: sizingBlockhash,
+            instructions: base,
+            signers,
+          });
+          if (sizeNoCu <= LEGACY_TX_MAX_BYTES) return base;
 
-        // if (conf.value.err) {
-        //   setIsCreating(false);
-        //   const errValue = JSON.stringify(conf.value.err);
-        //   onError(new Error(errValue));
-        //   throw new Error(errValue);
-        // }
-        // console.log("🚀 ~ no error:")
-
-        // const sig = await provider.sendAndConfirm?.(tx, [], {
-        //   blockhash, commitment: "processed"
-        // });
-
-        // Confirm via primary RPC, then fallback RPC (to avoid false "not found" cases).
-        const status = await pollSignatureStatus({
-          connection,
-          signature: sig,
-          timeoutMs: 120_000,
-        });
-        if (!status) {
-          onError(new Error("TransactionNotFoundOnChain"), sig);
           return undefined;
+        };
+
+        const tx1Instructions = pickCu([...ataIxs, createPoolIx]);
+        if (!tx1Instructions) {
+          throw new Error(
+            `TxTooLarge:create_pool even without CU ixs (max=${LEGACY_TX_MAX_BYTES} bytes).`,
+          );
         }
 
-        onSuccess(sig);
+        const txPlan: Array<{
+          label: string;
+          instructions: TransactionInstruction[];
+          signers?: Keypair[];
+        }> = [];
+
+        if (bootstrapOpenPosIx && bootstrapPositionNftMint) {
+          // Try bundling bootstrap + full-range in a single tx, otherwise split.
+          const combined = pickCu(
+            [bootstrapOpenPosIx, openPosIx],
+            [bootstrapPositionNftMint, positionNftMint],
+          );
+
+          if (combined) {
+            txPlan.push({
+              label: "bootstrap+open_position_full_range",
+              instructions: combined,
+              signers: [bootstrapPositionNftMint, positionNftMint],
+            });
+          } else {
+            const bootstrapOnly = pickCu(
+              [bootstrapOpenPosIx],
+              [bootstrapPositionNftMint],
+            );
+            const fullOnly = pickCu([openPosIx], [positionNftMint]);
+
+            if (!bootstrapOnly || !fullOnly) {
+              throw new Error(
+                `TxTooLarge:open_position even when split (max=${LEGACY_TX_MAX_BYTES} bytes). ` +
+                `Next step is v0 + ALT.`,
+              );
+            }
+
+            txPlan.push({
+              label: "bootstrap_open_position",
+              instructions: bootstrapOnly,
+              signers: [bootstrapPositionNftMint],
+            });
+            txPlan.push({
+              label: "open_position_full_range",
+              instructions: fullOnly,
+              signers: [positionNftMint],
+            });
+          }
+        } else {
+          const fullOnly = pickCu([openPosIx], [positionNftMint]);
+          if (!fullOnly) {
+            throw new Error(
+              `TxTooLarge:open_position_full_range (max=${LEGACY_TX_MAX_BYTES} bytes). Next step is v0 + ALT.`,
+            );
+          }
+          txPlan.push({
+            label: "open_position_full_range",
+            instructions: fullOnly,
+            signers: [positionNftMint],
+          });
+        }
+
+        // Important UX invariant:
+        // Do NOT broadcast `create_pool` unless we were able to fully plan the follow-up
+        // position txs within legacy limits. Otherwise we can create a pool without a position.
+        const sig1 = await sendAndPoll({
+          label: "create_pool",
+          instructions: tx1Instructions,
+        });
+        if (!sig1) return undefined;
+
+        let lastSig: string | undefined;
+        for (const step of txPlan) {
+          lastSig = await sendAndPoll(step);
+          if (!lastSig) return undefined;
+        }
+
+        onSuccess(lastSig);
         setIsCreating(false);
-        return sig;
+        return lastSig;
       } catch (e) {
         console.log("🚀 ~ CLMM create+position error:", e);
         const err = e as Error;

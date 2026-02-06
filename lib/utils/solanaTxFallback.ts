@@ -23,7 +23,24 @@ export async function pollSignatureStatus(params: {
     });
     const s0 = st.value[0];
     if (s0) {
-      if (s0.err) throw new Error(JSON.stringify(s0.err));
+      if (s0.err) {
+        // Best-effort: attach logs for easier debugging of custom program errors.
+        try {
+          const tx = await connection.getTransaction(signature, {
+            commitment: "confirmed",
+            maxSupportedTransactionVersion: 0,
+          });
+          const logs = tx?.meta?.logMessages;
+          throw new Error(
+            JSON.stringify({
+              err: s0.err,
+              logs: logs && logs.length > 0 ? logs : undefined,
+            }),
+          );
+        } catch {
+          throw new Error(JSON.stringify(s0.err));
+        }
+      }
       if (s0.confirmationStatus) return s0.confirmationStatus;
     }
 
@@ -34,7 +51,17 @@ export async function pollSignatureStatus(params: {
         maxSupportedTransactionVersion: 0,
       });
       if (tx?.meta) {
-        if (tx.meta.err) throw new Error(JSON.stringify(tx.meta.err));
+        if (tx.meta.err) {
+          throw new Error(
+            JSON.stringify({
+              err: tx.meta.err,
+              logs:
+                tx.meta.logMessages && tx.meta.logMessages.length > 0
+                  ? tx.meta.logMessages
+                  : undefined,
+            }),
+          );
+        }
         return "confirmed";
       }
     } catch {

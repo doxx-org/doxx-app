@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { BN } from "@coral-xyz/anchor";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { TokenProfile } from "@/lib/config/tokens";
+import { BPS } from "@/lib/constants";
 import {
   BalanceMapByMint,
   CLMMPoolStateWithConfig,
@@ -98,16 +99,17 @@ export const CreateCLMMPoolDialog = ({
       return undefined;
     }
 
-    return !!poolsData?.find(
-      (c) =>
+    return !!poolsData?.find((c) => {
+      return (
         ((c.poolState.tokenMint0.toString() === tokenA.address &&
           c.poolState.tokenMint1.toString() === tokenB.address) ||
           (c.poolState.tokenMint1.toString() === tokenA.address &&
             c.poolState.tokenMint0.toString() === tokenB.address)) &&
         new BN(c.ammConfig.tradeFeeRate.toString()).eq(
-          new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
-        ),
-    );
+          new BN(FEE_TIERS[selectedFeeIndex].fee * BPS),
+        )
+      );
+    });
   }, [poolsData, tokenA, tokenB, selectedFeeIndex]);
 
   return (

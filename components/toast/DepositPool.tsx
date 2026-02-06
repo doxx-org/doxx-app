@@ -1,7 +1,7 @@
 import { CopyIcon } from "lucide-react";
 import { copyToClipboard } from "@/lib/text";
 import { ellipseAddress } from "@/lib/utils";
-import { getAddressExplorerUrl } from "@/lib/utils/network";
+import { getTxExplorerUrl } from "@/lib/utils/network";
 import { Link } from "../Link";
 
 export const DepositPoolSuccessToast = ({
@@ -14,10 +14,7 @@ export const DepositPoolSuccessToast = ({
       <span>Deposit successful!</span>
       <div className="flex flex-row items-center gap-1">
         <span>TX: </span>
-        <Link
-          href={getAddressExplorerUrl(txSignature)}
-          className="text-blue-500"
-        >
+        <Link href={getTxExplorerUrl(txSignature)} className="text-blue-500">
           {ellipseAddress(txSignature, 4)}
         </Link>
         <CopyIcon

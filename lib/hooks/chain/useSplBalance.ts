@@ -38,8 +38,13 @@ interface AccountDataParsed {
 }
 
 // Perf caches (module-level, survives hook re-renders)
-// - Mint decimals never change; cache them to avoid re-fetching on every refetch.
-const mintDecimalsCache = new Map<string, number>();
+// - Mint decimals/supply rarely change; cache them to avoid re-fetching on every refetch.
+type MintSummary = {
+  decimals: number;
+  supply: bigint;
+  isNftLike: boolean; // heuristic: decimals=0 + supply=1
+};
+const mintSummaryCache = new Map<string, MintSummary>();
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -50,6 +55,7 @@ function chunk<T>(arr: T[], size: number): T[][] {
 type MapFromAccountOptions = {
   includeTokenAccounts?: boolean;
   skipZeroBalances?: boolean;
+  excludeNftLike?: boolean;
 };
 
 // Fetch balance for a single mint
@@ -75,16 +81,21 @@ export function useSplBalanceByMint(
       }
 
       const mintStr = mint.toBase58();
-      const cachedDecimals = mintDecimalsCache.get(mintStr);
-      let decimals = cachedDecimals ?? 0;
-      if (cachedDecimals === undefined) {
+      const cached = mintSummaryCache.get(mintStr);
+      let decimals = cached?.decimals ?? 0;
+      if (!cached) {
         const mintInfo = await connection.getAccountInfo(mint);
         if (mintInfo) {
           try {
             // Mint owner indicates which token program (legacy vs token-2022) to decode with.
             const m = unpackMint(mint, mintInfo, mintInfo.owner);
             decimals = m.decimals ?? 0;
-            mintDecimalsCache.set(mintStr, decimals);
+            const supply = BigInt(m.supply.toString());
+            mintSummaryCache.set(mintStr, {
+              decimals,
+              supply,
+              isNftLike: decimals === 0 && supply === 1n,
+            });
           } catch {
             // ignore
           }
@@ -118,6 +129,7 @@ const mapTokenBalanceFromAccount = (
 ): BalanceMapByMint => {
   const includeTokenAccounts = options?.includeTokenAccounts ?? true;
   const skipZeroBalances = options?.skipZeroBalances ?? false;
+  const excludeNftLike = options?.excludeNftLike ?? true;
 
   const balanceMap: BalanceMapByMint = {} as BalanceMapByMint;
   for (const { pubkey, account } of resp.value) {
@@ -126,6 +138,9 @@ const mapTokenBalanceFromAccount = (
 
     const rawAmount = BigInt(tokenAmount.amount);
     if (skipZeroBalances && rawAmount === 0n) continue;
+    // Heuristic filter for position-NFT-like holdings.
+    // Parsed response doesn't include mint supply; use an amount-based heuristic here.
+    if (excludeNftLike && (tokenAmount.decimals ?? 0) === 0 && rawAmount === 1n) continue;
 
     const prev = balanceMap[info.mint] ?? {
       mint: info.mint,
@@ -222,6 +237,7 @@ async function mapTokenBalanceFromRawAccounts(
 ): Promise<BalanceMapByMint> {
   const includeTokenAccounts = options?.includeTokenAccounts ?? false;
   const skipZeroBalances = options?.skipZeroBalances ?? true;
+  const excludeNftLike = options?.excludeNftLike ?? true;
 
   const balanceMap: BalanceMapByMint = {} as BalanceMapByMint;
   const programIdByMint = new Map<string, PublicKey>();
@@ -234,7 +250,6 @@ async function mapTokenBalanceFromRawAccounts(
       account.owner.equals(TOKEN_PROGRAM_ID) || account.owner.equals(TOKEN_2022_PROGRAM_ID)
         ? account.owner
         : programId;
-
     if (
       !effectiveProgramId.equals(TOKEN_PROGRAM_ID) &&
       !effectiveProgramId.equals(TOKEN_2022_PROGRAM_ID)
@@ -270,9 +285,9 @@ async function mapTokenBalanceFromRawAccounts(
     balanceMap[mintStr] = prev;
   }
 
-  // 2) Fill decimals from cache; only fetch missing mint infos
+  // 2) Fill mint summaries from cache; only fetch missing mint infos
   const missingMintStrs = [...programIdByMint.keys()].filter(
-    (mintStr) => mintDecimalsCache.get(mintStr) === undefined,
+    (mintStr) => mintSummaryCache.get(mintStr) === undefined,
   );
 
   // RPC limit: getMultipleAccountsInfo commonly capped (safe to chunk).
@@ -289,18 +304,34 @@ async function mapTokenBalanceFromRawAccounts(
       try {
         const mint = unpackMint(mintPk, info, programId);
         const decimals = mint.decimals ?? 0;
-        mintDecimalsCache.set(mintStr, decimals);
+        const supply = BigInt(mint.supply.toString());
+        mintSummaryCache.set(mintStr, {
+          decimals,
+          supply,
+          isNftLike: decimals === 0 && supply === 1n,
+        });
       } catch {
         // ignore
       }
     }
   }
 
-  // 3) Compute UI amounts using cached decimals
+  // 3) Optionally filter out NFT-like mints (e.g. CLMM position NFTs).
+  if (excludeNftLike) {
+    for (const mintStr of [...programIdByMint.keys()]) {
+      const summary = mintSummaryCache.get(mintStr);
+      if (summary?.isNftLike) {
+        delete balanceMap[mintStr];
+        programIdByMint.delete(mintStr);
+      }
+    }
+  }
+
+  // 4) Compute UI amounts using cached decimals
   for (const mintStr of programIdByMint.keys()) {
     const entry = balanceMap[mintStr];
     if (!entry) continue;
-    const decimals = mintDecimalsCache.get(mintStr) ?? 0;
+    const decimals = mintSummaryCache.get(mintStr)?.decimals ?? 0;
     entry.decimals = decimals;
     entry.amount = decimals > 0 ? Number(entry.rawAmount) / 10 ** decimals : Number(entry.rawAmount);
   }
@@ -363,6 +394,7 @@ export function useAllSplBalances(
       const byMint = await mapTokenBalanceFromRawAccounts(connection, rawResp, {
         includeTokenAccounts,
         skipZeroBalances: true,
+        excludeNftLike: true,
       });
 
       if (isMapFromAccount) return byMint;

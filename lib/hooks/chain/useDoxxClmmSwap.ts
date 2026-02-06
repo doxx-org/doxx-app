@@ -35,7 +35,10 @@ const CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED = Buffer.from(
   anchorUtils.bytes.utf8.encode("pool_tick_array_bitmap_extension"),
 );
 const CLMM_TICK_ARRAY_SIZE = 60;
-const DEFAULT_TICK_ARRAY_WINDOW = 5;
+// How many tick arrays (including current) to pass into swaps.
+// Too small => program can fail with NotEnoughTickArrayAccount (6027) on bigger swaps / thin liquidity.
+// Too large => slightly larger tx (more account metas).
+const DEFAULT_TICK_ARRAY_WINDOW = 12;
 
 type SwapBaseInputParams = {
   inputMint: PublicKey;
@@ -169,6 +172,19 @@ export function useDoxxClmmSwap(
         const outputMint = params.outputMint as PublicKey;
 
         // CLMM pools store ordered mints (tokenMint0 < tokenMint1)
+        if (
+          !(
+            (inputMint.equals(pool.tokenMint0) && outputMint.equals(pool.tokenMint1)) ||
+            (inputMint.equals(pool.tokenMint1) && outputMint.equals(pool.tokenMint0))
+          )
+        ) {
+          throw new Error(
+            `Swap mints do not match pool. ` +
+            `pool=[${pool.tokenMint0.toBase58()}, ${pool.tokenMint1.toBase58()}] ` +
+            `swap=[${inputMint.toBase58()} -> ${outputMint.toBase58()}]`,
+          );
+        }
+
         const inputIs0 = inputMint.equals(pool.tokenMint0);
         const inputVault = inputIs0 ? pool.tokenVault0 : pool.tokenVault1;
         const outputVault = inputIs0 ? pool.tokenVault1 : pool.tokenVault0;
@@ -234,7 +250,7 @@ export function useDoxxClmmSwap(
           window: DEFAULT_TICK_ARRAY_WINDOW,
         });
 
-        // Preserve order and only include existing tick arrays (to avoid InvalidTickArray errors)
+        // Preserve order of tick arrays around the current tick.
         const tickArrayPks = startIndices.map((idx) => {
           const [addr] = getClmmTickArrayAddress({
             pool: poolAddress,
@@ -246,10 +262,15 @@ export function useDoxxClmmSwap(
         const tickArrayInfos = await connection.getMultipleAccountsInfo(
           tickArrayPks,
         );
-        const existingTickArrayMetas = tickArrayPks
-          .map((pk, i) => ({ pk, i }))
-          .filter(({ i }) => !!tickArrayInfos[i])
-          .map(({ pk }) => ({ pubkey: pk, isWritable: true, isSigner: false }));
+        // Important: do NOT filter out missing tick arrays here.
+        // The program can require a minimum number of tick-array accounts (6027) even if it
+        // won't end up reading all of them for small swaps.
+        // We still require the *current* tick array to exist (below), otherwise swaps are impossible.
+        const tickArrayMetas = tickArrayPks.map((pk) => ({
+          pubkey: pk,
+          isWritable: true,
+          isSigner: false,
+        }));
 
         // The current tick array must exist for swaps; fail early with a clear error
         if (!tickArrayInfos[0]) {
@@ -267,7 +288,7 @@ export function useDoxxClmmSwap(
 
         const bitmapInfo = await connection.getAccountInfo(tickArrayBitmapExt);
         const remainingAccounts = [
-          ...existingTickArrayMetas,
+          ...tickArrayMetas,
           ...(bitmapInfo
             ? [{ pubkey: tickArrayBitmapExt, isWritable: false, isSigner: false }]
             : []),
@@ -281,27 +302,58 @@ export function useDoxxClmmSwap(
           ? (params as SwapBaseInputParams).minOut
           : (params as SwapBaseOutputParams).maxAmountIn;
 
-        const ix = await program.methods
-          .swapV2(
-            amount,
-            otherAmountThreshold,
-            new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
-            kind === "in",
-          )
-          .accounts({
-            payer: wallet.publicKey,
-            ammConfig: pool.ammConfig,
-            poolState: poolAddress,
-            inputTokenAccount,
-            outputTokenAccount,
-            inputVault,
-            outputVault,
-            observationState: pool.observationKey,
-            inputVaultMint: inputMint,
-            outputVaultMint: outputMint,
-          })
-          .remainingAccounts(remainingAccounts)
-          .instruction();
+        // Some chains/RPCs don't have the Memo program deployed as executable.
+        // `swap_v2` requires `memo_program` and will fail with Anchor's InvalidProgramExecutable (3009).
+        // In that case, fall back to the legacy `swap` instruction (deprecated upstream, but works without memo).
+        const memoInfo = await connection.getAccountInfo(MEMO_PROGRAM_ID);
+        const memoExecutable = memoInfo?.executable === true;
+
+        const ix = memoExecutable
+          ? await program.methods
+            .swapV2(
+              amount,
+              otherAmountThreshold,
+              new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
+              kind === "in",
+            )
+            .accounts({
+              payer: wallet.publicKey,
+              ammConfig: pool.ammConfig,
+              poolState: poolAddress,
+              inputTokenAccount,
+              outputTokenAccount,
+              inputVault,
+              outputVault,
+              observationState: pool.observationKey,
+              inputVaultMint: inputMint,
+              outputVaultMint: outputMint,
+            })
+            .remainingAccounts(remainingAccounts)
+            .instruction()
+          : await program.methods
+            .swap(
+              amount,
+              otherAmountThreshold,
+              new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
+              kind === "in",
+            )
+            .accounts({
+              payer: wallet.publicKey,
+              ammConfig: pool.ammConfig,
+              poolState: poolAddress,
+              inputTokenAccount,
+              outputTokenAccount,
+              inputVault,
+              outputVault,
+              observationState: pool.observationKey,
+              // Legacy swap only takes the "current" tick array.
+              tickArray: tickArrayPks[0]!,
+            })
+            // Even though the legacy IDL only lists `tick_array`, the program can still consume
+            // additional tick arrays via remaining accounts when crossing boundaries.
+            // Only pass tick arrays here (no bitmap extension) to avoid confusing older handlers.
+            .remainingAccounts(tickArrayMetas.slice(1))
+            .instruction();
 
         const tx = new Transaction().add(...cuIxs, ...ataIxs, ix);
         tx.feePayer = wallet.publicKey;

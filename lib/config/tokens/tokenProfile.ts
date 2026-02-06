@@ -14,7 +14,7 @@ export const solayer: TokenProfile = {
   name: "SOLAYER",
   symbol: TokenSymbol.LAYER,
   address: addressConfig.tokens.solayer,
-  decimals: 9,
+  decimals: 6,
   displayDecimals: 4,
   image: "/coins/layer.svg",
 };

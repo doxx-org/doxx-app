@@ -30,16 +30,15 @@ export default function Home() {
   // Hooks
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
-  const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   // Fetch all pools
   const {
-    data: poolsData,
-    isLoading: _isLoadingPools,
-    // TODO: add refetchAllPoolStates to the dependencies
-    // refetch: refetchAllPoolStates,
-  } = useGetCPMMPools(doxxAmmProgram);
+    data: allPools,
+    isLoading: isLoadingAllPools,
+    refetch,
+    cpmmPoolsData,
+    clmmPoolsData,
+  } = useGetAllPools();
 
   // Fetch token balances
   const { data: splBalances } = useAllSplBalances(
@@ -64,29 +63,21 @@ export default function Home() {
     }, [splBalances]);
 
   const poolTokens = useMemo(() => {
-    return poolsData?.map((p) => {
+    return allPools?.map((p) => {
       return {
-        mint0Address: p.poolState.token0Mint.toString(),
-        mint0Decimals: p.poolState.mint0Decimals,
-        mint1Address: p.poolState.token1Mint.toString(),
-        mint1Decimals: p.poolState.mint1Decimals,
+        mint0Address: p.lpToken.token1.address,
+        mint0Decimals: p.lpToken.token1.decimals,
+        mint1Address: p.lpToken.token2.address,
+        mint1Decimals: p.lpToken.token2.decimals,
       };
     });
-  }, [poolsData]);
+  }, [allPools]);
 
   const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
     useGetAllTokenInfos({
       poolTokens,
       rawTokenProfiles: rawTokenProfilesFromSplBalances,
     });
-  // console.log("🚀 ~ allTokenProfiles:", allTokenProfiles);
-
-  const {
-    data: allPools,
-    isLoading: isLoadingAllPools,
-    refetch,
-  } = useGetAllPools();
-  console.log("🚀 ~ allPools:", allPools);
 
   const handleOpenCreateCLMMPoolDialog = () => {
     setIsCreatePoolOpen(true);
@@ -159,16 +150,11 @@ export default function Home() {
           splBalances={splBalances}
           allTokenProfiles={allTokenProfiles}
           onOpenChange={setIsCreatePoolOpen}
-          poolsData={poolsData}
+          poolsData={
+            poolDrawer === PoolType.CPMM ? cpmmPoolsData : clmmPoolsData
+          }
         />
       )}
-      {/* {isPoolDrawerOpen && (
-        <CreatePoolDrawer
-          isOpen={isPoolDrawerOpen}
-          onOpenChange={setIsPoolDrawerOpen}
-          createPoolType={poolDrawer}
-        />
-      )} */}
     </div>
   );
 }
