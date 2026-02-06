@@ -1,4 +1,4 @@
-import { PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 import { CLMM_MAX_TICK, CLMM_MIN_TICK, CLMM_TICK_ARRAY_SIZE, LOG_1P0001 } from "../constants";
 
@@ -188,4 +188,25 @@ export function applyBuffer(amount: BN, bufferPct: number | undefined): BN {
   // multiplier in ppm to avoid floats as much as possible: (1 + pct) * 1e6
   const mul = Math.floor((1 + pct) * 1_000_000);
   return amount.muln(mul).divn(1_000_000);
+}
+
+export function estimateLegacyTxSize(params: {
+  feePayer: PublicKey;
+  recentBlockhash: string;
+  instructions: TransactionInstruction[];
+  signers?: Keypair[];
+}) {
+  const { feePayer, recentBlockhash, instructions, signers = [] } = params;
+  try {
+    const tx = new Transaction().add(...instructions);
+    tx.feePayer = feePayer;
+    tx.recentBlockhash = recentBlockhash;
+    if (signers.length > 0) tx.partialSign(...signers);
+    // Signature bytes are a fixed-width part of the serialized tx; content doesn't change size.
+    return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).length;
+  } catch {
+    // `Transaction.serialize` throws when the legacy tx is too large.
+    // For sizing/planning purposes, treat this as "definitely too large".
+    return Number.POSITIVE_INFINITY;
+  }
 }

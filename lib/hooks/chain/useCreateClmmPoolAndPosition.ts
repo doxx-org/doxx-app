@@ -21,6 +21,7 @@ import {
   bnToBigint,
   clampTick,
   computeSqrtPriceX64,
+  estimateLegacyTxSize,
   mulDiv,
   priceX128FromSqrtPriceX64,
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
@@ -162,26 +163,26 @@ async function broadcastRawTxToFallback(params: {
   }
 }
 
-function estimateLegacyTxSize(params: {
-  feePayer: PublicKey;
-  recentBlockhash: string;
-  instructions: TransactionInstruction[];
-  signers?: Keypair[];
-}) {
-  const { feePayer, recentBlockhash, instructions, signers = [] } = params;
-  try {
-    const tx = new Transaction().add(...instructions);
-    tx.feePayer = feePayer;
-    tx.recentBlockhash = recentBlockhash;
-    if (signers.length > 0) tx.partialSign(...signers);
-    // Signature bytes are a fixed-width part of the serialized tx; content doesn't change size.
-    return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).length;
-  } catch {
-    // `Transaction.serialize` throws when the legacy tx is too large.
-    // For sizing/planning purposes, treat this as "definitely too large".
-    return Number.POSITIVE_INFINITY;
-  }
-}
+// function estimateLegacyTxSize(params: {
+//   feePayer: PublicKey;
+//   recentBlockhash: string;
+//   instructions: TransactionInstruction[];
+//   signers?: Keypair[];
+// }) {
+//   const { feePayer, recentBlockhash, instructions, signers = [] } = params;
+//   try {
+//     const tx = new Transaction().add(...instructions);
+//     tx.feePayer = feePayer;
+//     tx.recentBlockhash = recentBlockhash;
+//     if (signers.length > 0) tx.partialSign(...signers);
+//     // Signature bytes are a fixed-width part of the serialized tx; content doesn't change size.
+//     return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).length;
+//   } catch {
+//     // `Transaction.serialize` throws when the legacy tx is too large.
+//     // For sizing/planning purposes, treat this as "definitely too large".
+//     return Number.POSITIVE_INFINITY;
+//   }
+// }
 
 
 
@@ -232,6 +233,7 @@ export function useCreateClmmPoolAndPosition(
       }
 
       try {
+        console.log("🚀 ~ params:", params)
         const {
           ammConfig,
           tickSpacing,
@@ -329,12 +331,15 @@ export function useCreateClmmPoolAndPosition(
 
         let tickLowerIndex: number;
         let tickUpperIndex: number;
-        if (priceMode === "Full") {
+        console.log("🚀 ~ priceMode:", priceMode)
+        if (priceMode === PriceMode.FULL) {
           tickLowerIndex = Math.ceil(CLMM_MIN_TICK / tickSpacing) * tickSpacing;
           tickUpperIndex = Math.floor(CLMM_MAX_TICK / tickSpacing) * tickSpacing;
         } else {
           const minP = Number(minPriceAperB || "");
+          console.log("🚀 ~ minP:", minP)
           const maxP = Number(maxPriceAperB || "");
+          console.log("🚀 ~ maxP:", maxP)
           if (!Number.isFinite(minP) || !Number.isFinite(maxP) || minP <= 0 || maxP <= 0) {
             throw new Error("Enter valid min/max prices");
           }
@@ -412,9 +417,10 @@ export function useCreateClmmPoolAndPosition(
           programId: program.programId,
         });
 
+        // Open position can exceed default 200k CU; use Solana max 1.4M.
         const cuIxs = [
           ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
-          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10_000 }),
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
         ];
 
         const safeOpenTime = await getSafeOpenTime(connection);
@@ -740,6 +746,19 @@ export function useCreateClmmPoolAndPosition(
           return undefined;
         };
 
+        // Position instructions need high compute; never send without Compute Budget or we get ProgramFailedToComplete.
+        const pickCuRequired = (base: TransactionInstruction[], signers?: Keypair[]) => {
+          const withCu = [...cuIxs, ...base];
+          const sizeWithCu = estimateLegacyTxSize({
+            feePayer: wallet.publicKey,
+            recentBlockhash: sizingBlockhash,
+            instructions: withCu,
+            signers,
+          });
+          if (sizeWithCu <= LEGACY_TX_MAX_BYTES) return withCu;
+          return undefined;
+        };
+
         const tx1Instructions = pickCu([...ataIxs, createPoolIx]);
         if (!tx1Instructions) {
           throw new Error(
@@ -755,7 +774,7 @@ export function useCreateClmmPoolAndPosition(
 
         if (bootstrapOpenPosIx && bootstrapPositionNftMint) {
           // Try bundling bootstrap + full-range in a single tx, otherwise split.
-          const combined = pickCu(
+          const combined = pickCuRequired(
             [bootstrapOpenPosIx, openPosIx],
             [bootstrapPositionNftMint, positionNftMint],
           );
@@ -767,11 +786,11 @@ export function useCreateClmmPoolAndPosition(
               signers: [bootstrapPositionNftMint, positionNftMint],
             });
           } else {
-            const bootstrapOnly = pickCu(
+            const bootstrapOnly = pickCuRequired(
               [bootstrapOpenPosIx],
               [bootstrapPositionNftMint],
             );
-            const fullOnly = pickCu([openPosIx], [positionNftMint]);
+            const fullOnly = pickCuRequired([openPosIx], [positionNftMint]);
 
             if (!bootstrapOnly || !fullOnly) {
               throw new Error(
@@ -792,7 +811,7 @@ export function useCreateClmmPoolAndPosition(
             });
           }
         } else {
-          const fullOnly = pickCu([openPosIx], [positionNftMint]);
+          const fullOnly = pickCuRequired([openPosIx], [positionNftMint]);
           if (!fullOnly) {
             throw new Error(
               `TxTooLarge:open_position_full_range (max=${LEGACY_TX_MAX_BYTES} bytes). Next step is v0 + ALT.`,
