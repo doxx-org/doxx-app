@@ -392,6 +392,8 @@ export function SwapWidget() {
   const [tokenAValue, tokenBValue] = useMemo(() => {
     const tokenAPrice = prices?.splPrice[sellToken.address.toLowerCase()];
     const tokenBPrice = prices?.splPrice[buyToken.address.toLowerCase()];
+    console.log("🚀 ~ sellAmount:", sellAmount);
+    console.log("🚀 ~ buyAmount:", buyAmount);
     return [
       tokenAPrice !== undefined
         ? sellAmount !== ""
@@ -421,9 +423,9 @@ export function SwapWidget() {
     }
 
     if (!bestRoute) {
-      setBuyAmount("");
-      setSellAmount("");
-      setBaseInput("");
+      // setBuyAmount("");
+      // setSellAmount("");
+      // setBaseInput("");
       return;
     }
 
@@ -432,14 +434,25 @@ export function SwapWidget() {
       const normalizedAmountOut = normalizeBN(
         bestRoute.swapState.token1Amount,
         bestRoute.swapState.token1Decimals,
+        {
+          minCap: parseAmountBN("0.00001", bestRoute.swapState.token1Decimals),
+        },
       );
       setBuyAmount(normalizedAmountOut);
     } else {
       // normalize amount to human readable format
+      console.log(
+        "🚀 ~ bestRoute.swapState.token0Amount:",
+        bestRoute.swapState.token0Amount.toString(),
+      );
       const normalizedAmountIn = normalizeBN(
         bestRoute.swapState.token0Amount,
         bestRoute.swapState.token0Decimals,
+        {
+          minCap: parseAmountBN("0.00001", bestRoute.swapState.token0Decimals),
+        },
       );
+      console.log("🚀 ~ normalizedAmountIn:", normalizedAmountIn);
       setSellAmount(normalizedAmountIn);
     }
   }, [isBaseExactIn, bestRoute, isFetchingBestRoute, errorBestRoute]);

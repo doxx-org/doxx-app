@@ -66,9 +66,9 @@ export function SwapInfo1({
 
   return (
     <>
-      <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-row items-center justify-center gap-1">
-          <p>1 {amountInfo.baseToken.symbol}</p>
+      <div className="flex flex-row items-center justify-between gap-4">
+        <div className="flex min-w-0 flex-row items-center justify-center gap-1">
+          <p className="truncate">1 {amountInfo.baseToken.symbol}</p>
           <ArrowRight />
 
           {isFetchingBestRoute ? (
@@ -134,9 +134,9 @@ export function SwapInfo1({
                     bestRoute.swapState.minMaxAmount,
                     isBaseExactIn ? buyToken.decimals : sellToken.decimals,
                     {
-                    displayDecimals: isBaseExactIn
-                      ? buyToken.displayDecimals
-                      : sellToken.displayDecimals,
+                      displayDecimals: isBaseExactIn
+                        ? buyToken.displayDecimals
+                        : sellToken.displayDecimals,
                     },
                   )} ${isBaseExactIn ? buyToken.symbol : sellToken.symbol}`
                 : "-"}

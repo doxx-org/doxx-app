@@ -22,7 +22,7 @@ export const knownTokenProfiles: TokenProfile[] = [
   token2,
 ];
 
-export const defaultSwapTokens: TokenProfile[] = [solana, token1];
+export const defaultSwapTokens: TokenProfile[] = [solana, solayer];
 
 export const knownTokenProfilesMap: Record<string, TokenProfile> =
   knownTokenProfiles.reduce(

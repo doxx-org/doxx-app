@@ -112,21 +112,21 @@ export function normalizeBN(
   }: NormalizeBNOptions = {},
 ): string {
   // Convert to string and pad with zeros if needed
-  minCap = minCap ?? parseAmountBN("0.01", decimals);
-  maxCap = maxCap ?? parseAmountBN(
-    "1000000",
-    decimals,
-  );
-  try {
-    if (amount.lt(minCap)) {
-      return "<" + formatAmountBN(minCap, decimals);
-    }
-    if (amount.gt(maxCap)) {
-      return ">" + formatAmountBN(maxCap, decimals);
-    }
-  } catch {
-    return "-";
-  }
+  // minCap = minCap ?? parseAmountBN("0.01", decimals);
+  // maxCap = maxCap ?? parseAmountBN(
+  //   "1000000",
+  //   decimals,
+  // );
+  // try {
+  //   if (amount.lt(minCap)) {
+  //     return "<" + formatAmountBN(minCap, decimals);
+  //   }
+  //   if (amount.gt(maxCap)) {
+  //     return ">" + formatAmountBN(maxCap, decimals);
+  //   }
+  // } catch {
+  //   return "-";
+  // }
 
   return formatAmountBN(amount, decimals, { displayDecimals });
 }

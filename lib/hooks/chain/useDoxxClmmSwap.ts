@@ -39,6 +39,8 @@ const CLMM_TICK_ARRAY_SIZE = 60;
 // Too small => program can fail with NotEnoughTickArrayAccount (6027) on bigger swaps / thin liquidity.
 // Too large => slightly larger tx (more account metas).
 const DEFAULT_TICK_ARRAY_WINDOW = 12;
+// Program requires at least this many tick array accounts; we can only pass ones that exist (or we get 3007).
+const MIN_TICK_ARRAYS_FOR_SWAP = 2;
 
 type SwapBaseInputParams = {
   inputMint: PublicKey;
@@ -233,14 +235,17 @@ export function useDoxxClmmSwap(
           pool.tokenMint1,
           program.programId,
         );
-
+        console.log("🚀 ~ pool.tickArrayBitmap.map(c=>c.toString()):", pool.tickArrayBitmap.map(c => c.toString()))
         // Provide a small window of tick arrays around current tick.
         const tickCurrent = pool.tickCurrent;
+        console.log("🚀 ~ tickCurrent:", tickCurrent)
         const tickSpacing = pool.tickSpacing;
+        console.log("🚀 ~ tickSpacing:", tickSpacing)
         const start = getClmmTickArrayStartIndex({
           tickCurrent,
           tickSpacing,
         });
+        console.log("🚀 ~ start:", start)
         const zeroForOne = inputIs0; // token0 -> token1 moves price down
 
         const startIndices = buildTickArrayStartIndices({
@@ -259,19 +264,11 @@ export function useDoxxClmmSwap(
           });
           return addr;
         });
+        console.log("🚀 ~ startIndices:", startIndices)
         const tickArrayInfos = await connection.getMultipleAccountsInfo(
           tickArrayPks,
         );
-        // Important: do NOT filter out missing tick arrays here.
-        // The program can require a minimum number of tick-array accounts (6027) even if it
-        // won't end up reading all of them for small swaps.
-        // We still require the *current* tick array to exist (below), otherwise swaps are impossible.
-        const tickArrayMetas = tickArrayPks.map((pk) => ({
-          pubkey: pk,
-          isWritable: true,
-          isSigner: false,
-        }));
-
+        console.log("🚀 ~ tickArrayInfos:", tickArrayInfos)
         // The current tick array must exist for swaps; fail early with a clear error
         if (!tickArrayInfos[0]) {
           throw new Error(
@@ -280,19 +277,32 @@ export function useDoxxClmmSwap(
             `Try a different pool, or initialize liquidity/positions spanning the current price.`,
           );
         }
+        // Only pass tick arrays that exist on-chain. Passing PDAs for uninitialized tick arrays
+        // causes AccountOwnedByWrongProgram (3007) because the account is system-owned.
+        const tickArrayMetas = tickArrayPks
+          .map((pk, i) => (tickArrayInfos[i] ? { pubkey: pk, isWritable: true as const, isSigner: false as const } : null))
+          .filter((m): m is { pubkey: PublicKey; isWritable: true; isSigner: false } => m != null);
+        console.log("🚀 ~ tickArrayMetas:", tickArrayMetas)
+
+        if (tickArrayMetas.length < MIN_TICK_ARRAYS_FOR_SWAP) {
+          throw new Error(
+            `Not enough initialized tick arrays for swap (${tickArrayMetas.length}, need at least ${MIN_TICK_ARRAYS_FOR_SWAP}). ` +
+            `Add liquidity (deposit) into this pool in a range that spans the current price so more tick arrays are initialized, or use a different pool.`,
+          );
+        }
 
         const [tickArrayBitmapExt] = getClmmTickArrayBitmapExtensionAddress({
           pool: poolAddress,
           programId: program.programId,
         });
-
-        const bitmapInfo = await connection.getAccountInfo(tickArrayBitmapExt);
-        const remainingAccounts = [
-          ...tickArrayMetas,
-          ...(bitmapInfo
-            ? [{ pubkey: tickArrayBitmapExt, isWritable: false, isSigner: false }]
-            : []),
-        ];
+        // Program requires tick array bitmap extension (6040 MissingTickArrayBitmapExtensionAccount).
+        // Always pass it; the program may create it if not yet initialized.
+        const tickArrayBitmapExtMeta = {
+          pubkey: tickArrayBitmapExt,
+          isWritable: false,
+          isSigner: false,
+        };
+        const remainingAccounts = [...tickArrayMetas, tickArrayBitmapExtMeta];
 
         const amount = kind === "in"
           ? (params as SwapBaseInputParams).amountIn
@@ -346,13 +356,9 @@ export function useDoxxClmmSwap(
               inputVault,
               outputVault,
               observationState: pool.observationKey,
-              // Legacy swap only takes the "current" tick array.
-              tickArray: tickArrayPks[0]!,
+              tickArray: tickArrayMetas[0]!.pubkey,
             })
-            // Even though the legacy IDL only lists `tick_array`, the program can still consume
-            // additional tick arrays via remaining accounts when crossing boundaries.
-            // Only pass tick arrays here (no bitmap extension) to avoid confusing older handlers.
-            .remainingAccounts(tickArrayMetas.slice(1))
+            .remainingAccounts([...tickArrayMetas.slice(1), tickArrayBitmapExtMeta])
             .instruction();
 
         const tx = new Transaction().add(...cuIxs, ...ataIxs, ix);
@@ -385,16 +391,26 @@ export function useDoxxClmmSwap(
         return sig;
       } catch (e) {
         const err = e as Error;
+        let message = err instanceof Error ? err.message : "Unknown error";
         if (e instanceof SendTransactionError) {
           try {
             const logs = await e.getLogs(connection);
             console.error("CLMM swap simulation logs:\n" + logs.join("\n"));
+            const logStr = logs.join(" ");
+            if (logStr.includes("6027") || logStr.includes("NotEnoughTickArrayAccount")) {
+              message =
+                "Not enough tick arrays for swap (6027). Add liquidity (deposit) into this pool in a range that spans the current price to initialize more tick arrays, or use a different pool.";
+            }
           } catch {
             // ignore
           }
+        } else if (message.includes("6027") || message.includes("NotEnoughTickArrayAccount")) {
+          message =
+            "Not enough tick arrays for swap (6027). Add liquidity (deposit) into this pool in a range that spans the current price to initialize more tick arrays, or use a different pool.";
         }
-        onError(err);
-        setSwapError(new Error(err instanceof Error ? err.message : "Unknown error"));
+        const userErr = new Error(message);
+        onError(userErr);
+        setSwapError(userErr);
         setIsSwapping(false);
         return undefined;
       }

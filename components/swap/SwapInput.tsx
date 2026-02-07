@@ -6,9 +6,11 @@ import Wallet from "@/assets/icons/wallet.svg";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
+import { Underlined } from "../Underlined";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface SwapInputProps {
   title: string;
@@ -47,20 +49,20 @@ export function SwapInput({
         className,
       )}
     >
-      <div className="flex w-full flex-row items-center justify-between">
+      <div className="flex w-full flex-row items-center justify-between gap-4">
         <p className="text-white">{title}</p>
-        <div className="flex items-center gap-[6px]">
-          <Wallet />
+        <div className="flex min-w-0 items-center gap-[6px]">
+          <Wallet className="size-4" />
           <p className="text-gray-600">{tokenBalance ?? "-"}</p>
-          <p className="text-gray-600">{token.symbol}</p>
+          <p className="truncate text-gray-600">{token.symbol}</p>
           {actionButtons}
         </div>
       </div>
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full items-center justify-between gap-4">
         <div className="flex">
           <Button
             variant="outline"
-            className="h-fit w-fit gap-2 rounded-2xl border border-white/10 bg-white/5 p-[6px]"
+            className="h-fit w-fit max-w-40 gap-2 rounded-2xl border border-white/10 bg-white/5 p-[6px]"
             disabled={!onOpenTokenSelector}
             onClick={onOpenTokenSelector}
           >
@@ -74,13 +76,13 @@ export function SwapInput({
                 <AvatarFallback>{"?"}</AvatarFallback>
               </Avatar>
             </div>
-            <span className={cn(text.b3(), "text-gray-300")}>
+            <span className={cn(text.b3(), "truncate text-gray-300")}>
               {token.symbol}
             </span>
             <ChevronDown />
           </Button>
         </div>
-        <div className="flex flex-col items-end overflow-hidden">
+        <div className="flex flex-col items-end">
           <input
             type="text"
             value={amount}
@@ -89,13 +91,28 @@ export function SwapInput({
             }
             className={cn(
               text.sh1(),
-              "flex-1 text-right text-white outline-none placeholder:text-gray-600",
+              "w-full flex-1 text-right text-white outline-none placeholder:text-gray-600",
             )}
             placeholder={placeholder}
             disabled={disabled || !isActionable}
           />
           {inputValue !== undefined ? (
-            <p className="text-right text-gray-600">${inputValue.toFixed(2)}</p>
+            Number.isInteger(inputValue) ? (
+              <p className="text-right text-gray-600">
+                ${inputValue.toFixed(2)}
+              </p>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger>
+                  <Underlined className="text-gray-600 decoration-gray-600">
+                    $0.00
+                  </Underlined>
+                </TooltipTrigger>
+                <TooltipContent className="flex flex-col gap-1">
+                  Unable to calculate value
+                </TooltipContent>
+              </Tooltip>
+            )
           ) : (
             <Skeleton className="h-4 w-10" />
           )}
