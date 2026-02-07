@@ -13,10 +13,8 @@ import { CLMMPoolStateWithConfig, CPMMPoolStateWithConfig } from "./types";
 import { useMemo } from "react";
 import { PoolType } from "@/components/earn/v2/types";
 
-export type RoutePoolType = "CPMM" | "CLMM";
-
 export type IUseBestRouteResponse = {
-  poolType: RoutePoolType;
+  poolType: PoolType;
   pool: CPMMPoolStateWithConfig | CLMMPoolStateWithConfig;
   swapState: SwapState;
 };

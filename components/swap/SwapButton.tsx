@@ -3,8 +3,11 @@ import { BN, Program } from "@coral-xyz/anchor";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Connection } from "@solana/web3.js";
 import { ZERO } from "@/lib/constants";
+import {
+  CLMMPoolStateWithConfig,
+  CPMMPoolStateWithConfig,
+} from "@/lib/hooks/chain/types";
 import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
-import { CLMMPoolStateWithConfig, CPMMPoolStateWithConfig } from "@/lib/hooks/chain/types";
 import { useDoxxClmmSwap } from "@/lib/hooks/chain/useDoxxClmmSwap";
 import { useDoxxCpmmSwap } from "@/lib/hooks/chain/useDoxxCpmmSwap";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
@@ -12,6 +15,7 @@ import { text } from "@/lib/text";
 import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
 import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
 import { cn } from "@/lib/utils/style";
+import { PoolType } from "../earn/v2/types";
 import { Button } from "../ui/button";
 
 interface SwapButtonProps {
@@ -47,12 +51,7 @@ export function SwapButton({
   onError,
 }: SwapButtonProps) {
   // inside a React component
-  const cpmm = useDoxxCpmmSwap(
-    cpmmProgram,
-    wallet,
-    onSuccess,
-    onError,
-  );
+  const cpmm = useDoxxCpmmSwap(cpmmProgram, wallet, onSuccess, onError);
   const clmm = useDoxxClmmSwap(
     connection,
     clmmProgram,
@@ -83,7 +82,7 @@ export function SwapButton({
 
     if (bestRoute.swapState.isBaseExactIn) {
       const minOut = bestRoute.swapState.minMaxAmount;
-      if (bestRoute.poolType === "CPMM") {
+      if (bestRoute.poolType === PoolType.CPMM) {
         const pool = bestRoute.pool as CPMMPoolStateWithConfig;
         await cpmm.swapBaseInput(pool.poolState, {
           inputMint,
@@ -102,7 +101,7 @@ export function SwapButton({
       }
     } else {
       const maxAmountIn = bestRoute.swapState.minMaxAmount;
-      if (bestRoute.poolType === "CPMM") {
+      if (bestRoute.poolType === PoolType.CPMM) {
         const pool = bestRoute.pool as CPMMPoolStateWithConfig;
         await cpmm.swapBaseOutput(pool.poolState, {
           inputMint,

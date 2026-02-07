@@ -5,7 +5,8 @@ export function getTxExplorerUrl(address: string): string {
   switch (clientEnvConfig.NEXT_PUBLIC_CHAIN) {
     case CHAIN.SOLANA:
       return getSolanaTxExplorerUrl(address);
-    case CHAIN.SOLAYER:
+    default:
+      // case CHAIN.SOLAYER:
       return getSolayerTxExplorerUrl(address);
   }
 }
@@ -14,7 +15,8 @@ export function getAddressExplorerUrl(address: string): string {
   switch (clientEnvConfig.NEXT_PUBLIC_CHAIN) {
     case CHAIN.SOLANA:
       return getSolanaAccountExplorerUrl(address);
-    case CHAIN.SOLAYER:
+    default:
+      // case CHAIN.SOLAYER:
       return getSolayerAddressExplorerUrl(address);
   }
 }
@@ -23,7 +25,8 @@ export function getTokenExplorerUrl(address: string): string {
   switch (clientEnvConfig.NEXT_PUBLIC_CHAIN) {
     case CHAIN.SOLANA:
       return getSolanaTokenExplorerUrl(address);
-    case CHAIN.SOLAYER:
+    default:
+      // case CHAIN.SOLAYER:
       return getSolayerAddressExplorerUrl(address);
   }
 }

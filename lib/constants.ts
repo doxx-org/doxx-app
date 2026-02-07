@@ -71,3 +71,11 @@ export const CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED = Buffer.from(
     110,
   ],
 );
+
+// ==============================================
+// Price constants
+// ==============================================
+export const SOLANA_PRICE = 85;
+export const USDC_PRICE = 1;
+/** Wrapped SOL mint (used for USD conversion when a pair contains SOL). */
+export const NATIVE_SOL_MINT = "So11111111111111111111111111111111111111112";

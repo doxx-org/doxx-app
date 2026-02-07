@@ -8,6 +8,7 @@ import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
+import { Skeleton } from "../ui/skeleton";
 
 interface SwapInputProps {
   title: string;
@@ -21,6 +22,7 @@ interface SwapInputProps {
   tokenBalance: number | undefined;
   actionButtons?: ReactNode;
   isActionable: boolean;
+  inputValue: number | undefined;
 }
 
 export function SwapInput({
@@ -35,6 +37,7 @@ export function SwapInput({
   tokenBalance,
   actionButtons,
   isActionable,
+  inputValue,
 }: SwapInputProps) {
   return (
     <div
@@ -77,7 +80,7 @@ export function SwapInput({
             <ChevronDown />
           </Button>
         </div>
-        <div className="flex flex-col overflow-hidden">
+        <div className="flex flex-col items-end overflow-hidden">
           <input
             type="text"
             value={amount}
@@ -91,7 +94,11 @@ export function SwapInput({
             placeholder={placeholder}
             disabled={disabled || !isActionable}
           />
-          <p className="text-right text-gray-600">$0.00</p>
+          {inputValue !== undefined ? (
+            <p className="text-right text-gray-600">${inputValue.toFixed(2)}</p>
+          ) : (
+            <Skeleton className="h-4 w-10" />
+          )}
         </div>
       </div>
     </div>

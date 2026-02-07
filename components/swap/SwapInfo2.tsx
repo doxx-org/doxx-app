@@ -66,12 +66,10 @@ export function SwapInfo2({
                       Pool ID:{" "}
                       <Link
                         href={getAddressExplorerUrl(
-                          bestRoute.pool.observationState.poolId.toString(),
+                          bestRoute.pool.poolId.toString(),
                         )}
                       >
-                        {ellipseAddress(
-                          bestRoute.pool.observationState.poolId.toString(),
-                        )}
+                        {ellipseAddress(bestRoute.pool.poolId.toString())}
                       </Link>
                     </div>
                   </TooltipContent>

@@ -14,7 +14,7 @@ import {
   RpcResponseAndContext,
 } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
-import { TokenProfile } from "@/lib/config/tokens";
+import { solana, TokenProfile } from "@/lib/config/tokens";
 import { BalanceMapByMint, SplBalance } from "./types";
 
 interface AccountDataParsedInfoTokenAmount {
@@ -397,9 +397,26 @@ export function useAllSplBalances(
         excludeNftLike: true,
       });
 
-      if (isMapFromAccount) return byMint;
+      // Get NATIVE SOLANA balance
+      const solanaBalanceAmount = await connection.getBalance(owner);
+      const solanaBalanceObject: BalanceMapByMint = {
+        [solana.address]: {
+          mint: solana.address,
+          rawAmount: BigInt(solanaBalanceAmount.toString()),
+          amount: solanaBalanceAmount / 10 ** solana.decimals,
+          decimals: solana.decimals,
+          tokenAccounts: [],
+        }
+      }
+
+      if (isMapFromAccount) return {
+        ...byMint,
+        ...solanaBalanceObject
+      };
       if (!tokenProfiles || tokenProfiles.length === 0) return undefined;
-      return mapTokenBalanceFromTokenProfiles(byMint, tokenProfiles);
+      return {
+        ...mapTokenBalanceFromTokenProfiles(byMint, tokenProfiles), ...solanaBalanceObject
+      };
     },
     enabled: !!owner && (isMapFromAccount || (tokenProfiles?.length ?? 0) > 0),
     staleTime: 2 * 60 * 1000, // 2 minutes - token balances don't change frequently

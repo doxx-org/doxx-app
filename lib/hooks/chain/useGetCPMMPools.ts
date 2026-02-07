@@ -71,21 +71,18 @@ export function useGetCPMMPools(
             poolState.account.observationKey.toBase58(),
           );
 
-          if (!ammConfig || !observationState) {
-            // TODO: handle this error
-            throw new Error(
-              `Failed to fetch configs for pool ${poolState.publicKey.toBase58()}`,
-            );
+          if (!ammConfig) {
+            return;
           }
 
           return {
-            poolId: observationState.poolId,
+            poolId: poolState.publicKey,
             poolState: { ...poolState.account },
             ammConfig,
             observationState,
           };
         },
-      );
+      ).filter(c => c !== undefined);
 
       return allPoolStatesData;
     },

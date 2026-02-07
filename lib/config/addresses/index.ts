@@ -9,6 +9,7 @@ export interface AddressConfig {
     createPoolFee: string;
   };
   tokens: {
+    solana: string;
     solayer: string;
     solayerUSD: string;
     usdc: string;

@@ -65,3 +65,10 @@ if (!parsed.success) {
 
 export const clientEnvConfig = parsed.data;
 export type ClientEnvConfig = typeof clientEnvConfig;
+
+// export const clientEnvConfig = {
+//   NEXT_PUBLIC_ENV: "devnet",
+//   NEXT_PUBLIC_CHAIN: "SOLAYER",
+//   NEXT_PUBLIC_NETWORK: "devnet",
+//   NEXT_PUBLIC_RPC_URL: "https://devnet-rpc.solayer.org",
+// };

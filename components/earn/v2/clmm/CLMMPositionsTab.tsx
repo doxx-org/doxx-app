@@ -7,7 +7,7 @@ import {
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn, formatNumber } from "@/lib/utils";
-import { Pool } from "../../PoolColumn";
+import { Pool } from "../types";
 
 interface Position {
   id: number;

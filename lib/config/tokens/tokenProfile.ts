@@ -1,6 +1,15 @@
 import { addressConfig } from "../addresses";
 import { TokenProfile, TokenSymbol } from "./type";
 
+export const solana: TokenProfile = {
+  name: "SOLANA",
+  symbol: "SOL",
+  address: addressConfig.tokens.solana,
+  decimals: 9,
+  displayDecimals: 4,
+  image: "/coins/solana.png",
+};
+
 export const unknownToken: TokenProfile = {
   name: "UNKNOWN",
   symbol: "UNK",

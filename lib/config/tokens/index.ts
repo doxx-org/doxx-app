@@ -1,4 +1,5 @@
 import {
+  solana,
   solayer,
   solayerUSD,
   ssol,
@@ -12,6 +13,7 @@ export * from "./tokenProfile";
 export * from "./type";
 
 export const knownTokenProfiles: TokenProfile[] = [
+  solana,
   usdc,
   solayer,
   solayerUSD,
@@ -20,7 +22,7 @@ export const knownTokenProfiles: TokenProfile[] = [
   token2,
 ];
 
-export const defaultSwapTokens: TokenProfile[] = [token1, token2];
+export const defaultSwapTokens: TokenProfile[] = [solana, token1];
 
 export const knownTokenProfilesMap: Record<string, TokenProfile> =
   knownTokenProfiles.reduce(

@@ -150,6 +150,26 @@ export function SwapWidget() {
     });
   }, [allPools]);
 
+  const prices:
+    | { poolPrice: Record<string, number>; splPrice: Record<string, number> }
+    | undefined = useMemo(() => {
+    return allPools?.reduce(
+      (acc, p) => {
+        acc.poolPrice[p.poolId.toLowerCase()] = p.price;
+        acc.splPrice[p.lpToken.token1.address.toLowerCase()] = p.priceToken1Usd;
+        acc.splPrice[p.lpToken.token2.address.toLowerCase()] = p.priceToken2Usd;
+        return acc;
+      },
+      {
+        poolPrice: {},
+        splPrice: {},
+      } as {
+        poolPrice: Record<string, number>;
+        splPrice: Record<string, number>;
+      },
+    );
+  }, [allPools]);
+
   const {
     data: allTokenProfiles,
     isLoading: isLoadingAllTokenProfiles,
@@ -362,10 +382,29 @@ export function SwapWidget() {
     if (error.message === "TransactionNotFoundOnChain" && txSignature) {
       toast.error(<CheckSignatureTimeoutToast signature={txSignature} />);
     } else {
-      toast.error(simplifyErrorMessage(error, "Swap failed"));
+      toast.error(
+        simplifyErrorMessage(error, "Swap failed.\nPlease try again"),
+      );
     }
-    toast.error(simplifyErrorMessage(error, "Swap failed"));
+    toast.error(simplifyErrorMessage(error, "Swap failed.\nPlease try again"));
   };
+
+  const [tokenAValue, tokenBValue] = useMemo(() => {
+    const tokenAPrice = prices?.splPrice[sellToken.address.toLowerCase()];
+    const tokenBPrice = prices?.splPrice[buyToken.address.toLowerCase()];
+    return [
+      tokenAPrice !== undefined
+        ? sellAmount !== ""
+          ? tokenAPrice * parseFloat(sellAmount)
+          : 0
+        : undefined,
+      tokenBPrice !== undefined
+        ? buyAmount !== ""
+          ? tokenBPrice * parseFloat(buyAmount)
+          : 0
+        : undefined,
+    ];
+  }, [prices, sellToken.address, sellAmount, buyToken.address, buyAmount]);
 
   useEffect(() => {
     if (!!errorBestRoute) {
@@ -451,6 +490,7 @@ export function SwapWidget() {
               <SellActionButtons onHalf={handleHalf} onMax={handleMax} />
             }
             isActionable={isActionable}
+            inputValue={tokenAValue}
           />
           <button
             type="button"
@@ -475,6 +515,7 @@ export function SwapWidget() {
             }
             tokenBalance={displayToken1Balance}
             isActionable={isActionable}
+            inputValue={tokenBValue}
           />
         </div>
         {/* details */}

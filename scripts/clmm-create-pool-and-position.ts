@@ -25,21 +25,39 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { clientEnvConfig } from "../lib/config/envConfig";
 
-import clmmIdlDevnet from "../lib/idl/devnet/clmm_devnet_idl.json";
-import clmmIdlMainnet from "../lib/idl/mainnet/clmm_mainnet_idl.json";
+// import clmmIdlDevnet from "../lib/idl/devnet/clmm_devnet_idl.json";
+// import clmmIdlMainnet from "../lib/idl/mainnet/clmm_mainnet_idl.json";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { doxxClmmIdl, DoxxClmmIdl } from "@/lib/idl";
 import { doxxClmmIdlMainnet } from "@/lib/idl/mainnet";
 import { doxxClmmIdlDevnet } from "@/lib/idl/devnet";
+import { PriceMode } from "@/components/earn/v2/types";
+import { applyBuffer, bnToBigint, clampTick, computeSqrtPriceX64, estimateLegacyTxSize, getAmmConfigAddress, getClmmTickArrayAddress, getClmmTickArrayBitmapExtensionAddress, getOrcleAccountAddress, getPersonalPositionAddress, getPoolAddress, getPoolVaultAddress, getProtocolPositionAddress, i32ToBeBytes, idlHasAccount, mulDiv, parseAmountBN, priceX128FromSqrtPriceX64, tickArrayStartIndex, tickFromPriceAperB } from "@/lib/utils";
+import { CLMM_MAX_TICK, CLMM_MIN_TICK, CLMM_TICK_ARRAY_SIZE, SEED_POSITION, TWO_POW_128 } from "@/lib/constants";
+import { pollSignatureStatus } from "@/lib/utils/solanaTxFallback";
 
 const BN = anchor.BN;
+
+const SYSVAR_RENT = new PublicKey("SysvarRent111111111111111111111111111111111");
+
+// Shared accounts for open_position (IDL expects these; some RPCs resolve them incorrectly if omitted).
+const openPositionProgramAccounts = {
+  rent: SYSVAR_RENT,
+  systemProgram: SystemProgram.programId,
+  tokenProgram: TOKEN_PROGRAM_ID,
+  associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+  tokenProgram2022: TOKEN_2022_PROGRAM_ID,
+};
+
+// ---------- Transaction size limits ----------
+const LEGACY_TX_MAX_BYTES = 1232; // common wallet-adapter legacy tx cap
 
 // ---------- Hardcoded config ----------
 type ScriptConfig = {
@@ -62,7 +80,7 @@ type ScriptConfig = {
   maxAmountBufferPct?: string;
 
   /** "Full" or "Custom". If Custom, set min/max. */
-  mode: "Full" | "Custom";
+  mode: PriceMode;
   minPriceAperB?: string;
   maxPriceAperB?: string;
 
@@ -78,23 +96,27 @@ type ScriptConfig = {
 const CONFIG: ScriptConfig = {
   rpcUrl: "https://devnet-rpc.solayer.org",
   keypairPath: "~/.config/solana/id.json",
-  idl: (process.env.NEXT_PUBLIC_NETWORK!! === WalletAdapterNetwork.Mainnet ? doxxClmmIdlMainnet : doxxClmmIdlDevnet) as DoxxClmmIdl,
+  idl: (process.env.NEXT_PUBLIC_NETWORK === WalletAdapterNetwork.Mainnet ? doxxClmmIdlMainnet : doxxClmmIdlDevnet) as DoxxClmmIdl,
   feeIndex: 1,
 
   // Solayer devnet defaults from `lib/config/addresses/address.devnet.json`
-  tokenA: "9v5VCdbLZveXTJ35MPGb1HHQxEN1XHBNZinqz44gUzSC",
-  tokenB: "He1JHswhPCYYJ2WK2c7JgVVQyKBPaKxB6SDXzCKhqUj7",
+  // tokenA: "5DA5HuM2crJLZzhrfnwLD7eA1pcHztTRR639iaaJgJTn",
+  // tokenB: "9v5VCdbLZveXTJ35MPGb1HHQxEN1XHBNZinqz44gUzSC",
+  tokenA: "So11111111111111111111111111111111111111112",
+  tokenB: "FicCKgiPHLUv7bjsY9ydSF91RKGikD8xr4U5orobWUiK",
+  // tokenB: "GUewnup48zDzM5B43ZeNY6SNEYQZ93fatFJ8yuXn96zV", // create but doesn't deposit
+  // tokenB: "7zHp8PnVt5VgehRUEjGLhKC73FKZXAF3i3RV4kfc51kY",
   decA: 9,
-  decB: 6,
+  decB: 9,
 
   initialPriceAperB: "0.01",
   amountA: "10",
   amountB: "10",
   maxAmountBufferPct: "0.02", // +2% buffer to pass PriceSlippageCheck (6021)
 
-  mode: "Full",
-  // minPriceAperB: "0.005",
-  // maxPriceAperB: "0.02",
+  mode: PriceMode.FULL,
+  minPriceAperB: "0.005",
+  maxPriceAperB: "0.02",
 
   // Debug toggles
   splitTx: false,
@@ -109,46 +131,6 @@ function expandHome(p: string | undefined): string | undefined {
   return p;
 }
 
-function parseNumber(n: string | undefined, label: string): number {
-  const v = Number(n);
-  if (!Number.isFinite(v)) throw new Error(`Invalid number for ${label}: ${n}`);
-  return v;
-}
-
-function applyBuffer(amount: anchor.BN, bufferPct: string | undefined): anchor.BN {
-  const pct = Number(bufferPct ?? "0");
-  if (!Number.isFinite(pct) || pct <= 0) return amount;
-  // multiplier in ppm to avoid floats as much as possible: (1 + pct) * 1e6
-  const mul = Math.floor((1 + pct) * 1_000_000);
-  return amount.muln(mul).divn(1_000_000);
-}
-
-const TWO_POW_128 = 1n << 128n;
-
-function bnToBigint(bn: anchor.BN): bigint {
-  return BigInt(bn.toString());
-}
-
-function bigintToBn(x: bigint): anchor.BN {
-  return new anchor.BN(x.toString());
-}
-
-function mulDiv(a: bigint, b: bigint, den: bigint): bigint {
-  if (den === 0n) throw new Error("mulDiv division by zero");
-  return (a * b) / den;
-}
-
-function mulByPpm(x: bigint, ppm: number): bigint {
-  return (x * BigInt(ppm)) / 1_000_000n;
-}
-
-function priceX128FromSqrtPriceX64(sqrtPriceX64: anchor.BN) {
-  // sqrtPriceX64 is Q64.64 of sqrt(P). So P is Q128.128:
-  // priceX128 = sqrt^2 (denominator is 2^128)
-  const s = bnToBigint(sqrtPriceX64);
-  return s * s; // numerator for P with denominator 2^128
-}
-
 function loadKeypair(keypairPath: string): Keypair {
   const p = expandHome(keypairPath);
   if (!p) throw new Error("Invalid keypair path");
@@ -158,264 +140,40 @@ function loadKeypair(keypairPath: string): Keypair {
   return Keypair.fromSecretKey(secret);
 }
 
-// ---------- Math helpers ----------
-// IMPORTANT: This Raydium CLMM program supports tick range [-443636, 443636]
-// (see IDL errors 6008/6009).
-const MIN_TICK = -443_636;
-const MAX_TICK = 443_636;
-const LOG_1P0001 = Math.log(1.0001);
-const CLMM_TICK_ARRAY_SIZE = 60;
-
-function pow10(exp: number): bigint {
-  if (exp <= 0) return 1n;
-  return 10n ** BigInt(exp);
-}
-
-function parseDecimalToFraction(value: string): { num: bigint; den: bigint } {
-  const v = String(value ?? "").trim();
-  if (!v) throw new Error("Price is required");
-  if (v.startsWith("-")) throw new Error("Price must be positive");
-  if (!/^\d+(\.\d+)?$/.test(v)) throw new Error(`Invalid price format: ${v}`);
-  const [i, f = ""] = v.split(".");
-  const digits = (i + f).replace(/^0+(?=\d)/, "");
-  return { num: BigInt(digits || "0"), den: pow10(f.length) };
-}
-
-function bigintSqrt(n: bigint): bigint {
-  if (n < 0n) throw new Error("sqrt of negative");
-  if (n < 2n) return n;
-  let x0 = n;
-  let x1 = (x0 + 1n) >> 1n;
-  while (x1 < x0) {
-    x0 = x1;
-    x1 = (x1 + n / x1) >> 1n;
-  }
-  return x0;
-}
-
-function u16ToBytes(num: number) {
-  const arr = new ArrayBuffer(2);
-  const view = new DataView(arr);
-  view.setUint16(0, num, false);
-  return new Uint8Array(arr);
-}
-
-function computeSqrtPriceX64(params: {
-  tokenAMint: PublicKey;
-  tokenBMint: PublicKey;
-  tokenADecimals: number;
-  tokenBDecimals: number;
-  tokenMint0: PublicKey;
-  tokenMint1: PublicKey;
-  priceAperB: string;
-}): anchor.BN {
-  const {
-    tokenAMint,
-    tokenBMint,
-    tokenADecimals,
-    tokenBDecimals,
-    tokenMint0,
-    tokenMint1,
-    priceAperB,
-  } = params;
-  const { num: pabNum, den: pabDen } = parseDecimalToFraction(priceAperB);
-  if (pabNum === 0n) throw new Error("Price must be > 0");
-
-  const aIs0 = tokenAMint.equals(tokenMint0);
-  const aIs1 = tokenAMint.equals(tokenMint1);
-  const bIs0 = tokenBMint.equals(tokenMint0);
-  const bIs1 = tokenBMint.equals(tokenMint1);
-  if ((!aIs0 && !aIs1) || (!bIs0 && !bIs1)) {
-    throw new Error("Token mints do not match token0/token1 ordering");
-  }
-
-  // Pab = A/B (human). Need P10 = token1/token0 (human).
-  let p10Num = pabNum;
-  let p10Den = pabDen;
-  const token0Decimals = aIs0 ? tokenADecimals : tokenBDecimals;
-  const token1Decimals = aIs0 ? tokenBDecimals : tokenADecimals;
-  if (aIs0) {
-    p10Num = pabDen;
-    p10Den = pabNum;
-  }
-
-  const decDiff = token1Decimals - token0Decimals;
-  if (decDiff >= 0) p10Num = p10Num * pow10(decDiff);
-  else p10Den = p10Den * pow10(-decDiff);
-
-  const scaled = (p10Num << 128n) / p10Den;
-  const sqrt = bigintSqrt(scaled);
-  const maxU128 = (1n << 128n) - 1n;
-  if (sqrt < 0n || sqrt > maxU128) throw new Error("sqrtPriceX64 out of range");
-  return new BN(sqrt.toString());
-}
-
-function clampTick(t: number, spacing: number): number {
-  const minAllowed = Math.ceil(MIN_TICK / spacing) * spacing;
-  const maxAllowed = Math.floor(MAX_TICK / spacing) * spacing;
-  return Math.min(maxAllowed, Math.max(minAllowed, t));
-}
-
-function tickFromPriceAperB(params: {
-  priceAperB: number;
-  tokenAMint: PublicKey;
-  tokenBMint: PublicKey;
-  tokenADecimals: number;
-  tokenBDecimals: number;
-  tokenMint0: PublicKey;
-  tokenMint1: PublicKey;
-}): number {
-  const {
-    priceAperB,
-    tokenAMint,
-    tokenBMint,
-    tokenADecimals,
-    tokenBDecimals,
-    tokenMint0,
-    tokenMint1,
-  } = params;
-  const aIs0 = tokenAMint.equals(tokenMint0);
-  const aIs1 = tokenAMint.equals(tokenMint1);
-  const bIs0 = tokenBMint.equals(tokenMint0);
-  const bIs1 = tokenBMint.equals(tokenMint1);
-  if ((!aIs0 && !aIs1) || (!bIs0 && !bIs1)) {
-    throw new Error("Token mints do not match token0/token1 ordering");
-  }
-
-  const token0Decimals = aIs0 ? tokenADecimals : tokenBDecimals;
-  const token1Decimals = aIs0 ? tokenBDecimals : tokenADecimals;
-
-  const safe = Math.max(Number(priceAperB), 1e-18);
-  const logP10Human = aIs0 ? -Math.log(safe) : Math.log(safe);
-  const logDecScale = (token1Decimals - token0Decimals) * Math.log(10);
-  const logPriceBase = logP10Human + logDecScale;
-  return Math.floor(logPriceBase / LOG_1P0001);
-}
-
-function tickArrayStartIndex(tickIndex: number, tickSpacing: number): number {
-  const arraySpacing = tickSpacing * CLMM_TICK_ARRAY_SIZE;
-  if (arraySpacing === 0) return 0;
-  return Math.floor(tickIndex / arraySpacing) * arraySpacing;
-}
-
-// NOTE: This CLMM program encodes numeric PDA seed args as big-endian bytes
-// (same as the u16 amm_config index seed in this repo).
-function i32ToBeBytes(num: number): Buffer {
-  const arr = new ArrayBuffer(4);
-  const view = new DataView(arr);
-  view.setInt32(0, num, false);
-  return Buffer.from(arr);
-}
-
-// ---------- PDA helpers (per IDL) ----------
-const SEED_POOL = Buffer.from("pool", "utf8");
-const SEED_POOL_VAULT = Buffer.from("pool_vault", "utf8");
-const SEED_OBSERVATION = Buffer.from("observation", "utf8");
-const SEED_TICK_ARRAY = Buffer.from("tick_array", "utf8");
-const SEED_TICK_BITMAP_EXT = Buffer.from("pool_tick_array_bitmap_extension", "utf8");
-const SEED_POSITION = Buffer.from("position", "utf8");
-
-function pdaPool(
-  programId: PublicKey,
-  ammConfig: PublicKey,
-  mint0: PublicKey,
-  mint1: PublicKey,
-): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [SEED_POOL, ammConfig.toBuffer(), mint0.toBuffer(), mint1.toBuffer()],
-    programId,
-  )[0];
-}
-
-function pdaVault(
-  programId: PublicKey,
-  poolState: PublicKey,
-  mint: PublicKey,
-): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [SEED_POOL_VAULT, poolState.toBuffer(), mint.toBuffer()],
-    programId,
-  )[0];
-}
-
-function pdaObservation(programId: PublicKey, poolState: PublicKey): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [SEED_OBSERVATION, poolState.toBuffer()],
-    programId,
-  )[0];
-}
-
-function pdaTickBitmap(programId: PublicKey, poolState: PublicKey): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [SEED_TICK_BITMAP_EXT, poolState.toBuffer()],
-    programId,
-  )[0];
-}
-
-function pdaTickArray(
-  programId: PublicKey,
-  poolState: PublicKey,
-  startIndex: number,
-): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [SEED_TICK_ARRAY, poolState.toBuffer(), i32ToBeBytes(startIndex)],
-    programId,
-  )[0];
-}
-
-function pdaPersonalPosition(
-  programId: PublicKey,
-  positionNftMint: PublicKey,
-): PublicKey {
-  return PublicKey.findProgramAddressSync(
-    [SEED_POSITION, positionNftMint.toBuffer()],
-    programId,
-  )[0];
-}
-
-function pdaAmmConfig(programId: PublicKey, index: number): PublicKey {
-  const indexBuffer = u16ToBytes(index);
-  return PublicKey.findProgramAddressSync([Buffer.from("amm_config"), indexBuffer], programId)[0];
-}
-
-// We don't have PDA seeds for protocol_position in the IDL.
-// Probe a few common Raydium-like variants.
+// Protocol position PDA must match the program. Use same derivation as the hook (getProtocolPositionAddress).
+// When probeProtocolPosition is true, we try additional variants.
 function protocolPositionCandidates(
   programId: PublicKey,
   poolState: PublicKey,
   tickLower: number,
   tickUpper: number,
 ): PublicKey[] {
-  const candidates = [];
+  const candidates: PublicKey[] = [];
 
-  // Variant A: "position" + pool + i32 + i32 (common in Raydium)
-  candidates.push(
-    PublicKey.findProgramAddressSync(
-      [SEED_POSITION, poolState.toBuffer(), i32ToBeBytes(tickLower), i32ToBeBytes(tickUpper)],
-      programId,
-    )[0],
-  );
+  // Primary: "protocol_position" + pool + i32 + i32 (matches hook and this CLMM program).
+  const [primary] = getProtocolPositionAddress({
+    pool: poolState,
+    tickLowerIndex: tickLower,
+    tickUpperIndex: tickUpper,
+    programId,
+  });
+  candidates.push(primary);
 
-  // Variant B: "protocol_position" + pool + i32 + i32 (what UI/hook previously assumed)
-  candidates.push(
-    PublicKey.findProgramAddressSync(
-      [
-        Buffer.from("protocol_position", "utf8"),
-        poolState.toBuffer(),
-        i32ToBeBytes(tickLower),
-        i32ToBeBytes(tickUpper),
-      ],
-      programId,
-    )[0],
-  );
-
-  // Variant C: "protocol_position" + pool (less likely)
-  candidates.push(
-    PublicKey.findProgramAddressSync(
-      [Buffer.from("protocol_position", "utf8"), poolState.toBuffer()],
-      programId,
-    )[0],
-  );
+  // Only add other variants when probing.
+  if (CONFIG.probeProtocolPosition) {
+    candidates.push(
+      PublicKey.findProgramAddressSync(
+        [SEED_POSITION, poolState.toBuffer(), i32ToBeBytes(tickLower), i32ToBeBytes(tickUpper)],
+        programId,
+      )[0],
+    );
+    candidates.push(
+      PublicKey.findProgramAddressSync(
+        [Buffer.from("protocol_position", "utf8"), poolState.toBuffer()],
+        programId,
+      )[0],
+    );
+  }
 
   return Array.from(new Set(candidates.map((c) => c.toBase58()))).map((s) => new PublicKey(s));
 }
@@ -446,10 +204,19 @@ async function trySimulate(
     }
     console.log(`\n=== simulate: ${label} ===`);
     console.log("err:", sim.value.err);
+    const unitsConsumed = (sim.value as any).unitsConsumed;
+    if (unitsConsumed != null) console.log("unitsConsumed:", unitsConsumed);
     // If RPC doesn't return logs, decode common Anchor framework error codes.
     try {
       const ixErr = (sim.value.err as any)?.InstructionError;
       const custom = Array.isArray(ixErr) ? ixErr[1]?.Custom : undefined;
+      const errMsg = Array.isArray(ixErr) ? ixErr[1] : undefined;
+      if (errMsg === "ProgramFailedToComplete" || String(errMsg).includes("ProgramFailedToComplete")) {
+        console.log(
+          "(hint) ProgramFailedToComplete usually means the instruction ran out of compute. " +
+          "Try mode: Full range, or narrow the custom price range. Solana max is 1.4M CU/tx.",
+        );
+      }
       if (typeof custom === "number") {
         if (custom === 2505) {
           console.log(
@@ -495,7 +262,7 @@ async function sendTx(
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const { blockhash, lastValidBlockHeight } =
-      await connection.getLatestBlockhash("processed");
+      await connection.getLatestBlockhash("confirmed");
 
     const freshTx = new Transaction().add(...instructions);
     freshTx.feePayer = walletKp.publicKey;
@@ -506,7 +273,7 @@ async function sendTx(
     try {
       sig = await connection.sendRawTransaction(freshTx.serialize(), {
         skipPreflight: false,
-        preflightCommitment: "processed",
+        preflightCommitment: "confirmed",
         maxRetries: 5,
       });
     } catch (e) {
@@ -525,93 +292,13 @@ async function sendTx(
 
     console.log("signature:", sig, `(attempt ${attempt}/${maxAttempts})`);
 
-    const pollStatus = async () => {
-      const started = Date.now();
-      const timeoutMs = 35_000;
-      while (Date.now() - started < timeoutMs) {
-        const st = await connection.getSignatureStatuses([sig], {
-          searchTransactionHistory: true,
-        });
-        const s0 = st.value[0];
-        if (s0) {
-          if (s0.err) throw new Error(JSON.stringify(s0.err));
-          if (s0.confirmationStatus) return s0.confirmationStatus;
-        }
-        await new Promise((r) => setTimeout(r, 800));
-      }
-      return undefined;
-    };
-
-    try {
-      // Confirm at processed first to avoid needless expiry, then fetch logs via getTransaction.
-      const conf = await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "processed",
-      );
-
-      if (conf.value.err) {
-        throw new Error(JSON.stringify(conf.value.err));
-      }
-
-      // Extra safety: some RPCs return "expired" incorrectly; polling status is more reliable.
-      await pollStatus();
-
-      // Best-effort: fetch log messages after confirmation (some RPCs may not support it).
-      try {
-        const parsed = await connection.getTransaction(sig, {
-          commitment: "confirmed",
-          maxSupportedTransactionVersion: 0,
-        });
-        const logs = parsed?.meta?.logMessages;
-        if (logs?.length) {
-          console.log("\n--- onchain logs (getTransaction) ---\n" + logs.join("\n"));
-        } else {
-          console.log("(no logMessages from getTransaction)");
-        }
-      } catch (e) {
-        const msg =
-          e && typeof e === "object" && "message" in e ? (e as any).message : e;
-        console.log("(getTransaction not available / no logs)", String(msg ?? e));
-      }
-
-      return sig;
-    } catch (e) {
-      lastErr = e;
-      const msg = e && typeof e === "object" && "message" in e ? (e as any).message : e;
-      const str = String(msg ?? e);
-      if (str.includes("block height exceeded") || str.includes("TransactionExpiredBlockheightExceededError")) {
-        // Blockhash expiry can be a false-negative on some RPCs. Verify by status/tx fetch.
-        try {
-          const status = await pollStatus();
-          if (status) {
-            console.log(`confirm: RPC reported expiry but status is ${status}; treating as success.`);
-            return sig;
-          }
-        } catch (statusErr) {
-          // If status says err, surface it.
-          throw statusErr;
-        }
-
-        // Last resort: try getTransaction (search history) to detect success.
-        try {
-          const parsed = await connection.getTransaction(sig, {
-            commitment: "confirmed",
-            maxSupportedTransactionVersion: 0,
-          });
-          if (parsed?.meta) {
-            if (parsed.meta.err) throw new Error(JSON.stringify(parsed.meta.err));
-            console.log("confirm: found transaction on-chain despite expiry; treating as success.");
-            return sig;
-          }
-        } catch {
-          // ignore and retry
-        }
-
-        console.log("confirm: blockhash expired and status unknown, retrying with fresh blockhash...");
-        continue;
-      }
-      throw e;
-    }
+    const status = await pollSignatureStatus({
+      connection,
+      signature: sig,
+      timeoutMs: 120_000,
+    });
+    console.log("🚀 ~ status:", status)
+    return sig;
   }
 
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr ?? "sendTx failed"));
@@ -626,13 +313,6 @@ async function resolveTokenProgramId(
   return owner && owner.equals(TOKEN_2022_PROGRAM_ID)
     ? TOKEN_2022_PROGRAM_ID
     : TOKEN_PROGRAM_ID;
-}
-
-function idlHasAccount(idl: DoxxClmmIdl, ixName: string, accountName: string) {
-  const ix = (idl?.instructions as any[] | undefined)?.find(
-    (i) => i?.name === ixName,
-  );
-  return !!ix?.accounts?.some((a: any) => a?.name === accountName);
 }
 
 // ---------- main ----------
@@ -659,11 +339,6 @@ async function main() {
   const connection = new Connection(rpc, "confirmed");
   const payer = loadKeypair(keypairPath);
 
-  // Choose IDL: devnet vs mainnet uses same program id in your repo, but keep option.
-  const idl: DoxxClmmIdl = CONFIG.idl;
-  const programId = new PublicKey(idl.address);
-  console.log("🚀 ~ programId:", programId.toString())
-
   // Minimal wallet wrapper for AnchorProvider (only used for account fetch + instruction builders).
   const wallet: anchor.Wallet = {
     publicKey: payer.publicKey,
@@ -685,14 +360,20 @@ async function main() {
     },
   };
 
+  // Use IDL that matches rpcUrl so program id and PDAs match the deployed program (avoids IncorrectProgramId).
+  const idl: DoxxClmmIdl = CONFIG.rpcUrl.toLowerCase().includes("devnet")
+    ? (doxxClmmIdlDevnet as DoxxClmmIdl)
+    : (doxxClmmIdlMainnet as DoxxClmmIdl);
   const provider = new anchor.AnchorProvider(connection, wallet, { commitment: "confirmed" });
-  const program = new anchor.Program<DoxxClmmIdl>(doxxClmmIdl, provider);
+  const program = new anchor.Program<DoxxClmmIdl>(idl, provider);
+  const programId = program.programId;
+  console.log("🚀 ~ programId:", programId.toString());
 
   console.log("rpc:", rpc);
   console.log("programId:", programId.toBase58());
   console.log("payer:", payer.publicKey.toBase58());
 
-  const ammConfig = pdaAmmConfig(programId, feeIndex);
+  const [ammConfig] = getAmmConfigAddress(feeIndex, programId);
   console.log("ammConfig:", ammConfig.toBase58(), "(index", feeIndex, ")");
 
   const cfg = await program.account.ammConfig.fetch(ammConfig);
@@ -720,11 +401,35 @@ async function main() {
     priceAperB: price,
   });
 
-  const poolState = pdaPool(programId, ammConfig, mint0, mint1);
-  const vault0 = pdaVault(programId, poolState, mint0);
-  const vault1 = pdaVault(programId, poolState, mint1);
-  const observation = pdaObservation(programId, poolState);
-  const tickBitmap = pdaTickBitmap(programId, poolState);
+  // const poolState = pdaPool(programId, ammConfig, mint0, mint1);
+  const [poolState] = getPoolAddress(
+    ammConfig,
+    mint0,
+    mint1,
+    programId,
+  );
+  // const vault0 = pdaVault(programId, poolState, mint0);
+  // const vault1 = pdaVault(programId, poolState, mint1);
+  const [vault0] = getPoolVaultAddress(
+    poolState,
+    mint0,
+    programId,
+  );
+  const [vault1] = getPoolVaultAddress(
+    poolState,
+    mint1,
+    programId,
+  );
+  // const observation = pdaObservation(programId, poolState);
+  // const tickBitmap = pdaTickBitmap(programId, poolState);
+  const [observation] = getOrcleAccountAddress(
+    poolState,
+    program.programId,
+  );
+  const [tickBitmap] = getClmmTickArrayBitmapExtensionAddress({
+    pool: poolState,
+    programId: program.programId,
+  });
 
   console.log("poolState:", poolState.toBase58());
   console.log("tokenMint0:", mint0.toBase58(), "tokenMint1:", mint1.toBase58());
@@ -737,12 +442,14 @@ async function main() {
   // ticks
   let tickLower: number;
   let tickUpper: number;
-  if (mode === "Full") {
-    tickLower = Math.ceil(MIN_TICK / tickSpacing) * tickSpacing;
-    tickUpper = Math.floor(MAX_TICK / tickSpacing) * tickSpacing;
+  if (mode === PriceMode.FULL) {
+    tickLower = Math.ceil(CLMM_MIN_TICK / tickSpacing) * tickSpacing;
+    tickUpper = Math.floor(CLMM_MAX_TICK / tickSpacing) * tickSpacing;
   } else {
-    const lo = Math.min(parseNumber(min, "--min"), parseNumber(max, "--max"));
-    const hi = Math.max(parseNumber(min, "--min"), parseNumber(max, "--max"));
+    const lo = Math.min(Number(min ?? 0), Number(max ?? 0));
+    console.log("🚀 ~ lo:", lo)
+    const hi = Math.max(Number(min ?? 0), Number(max ?? 0));
+    console.log("🚀 ~ hi:", hi)
     const rawLower = tickFromPriceAperB({
       priceAperB: lo,
       tokenAMint: tokenA,
@@ -768,10 +475,47 @@ async function main() {
   tickUpper = clampTick(tickUpper, tickSpacing);
   if (tickUpper <= tickLower) tickUpper = tickLower + tickSpacing;
 
+  // Custom only: CLMM requires the pool's current tick to be inside [tickLower, tickUpper).
+  // If the user's range doesn't include the initial price, widen the range to include it.
+  if (mode !== PriceMode.FULL) {
+    const currentTickFromInitialPrice = tickFromPriceAperB({
+      priceAperB: Number(price),
+      tokenAMint: tokenA,
+      tokenBMint: tokenB,
+      tokenADecimals: decA,
+      tokenBDecimals: decB,
+      tokenMint0: mint0,
+      tokenMint1: mint1,
+    });
+    const currentTickAligned =
+      clampTick(Math.floor(currentTickFromInitialPrice / tickSpacing) * tickSpacing, tickSpacing);
+    if (currentTickAligned < tickLower) {
+      tickLower = currentTickAligned;
+      tickLower = clampTick(tickLower, tickSpacing);
+      console.log("(Custom) widened tickLower to include initial price:", tickLower);
+    }
+    if (currentTickAligned >= tickUpper) {
+      tickUpper = (Math.floor(currentTickFromInitialPrice / tickSpacing) + 1) * tickSpacing;
+      tickUpper = clampTick(tickUpper, tickSpacing);
+      if (tickUpper <= tickLower) tickUpper = tickLower + tickSpacing;
+      console.log("(Custom) widened tickUpper to include initial price:", tickUpper);
+    }
+  }
+
   const taLowerStart = tickArrayStartIndex(tickLower, tickSpacing);
   const taUpperStart = tickArrayStartIndex(tickUpper, tickSpacing);
-  const tickArrayLower = pdaTickArray(programId, poolState, taLowerStart);
-  const tickArrayUpper = pdaTickArray(programId, poolState, taUpperStart);
+  // const tickArrayLower = pdaTickArray(programId, poolState, taLowerStart);
+  // const tickArrayUpper = pdaTickArray(programId, poolState, taUpperStart);
+  const [tickArrayLower] = getClmmTickArrayAddress({
+    pool: poolState,
+    startTickIndex: taLowerStart,
+    programId: program.programId,
+  });
+  const [tickArrayUpper] = getClmmTickArrayAddress({
+    pool: poolState,
+    startTickIndex: taUpperStart,
+    programId: program.programId,
+  });
 
   console.log("tickLower:", tickLower, "tickUpper:", tickUpper);
   console.log("tickArrayLowerStart:", taLowerStart, "tickArrayUpperStart:", taUpperStart);
@@ -801,16 +545,18 @@ async function main() {
     false,
     TOKEN_2022_PROGRAM_ID,
   );
-  const personalPosition = pdaPersonalPosition(programId, positionNftMint.publicKey);
+  const personalPosition = getPersonalPositionAddress(programId, positionNftMint.publicKey);
 
   // Protocol position candidates
   const protocolCandidates = protocolPositionCandidates(programId, poolState, tickLower, tickUpper);
   const protocolPositions = probeProtocolPosition ? protocolCandidates : [protocolCandidates[0]];
 
   // Instructions
+  // Open position can exceed default 200k CU. Use Solana's max (1.4M); custom range may still hit ProgramFailedToComplete.
+  const COMPUTE_UNIT_LIMIT = 1_400_000;
   const cuIxs = [
-    ComputeBudgetProgram.setComputeUnitLimit({ units: 1_400_000 }),
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 10_000 }),
+    ComputeBudgetProgram.setComputeUnitLimit({ units: COMPUTE_UNIT_LIMIT }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
   ];
 
   const ataIxs = [
@@ -887,23 +633,16 @@ async function main() {
   void amount1Max;
 
   // Parse amounts to token decimals (simple parser: decimal -> integer BN)
-  function parseAmount(amountStr: string, decimals: number): anchor.BN {
-    const s = String(amountStr);
-    if (!/^\d+(\.\d+)?$/.test(s)) throw new Error(`Invalid amount: ${s}`);
-    const [i, f = ""] = s.split(".");
-    const frac = (f + "0".repeat(decimals)).slice(0, decimals);
-    return new BN(`${i}${frac}`.replace(/^0+(?=\d)/, "") || "0");
-  }
-  const amountAMax = parseAmount(amountA, decA);
-  const amountBMax = parseAmount(amountB, decB);
+  const amountAMax = parseAmountBN(amountA, decA);
+  const amountBMax = parseAmountBN(amountB, decB);
   // Apply a small buffer so the program's internal price/liquidity rounding doesn't trip slippage checks.
   const a0MaxBase = applyBuffer(
     shouldSwap ? amountBMax : amountAMax,
-    CONFIG.maxAmountBufferPct,
+    Number(CONFIG.maxAmountBufferPct ?? "0"),
   );
   const a1MaxBase = applyBuffer(
     shouldSwap ? amountAMax : amountBMax,
-    CONFIG.maxAmountBufferPct,
+    Number(CONFIG.maxAmountBufferPct ?? "0"),
   );
 
   // Pre-compute implied token1/token0 price from sqrtPriceX64 for slippage bounds.
@@ -1002,22 +741,33 @@ async function main() {
 
   const bootstrapTaLowerStart = tickArrayStartIndex(bootstrapTickLower, tickSpacing);
   const bootstrapTaUpperStart = tickArrayStartIndex(bootstrapTickUpper, tickSpacing);
-  const bootstrapTickArrayLower = pdaTickArray(programId, poolState, bootstrapTaLowerStart);
-  const bootstrapTickArrayUpper = pdaTickArray(programId, poolState, bootstrapTaUpperStart);
+  const [bootstrapTickArrayLower] = getClmmTickArrayAddress({
+    pool: poolState,
+    startTickIndex: bootstrapTaLowerStart,
+    programId: program.programId,
+  });
+  const [bootstrapTickArrayUpper] = getClmmTickArrayAddress({
+    pool: poolState,
+    startTickIndex: bootstrapTaUpperStart,
+    programId: program.programId,
+  });
+
+  // const bootstrapTickArrayLower = pdaTickArray(programId, poolState, bootstrapTaLowerStart);
+  // const bootstrapTickArrayUpper = pdaTickArray(programId, poolState, bootstrapTaUpperStart);
   const bootstrapProtocolPosition =
     protocolPositionCandidates(programId, poolState, bootstrapTickLower, bootstrapTickUpper)[0]!;
 
   const bootstrapPositionNftMint = shouldBootstrapTickArrays ? Keypair.generate() : undefined;
   const bootstrapPositionNftAccount = bootstrapPositionNftMint
     ? getAssociatedTokenAddressSync(
-        bootstrapPositionNftMint.publicKey,
-        positionNftOwner,
-        false,
-        TOKEN_2022_PROGRAM_ID,
-      )
+      bootstrapPositionNftMint.publicKey,
+      positionNftOwner,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+    )
     : undefined;
   const bootstrapPersonalPosition = bootstrapPositionNftMint
-    ? pdaPersonalPosition(programId, bootstrapPositionNftMint.publicKey)
+    ? getPersonalPositionAddress(programId, bootstrapPositionNftMint.publicKey)
     : undefined;
 
   if (shouldBootstrapTickArrays) {
@@ -1077,6 +827,7 @@ async function main() {
           tokenAccount1: ownerToken1,
           tokenVault0: vault0,
           tokenVault1: vault1,
+          ...openPositionProgramAccounts,
           vault0Mint: mint0,
           vault1Mint: mint1,
         })
@@ -1088,142 +839,199 @@ async function main() {
     const bootstrapOpenPosIx =
       shouldBootstrapTickArrays && bootstrapPositionNftMint
         ? await program.methods
-            .openPositionWithToken22Nft(
-              bootstrapTickLower,
-              bootstrapTickUpper,
-              bootstrapTaLowerStart,
-              bootstrapTaUpperStart,
-              bootstrapLiquidity,
-              bootstrapAmount0MaxAllowed,
-              bootstrapAmount1MaxAllowed,
-              withMetadata,
-              baseFlag,
-            )
-            .accounts({
-              payer: payer.publicKey,
-              positionNftOwner: positionNftOwner,
-              positionNftMint: bootstrapPositionNftMint.publicKey,
-              positionNftAccount: bootstrapPositionNftAccount!,
-              poolState,
-              protocolPosition: bootstrapProtocolPosition,
-              tickArrayLower: bootstrapTickArrayLower,
-              tickArrayUpper: bootstrapTickArrayUpper,
-              personalPosition: bootstrapPersonalPosition!,
-              tokenAccount0: ownerToken0,
-              tokenAccount1: ownerToken1,
-              tokenVault0: vault0,
-              tokenVault1: vault1,
-              vault0Mint: mint0,
-              vault1Mint: mint1,
-            })
-            .instruction()
+          .openPositionWithToken22Nft(
+            bootstrapTickLower,
+            bootstrapTickUpper,
+            bootstrapTaLowerStart,
+            bootstrapTaUpperStart,
+            bootstrapLiquidity,
+            bootstrapAmount0MaxAllowed,
+            bootstrapAmount1MaxAllowed,
+            withMetadata,
+            baseFlag,
+          )
+          .accounts({
+            payer: payer.publicKey,
+            positionNftOwner: positionNftOwner,
+            positionNftMint: bootstrapPositionNftMint.publicKey,
+            positionNftAccount: bootstrapPositionNftAccount!,
+            poolState,
+            protocolPosition: bootstrapProtocolPosition,
+            tickArrayLower: bootstrapTickArrayLower,
+            tickArrayUpper: bootstrapTickArrayUpper,
+            personalPosition: bootstrapPersonalPosition!,
+            tokenAccount0: ownerToken0,
+            tokenAccount1: ownerToken1,
+            tokenVault0: vault0,
+            tokenVault1: vault1,
+            ...openPositionProgramAccounts,
+            vault0Mint: mint0,
+            vault1Mint: mint1,
+          })
+          .instruction()
         : undefined;
 
-    const instructions = [
-      ...cuIxs,
-      ...ataIxs,
-      createPoolIx,
-      ...(bootstrapOpenPosIx ? [bootstrapOpenPosIx] : []),
-      openPosIx,
-    ];
+    // Pre-plan tx splits based on estimated legacy serialized size.
+    const { blockhash: sizingBlockhash } = await connection.getLatestBlockhash("confirmed");
 
-    const txCombined = new Transaction().add(...instructions);
-    txCombined.feePayer = payer.publicKey;
-    const { blockhash } = await connection.getLatestBlockhash("processed");
-    txCombined.recentBlockhash = blockhash;
-    txCombined.partialSign(
-      payer,
-      ...(bootstrapPositionNftMint ? [bootstrapPositionNftMint] : []),
-      positionNftMint,
-    );
+    const pickCu = (base: TransactionInstruction[], signers?: Keypair[]) => {
+      const withCu = [...cuIxs, ...base];
+      const sizeWithCu = estimateLegacyTxSize({
+        feePayer: payer.publicKey,
+        recentBlockhash: sizingBlockhash,
+        instructions: withCu,
+        signers,
+      });
+      if (sizeWithCu <= LEGACY_TX_MAX_BYTES) return withCu;
 
-    if (!doSend) {
-      if (doSplit) {
-        console.log(
-          "\n(note) You are simulating split txs. Simulation does not persist state, so phase2 will fail unless phase1 was already sent on-chain.\n" +
-          "To validate end-to-end via simulation, use splitTx=false (combined simulation), or set send=true to actually create the pool first.",
+      const sizeNoCu = estimateLegacyTxSize({
+        feePayer: payer.publicKey,
+        recentBlockhash: sizingBlockhash,
+        instructions: base,
+        signers,
+      });
+      if (sizeNoCu <= LEGACY_TX_MAX_BYTES) return base;
+
+      return undefined;
+    };
+
+    // Position instructions need high compute; never send them without Compute Budget or we get ProgramFailedToComplete.
+    const pickCuRequired = (base: TransactionInstruction[], signers?: Keypair[]) => {
+      const withCu = [...cuIxs, ...base];
+      const sizeWithCu = estimateLegacyTxSize({
+        feePayer: payer.publicKey,
+        recentBlockhash: sizingBlockhash,
+        instructions: withCu,
+        signers,
+      });
+      if (sizeWithCu <= LEGACY_TX_MAX_BYTES) return withCu;
+      return undefined;
+    };
+
+    const tx1Instructions = pickCu([...ataIxs, createPoolIx]);
+    if (!tx1Instructions) {
+      throw new Error(
+        `TxTooLarge:create_pool even without CU ixs (max=${LEGACY_TX_MAX_BYTES} bytes).`,
+      );
+    }
+
+    const txPlan: Array<{
+      label: string;
+      instructions: TransactionInstruction[];
+      signers?: Keypair[];
+    }> = [];
+
+    if (bootstrapOpenPosIx && bootstrapPositionNftMint) {
+      // Try bundling bootstrap + full-range in a single tx, otherwise split.
+      // Position txs must include Compute Budget or we get ProgramFailedToComplete.
+      const combined = pickCuRequired(
+        [bootstrapOpenPosIx, openPosIx],
+        [bootstrapPositionNftMint, positionNftMint],
+      );
+
+      if (combined) {
+        txPlan.push({
+          label: "bootstrap+open_position_full_range",
+          instructions: combined,
+          signers: [bootstrapPositionNftMint, positionNftMint],
+        });
+      } else {
+        const bootstrapOnly = pickCuRequired(
+          [bootstrapOpenPosIx],
+          [bootstrapPositionNftMint],
         );
+        const fullOnly = pickCuRequired([openPosIx], [positionNftMint]);
 
-        const tx1Instructions = [
-          ...cuIxs,
-          ...ataIxs,
-          createPoolIx,
-        ];
-        const tx1 = new Transaction().add(...tx1Instructions);
-        tx1.feePayer = payer.publicKey;
-        tx1.recentBlockhash = blockhash;
-        tx1.partialSign(payer);
-        await trySimulate(connection, "create_pool (phase1)", tx1Instructions, [
-          payer,
-        ]);
-
-        // If pool doesn't already exist on-chain, phase2 simulation will always fail.
-        const poolInfo = await connection.getAccountInfo(poolState, "processed");
-        if (!poolInfo) {
-          await trySimulate(connection, "combined (recommended)", instructions, [
-            payer,
-            positionNftMint,
-          ]);
-          continue;
+        if (!bootstrapOnly || !fullOnly) {
+          throw new Error(
+            `TxTooLarge:open_position even when split (max=${LEGACY_TX_MAX_BYTES} bytes). ` +
+            `Next step is v0 + ALT.`,
+          );
         }
 
-        const tx2Instructions = [...cuIxs, openPosIx];
-        const tx2 = new Transaction().add(...tx2Instructions);
-        tx2.feePayer = payer.publicKey;
-        tx2.recentBlockhash = blockhash;
-        tx2.partialSign(payer, positionNftMint);
-        await trySimulate(connection, "open_position_with_token22_nft (phase2)", tx2Instructions, [
-          payer,
-          positionNftMint,
-        ]);
+        txPlan.push({
+          label: "bootstrap_open_position",
+          instructions: bootstrapOnly,
+          signers: [bootstrapPositionNftMint],
+        });
+        txPlan.push({
+          label: "open_position_full_range",
+          instructions: fullOnly,
+          signers: [positionNftMint],
+        });
+      }
+    } else {
+      const fullOnly = pickCuRequired([openPosIx], [positionNftMint]);
+      if (!fullOnly) {
+        throw new Error(
+          `TxTooLarge:open_position_full_range (max=${LEGACY_TX_MAX_BYTES} bytes). Next step is v0 + ALT.`,
+        );
+      }
+      txPlan.push({
+        label: "open_position_full_range",
+        instructions: fullOnly,
+        signers: [positionNftMint],
+      });
+    }
+
+    if (!doSend) {
+      // Simulation mode: try to simulate each planned transaction
+      console.log(
+        "\n(note) Simulation mode. Transactions are pre-planned based on size estimation.",
+      );
+
+      const poolInfo = await connection.getAccountInfo(poolState, "processed");
+      if (!poolInfo) {
+        // Pool doesn't exist: position-only sim would fail. Run one combined sim (create_pool + first position) so the program sees the pool.
+        console.log(
+          "\n(note) Pool doesn't exist yet. Simulating create_pool + first position in one tx.",
+        );
+        const firstStep = txPlan[0];
+        if (firstStep) {
+          const combinedIxs = [...tx1Instructions, ...firstStep.instructions];
+          const combinedSigners = [payer, ...(firstStep.signers || [])];
+          await trySimulate(
+            connection,
+            "create_pool+position (combined)",
+            combinedIxs,
+            combinedSigners,
+          );
+        } else {
+          await trySimulate(connection, "create_pool", tx1Instructions, [payer]);
+        }
       } else {
-        await trySimulate(connection, "combined", instructions, [
-          payer,
-          positionNftMint,
-        ]);
+        for (const step of txPlan) {
+          const tx = new Transaction().add(...step.instructions);
+          tx.feePayer = payer.publicKey;
+          tx.recentBlockhash = sizingBlockhash;
+          if (step.signers && step.signers.length > 0) {
+            tx.partialSign(payer, ...step.signers);
+          } else {
+            tx.partialSign(payer);
+          }
+          await trySimulate(connection, step.label, step.instructions, [
+            payer,
+            ...(step.signers || []),
+          ]);
+        }
       }
       continue;
     }
 
-    if (doSplit) {
-      const tx1 = new Transaction().add(...cuIxs, ...ataIxs, createPoolIx);
-      await sendTx(connection, payer, tx1, "create_pool (phase1)");
+    // Important UX invariant:
+    // Do NOT broadcast `create_pool` unless we were able to fully plan the follow-up
+    // position txs within legacy limits. Otherwise we can create a pool without a position.
+    // const tx1 = new Transaction().add(...tx1Instructions);
+    // await sendTx(connection, payer, tx1, "create_pool");
 
-      if (bootstrapOpenPosIx && bootstrapPositionNftMint) {
-        const tx2 = new Transaction().add(...cuIxs, bootstrapOpenPosIx);
-        await sendTx(
-          connection,
-          payer,
-          tx2,
-          "bootstrap_open_position (phase2)",
-          [bootstrapPositionNftMint],
-        );
-        const tx3 = new Transaction().add(...cuIxs, openPosIx);
-        await sendTx(
-          connection,
-          payer,
-          tx3,
-          "open_position_with_token22_nft_full_range (phase3)",
-          [positionNftMint],
-        );
-      } else {
-        const tx2 = new Transaction().add(...cuIxs, openPosIx);
-        await sendTx(
-          connection,
-          payer,
-          tx2,
-          "open_position_with_token22_nft (phase2)",
-          [positionNftMint],
-        );
-      }
-    } else {
-      // Sign inside sendTx after blockhash is set.
+    for (const step of txPlan) {
+      const tx = new Transaction().add(...step.instructions);
       await sendTx(
         connection,
         payer,
-        txCombined,
-        "combined",
-        [...(bootstrapPositionNftMint ? [bootstrapPositionNftMint] : []), positionNftMint],
+        tx,
+        step.label,
+        step.signers || [],
       );
     }
 

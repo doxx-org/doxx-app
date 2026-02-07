@@ -39,6 +39,30 @@ export function priceX128FromSqrtPriceX64(sqrtPriceX64: BN): bigint {
   return s * s; // numerator, denom=2^128
 }
 
+const TWO_POW_128 = 1n << 128n;
+
+/**
+ * Convert CLMM sqrtPriceX64 to human-readable price (token1 per token0 and token0 per token1).
+ * sqrtPriceX64 is sqrt(token1/token0) in base units, Q64.64.
+ */
+export function priceFromClmmSqrtPriceX64(params: {
+  sqrtPriceX64: BN;
+  dec0: number;
+  dec1: number;
+}): { priceToken1PerToken0: number; priceToken0PerToken1: number } {
+  const { sqrtPriceX64, dec0, dec1 } = params;
+  const priceX128 = priceX128FromSqrtPriceX64(sqrtPriceX64);
+  // token1/token0 in base units = priceX128 / 2^128
+  // human token1/token0 = base * 10^(dec0 - dec1)
+  const decDiff = dec0 - dec1;
+  const scale = 10 ** decDiff;
+  const priceToken1PerToken0 =
+    Number(priceX128) / Number(TWO_POW_128) * scale;
+  const priceToken0PerToken1 =
+    priceToken1PerToken0 <= 0 ? 0 : 1 / priceToken1PerToken0;
+  return { priceToken1PerToken0, priceToken0PerToken1 };
+}
+
 export function pow10(exp: number): bigint {
   if (exp <= 0) return 1n;
   return 10n ** BigInt(exp);

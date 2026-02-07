@@ -1,14 +1,16 @@
 import { IdlAccounts } from "@coral-xyz/anchor";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
+import { PublicKey } from "@solana/web3.js";
 
 export type CPMMAmmConfig = IdlAccounts<DoxxCpmmIdl>["ammConfig"];
 export type CPMMPoolState = IdlAccounts<DoxxCpmmIdl>["poolState"];
 export type CPMMObservationState = IdlAccounts<DoxxCpmmIdl>["observationState"];
 
 export interface CPMMPoolStateWithConfig {
+  poolId: PublicKey;
   poolState: CPMMPoolState;
   ammConfig: CPMMAmmConfig;
-  observationState: CPMMObservationState;
+  observationState: CPMMObservationState | null | undefined;
 }
 
 export type CLMMAmmConfig = IdlAccounts<DoxxClmmIdl>["ammConfig"];
@@ -16,9 +18,10 @@ export type CLMMPoolState = IdlAccounts<DoxxClmmIdl>["poolState"];
 export type CLMMObservationState = IdlAccounts<DoxxClmmIdl>["observationState"];
 
 export interface CLMMPoolStateWithConfig {
+  poolId: PublicKey;
   poolState: CLMMPoolState;
   ammConfig: CLMMAmmConfig;
-  observationState: CLMMObservationState;
+  observationState: CLMMObservationState | null | undefined;
 }
 
 export type SplBalance = {

@@ -26,6 +26,12 @@ export type Pool = {
   reward24h: number; // in usd
   cpmmPoolState?: CPMMPoolState;
   clmmPoolState?: CLMMPoolState;
-  price: number;
+  price: number; // pool display price (usd when SOL in pair, else ratio)
+  priceAperB: number; // tokenA (token1) per tokenB (token2)
+  priceBperA: number; // tokenB (token2) per tokenA (token1)
+  /** USD price of 1 unit of token1 (first token in lpToken). */
+  priceToken1Usd: number;
+  /** USD price of 1 unit of token2 (second token in lpToken). */
+  priceToken2Usd: number;
   poolType: PoolType;
 };
