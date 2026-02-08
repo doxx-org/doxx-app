@@ -4,7 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
 import { CreatePoolSuccessToast } from "@/components/toast/CreatePool";
 import { TokenProfile } from "@/lib/config/tokens";
-import { useCreatePool } from "@/lib/hooks/chain/useCreatePool";
+import { useCreateCPMMPool } from "@/lib/hooks/chain/useCreateCPMMPool";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
@@ -73,7 +73,7 @@ export const CreatePoolButton = ({
     createPool,
     isCreating: isCreatingPool,
     // createError: createPoolError,
-  } = useCreatePool(doxxAmmProgram, wallet, handleSuccess, handleError);
+  } = useCreateCPMMPool(doxxAmmProgram, wallet, handleSuccess, handleError);
 
   const isCreatePoolEnabled =
     tokenA &&

@@ -38,7 +38,7 @@ type CreatePoolParams = {
   openTime?: BN; // timestamp, defaults to current time
 };
 
-export function useCreatePool(
+export function useCreateCPMMPool(
   program: Program<DoxxCpmmIdl> | undefined,
   wallet: AnchorWallet | undefined,
   onSuccess: (tx?: string) => void,
@@ -89,7 +89,7 @@ export function useCreatePool(
           actualInitAmount0,
           actualInitAmount1,
         ] = shouldSwap
-            ? [
+          ? [
               token1Mint,
               token0Mint,
               token1Program,
@@ -97,7 +97,7 @@ export function useCreatePool(
               initAmount1,
               initAmount0,
             ]
-            : [
+          : [
               token0Mint,
               token1Mint,
               token0Program,
