@@ -1,27 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BN } from "@coral-xyz/anchor";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
-import {
-  RawTokenProfile,
-  knownTokenProfiles,
-  unknownToken,
-} from "@/lib/config/tokens";
-import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
-import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
-import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
-import { useGetCLMMPools } from "@/lib/hooks/chain/useGetCLMMPools";
-import { useProvider } from "@/lib/hooks/chain/useProvider";
-import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { DataTable } from "../ui/data-table";
 import { SearchInput } from "../ui/search-input";
-// import { CreatePoolDialog } from "./CreateCPMMPoolDialog";
 import { createColumns } from "./PoolColumn";
 import { DepositPoolDrawer } from "./v2/DepositPoolDrawer";
-import { Pool, PoolType } from "./v2/types";
+import { Pool } from "./v2/types";
 
 export function Pools() {
   const [searchValue, setSearchValue] = useState("");
