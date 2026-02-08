@@ -1,6 +1,6 @@
 import { IdlAccounts } from "@coral-xyz/anchor";
-import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 import { PublicKey } from "@solana/web3.js";
+import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 
 export type CPMMAmmConfig = IdlAccounts<DoxxCpmmIdl>["ammConfig"];
 export type CPMMPoolState = IdlAccounts<DoxxCpmmIdl>["poolState"];
@@ -16,6 +16,8 @@ export interface CPMMPoolStateWithConfig {
 export type CLMMAmmConfig = IdlAccounts<DoxxClmmIdl>["ammConfig"];
 export type CLMMPoolState = IdlAccounts<DoxxClmmIdl>["poolState"];
 export type CLMMObservationState = IdlAccounts<DoxxClmmIdl>["observationState"];
+export type CLMMPersonalPositionState =
+  IdlAccounts<DoxxClmmIdl>["personalPositionState"];
 
 export interface CLMMPoolStateWithConfig {
   poolId: PublicKey;

@@ -571,7 +571,7 @@ export async function getBestQuoteClmmSingleHopExactIn(
     candidates.push(pool);
     tickArrayPdas.push(
       getClmmTickArrayAddress({
-        poolId: pool.observationState.poolId,
+        poolId: pool.poolId,
         startTickIndex: start,
         programId: clmmProgramId,
       }),
@@ -665,7 +665,7 @@ export async function getBestQuoteClmmSingleHopExactOut(
     candidates.push(pool);
     tickArrayPdas.push(
       getClmmTickArrayAddress({
-        poolId: pool.observationState.poolId,
+        poolId: pool.poolId,
         startTickIndex: start,
         programId: clmmProgramId,
       }),

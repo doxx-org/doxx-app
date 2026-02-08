@@ -69,12 +69,6 @@ export const DepositCLMMDrawer = ({
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
-        {/* <div className="shrink-0">
-          <PoolInfo {...selectedPool} />
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
-        </div> */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <PoolInfo {...selectedPool} />
           <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />

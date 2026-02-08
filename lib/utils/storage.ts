@@ -20,3 +20,13 @@ export const favouritePairsAtom = atomWithStorage<TradingPair[]>(
   "favouritePairs",
   [],
 );
+
+// Perf caches (module-level, survives hook re-renders)
+// - Mint decimals/supply rarely change; cache them to avoid re-fetching on every refetch.
+type MintSummary = {
+  decimals: number;
+  supply: bigint;
+  isNftLike: boolean; // heuristic: decimals=0 + supply=1
+};
+
+export const mintSummaryCache = new Map<string, MintSummary>();

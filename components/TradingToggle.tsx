@@ -3,7 +3,7 @@
 import { useAtom } from "jotai";
 import * as motion from "motion/react-client";
 import { text } from "@/lib/text";
-import { TradingMode, tradingModeAtom } from "@/lib/utils/atomWithStorage";
+import { TradingMode, tradingModeAtom } from "@/lib/utils/storage";
 import { cn } from "@/lib/utils/style";
 
 export default function TradingToggle() {

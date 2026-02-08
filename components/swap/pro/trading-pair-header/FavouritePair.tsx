@@ -1,7 +1,7 @@
 import { useAtom } from "jotai";
 import { text } from "@/lib/text";
-import { favouritePairsAtom } from "@/lib/utils/atomWithStorage";
 import { formatNumber } from "@/lib/utils/number";
+import { favouritePairsAtom } from "@/lib/utils/storage";
 import { cn } from "@/lib/utils/style";
 import { TradingPair } from "./types";
 

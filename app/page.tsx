@@ -2,7 +2,7 @@
 
 import { useAtom } from "jotai";
 import { ProSwapWidget, SwapWidget, TrendingTokens } from "@/components/swap";
-import { TradingMode, tradingModeAtom } from "@/lib/utils/atomWithStorage";
+import { TradingMode, tradingModeAtom } from "@/lib/utils/storage";
 
 export default function Home() {
   const [tradingMode] = useAtom(tradingModeAtom);

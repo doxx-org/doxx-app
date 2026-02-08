@@ -586,7 +586,7 @@ export type DoxxClmmMainnet = {
           "type": "u128"
         },
         {
-          "name": "open_time",
+          "name": "openTime",
           "type": "u64"
         }
       ]
@@ -605,7 +605,7 @@ export type DoxxClmmMainnet = {
           "signer": true
         },
         {
-          "name": "token_mint",
+          "name": "tokenMint",
           "docs": ["Support token mint"]
         },
         {
@@ -624,7 +624,7 @@ export type DoxxClmmMainnet = {
               },
               {
                 "kind": "account",
-                "path": "token_mint"
+                "path": "tokenMint"
               }
             ]
           }
@@ -1310,11 +1310,11 @@ export type DoxxClmmMainnet = {
       ],
       "args": [
         {
-          "name": "tick_lower_index",
+          "name": "tickLowerIndex",
           "type": "i32"
         },
         {
-          "name": "tick_upper_index",
+          "name": "tickUpperIndex",
           "type": "i32"
         },
         {
@@ -1540,11 +1540,11 @@ export type DoxxClmmMainnet = {
       ],
       "args": [
         {
-          "name": "tick_lower_index",
+          "name": "tickLowerIndex",
           "type": "i32"
         },
         {
-          "name": "tick_upper_index",
+          "name": "tickUpperIndex",
           "type": "i32"
         },
         {
@@ -1743,11 +1743,11 @@ export type DoxxClmmMainnet = {
       ],
       "args": [
         {
-          "name": "tick_lower_index",
+          "name": "tickLowerIndex",
           "type": "i32"
         },
         {
-          "name": "tick_upper_index",
+          "name": "tickUpperIndex",
           "type": "i32"
         },
         {
@@ -1842,15 +1842,15 @@ export type DoxxClmmMainnet = {
           "type": "u8"
         },
         {
-          "name": "emissions_per_second_x64",
+          "name": "emissionsPerSecondX64",
           "type": "u128"
         },
         {
-          "name": "open_time",
+          "name": "openTime",
           "type": "u64"
         },
         {
-          "name": "end_time",
+          "name": "endTime",
           "type": "u64"
         }
       ]
@@ -2296,7 +2296,7 @@ export type DoxxClmmMainnet = {
       "discriminator": [19, 236, 58, 237, 81, 222, 183, 252]
     },
     {
-      "name": "PersonalPositionState",
+      "name": "personalPositionState",
       "discriminator": [70, 111, 150, 126, 230, 15, 25, 117]
     },
     {
@@ -2800,12 +2800,12 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "tick_lower_index",
+            "name": "tickLowerIndex",
             "docs": ["The lower tick of the position"],
             "type": "i32"
           },
           {
-            "name": "tick_upper_index",
+            "name": "tickUpperIndex",
             "docs": ["The upper tick of the position"],
             "type": "i32"
           },
@@ -2949,17 +2949,17 @@ export type DoxxClmmMainnet = {
         "kind": "struct",
         "fields": [
           {
-            "name": "open_time",
+            "name": "openTime",
             "docs": ["Reward open time"],
             "type": "u64"
           },
           {
-            "name": "end_time",
+            "name": "endTime",
             "docs": ["Reward end time"],
             "type": "u64"
           },
           {
-            "name": "emissions_per_second_x64",
+            "name": "emissionsPerSecondX64",
             "docs": [
               "Token reward per second are earned per unit of liquidity"
             ],
@@ -3117,7 +3117,7 @@ export type DoxxClmmMainnet = {
             "type": "bool"
           },
           {
-            "name": "recent_epoch",
+            "name": "recentEpoch",
             "docs": ["recent update epoch"],
             "type": "u64"
           },
@@ -3191,7 +3191,7 @@ export type DoxxClmmMainnet = {
       }
     },
     {
-      "name": "PersonalPositionState",
+      "name": "personalPositionState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -3203,7 +3203,7 @@ export type DoxxClmmMainnet = {
             }
           },
           {
-            "name": "nft_mint",
+            "name": "nftMint",
             "docs": ["Mint address of the tokenized position"],
             "type": "pubkey"
           },
@@ -3213,12 +3213,12 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "tick_lower_index",
+            "name": "tickLowerIndex",
             "docs": ["The lower bound tick of the position"],
             "type": "i32"
           },
           {
-            "name": "tick_upper_index",
+            "name": "tickUpperIndex",
             "docs": ["The upper bound tick of the position"],
             "type": "i32"
           },
@@ -3228,40 +3228,40 @@ export type DoxxClmmMainnet = {
             "type": "u128"
           },
           {
-            "name": "fee_growth_inside_0_last_x64",
+            "name": "feeGrowthInside0LastX64",
             "docs": [
               "The token_0 fee growth of the aggregate position as of the last action on the individual position"
             ],
             "type": "u128"
           },
           {
-            "name": "fee_growth_inside_1_last_x64",
+            "name": "feeGrowthInside1LastX64",
             "docs": [
               "The token_1 fee growth of the aggregate position as of the last action on the individual position"
             ],
             "type": "u128"
           },
           {
-            "name": "token_fees_owed_0",
+            "name": "tokenFeesOwed0",
             "docs": [
               "The fees owed to the position owner in token_0, as of the last computation"
             ],
             "type": "u64"
           },
           {
-            "name": "token_fees_owed_1",
+            "name": "tokenFeesOwed1",
             "docs": [
               "The fees owed to the position owner in token_1, as of the last computation"
             ],
             "type": "u64"
           },
           {
-            "name": "reward_infos",
+            "name": "rewardInfos",
             "type": {
               "array": [
                 {
                   "defined": {
-                    "name": "PositionRewardInfo"
+                    "name": "positionRewardInfo"
                   }
                 },
                 3
@@ -3269,7 +3269,7 @@ export type DoxxClmmMainnet = {
             }
           },
           {
-            "name": "recent_epoch",
+            "name": "recentEpoch",
             "type": "u64"
           },
           {
@@ -3492,7 +3492,7 @@ export type DoxxClmmMainnet = {
             }
           },
           {
-            name: "reward_infos",
+            name: "rewardInfos",
             type: {
               array: [
                 {
@@ -3538,11 +3538,11 @@ export type DoxxClmmMainnet = {
             type: "u64"
           },
           {
-            name: "open_time",
+            name: "openTime",
             type: "u64"
           },
           {
-            name: "recent_epoch",
+            name: "recentEpoch",
             type: "u64"
           },
           {
@@ -3561,16 +3561,16 @@ export type DoxxClmmMainnet = {
       }
     },
     {
-      "name": "PositionRewardInfo",
+      "name": "positionRewardInfo",
       "type": {
         "kind": "struct",
         "fields": [
           {
-            "name": "growth_inside_last_x64",
+            "name": "growthInsideLastX64",
             "type": "u128"
           },
           {
-            "name": "reward_amount_owed",
+            "name": "rewardAmountOwed",
             "type": "u64"
           }
         ]
@@ -3593,12 +3593,12 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "tick_lower_index",
+            "name": "tickLowerIndex",
             "docs": ["The lower bound tick of the position"],
             "type": "i32"
           },
           {
-            "name": "tick_upper_index",
+            "name": "tickUpperIndex",
             "docs": ["The upper bound tick of the position"],
             "type": "i32"
           },
@@ -3608,26 +3608,26 @@ export type DoxxClmmMainnet = {
             "type": "u128"
           },
           {
-            "name": "fee_growth_inside_0_last_x64",
+            "name": "feeGrowthInside0LastX64",
             "docs": [
               "The token_0 fee growth per unit of liquidity as of the last update to liquidity or fees owed"
             ],
             "type": "u128"
           },
           {
-            "name": "fee_growth_inside_1_last_x64",
+            "name": "feeGrowthInside1LastX64",
             "docs": [
               "The token_1 fee growth per unit of liquidity as of the last update to liquidity or fees owed"
             ],
             "type": "u128"
           },
           {
-            "name": "token_fees_owed_0",
+            "name": "tokenFeesOwed0",
             "docs": ["The fees owed to the position owner in token_0"],
             "type": "u64"
           },
           {
-            "name": "token_fees_owed_1",
+            "name": "tokenFeesOwed1",
             "docs": ["The fees owed to the position owner in token_1"],
             "type": "u64"
           },
@@ -3641,7 +3641,7 @@ export type DoxxClmmMainnet = {
             }
           },
           {
-            "name": "recent_epoch",
+            "name": "recentEpoch",
             "type": "u64"
           },
           {
@@ -3664,49 +3664,49 @@ export type DoxxClmmMainnet = {
         "kind": "struct",
         "fields": [
           {
-            "name": "reward_state",
+            "name": "rewardState",
             "docs": ["Reward state"],
             "type": "u8"
           },
           {
-            "name": "open_time",
+            "name": "openTime",
             "docs": ["Reward open time"],
             "type": "u64"
           },
           {
-            "name": "end_time",
+            "name": "endTime",
             "docs": ["Reward end time"],
             "type": "u64"
           },
           {
-            "name": "last_update_time",
+            "name": "lastUpdateTime",
             "docs": ["Reward last update time"],
             "type": "u64"
           },
           {
-            "name": "emissions_per_second_x64",
+            "name": "emissionsPerSecondX64",
             "docs": [
               "Q64.64 number indicates how many tokens per second are earned per unit of liquidity."
             ],
             "type": "u128"
           },
           {
-            "name": "reward_total_emissioned",
+            "name": "rewardTotalEmissioned",
             "docs": ["The total amount of reward emissioned"],
             "type": "u64"
           },
           {
-            "name": "reward_claimed",
+            "name": "rewardClaimed",
             "docs": ["The total amount of claimed reward"],
             "type": "u64"
           },
           {
-            "name": "token_mint",
+            "name": "tokenMint",
             "docs": ["Reward token mint."],
             "type": "pubkey"
           },
           {
-            "name": "token_vault",
+            "name": "tokenVault",
             "docs": ["Reward vault token account."],
             "type": "pubkey"
           },
@@ -3716,7 +3716,7 @@ export type DoxxClmmMainnet = {
             "type": "pubkey"
           },
           {
-            "name": "reward_growth_global_x64",
+            "name": "rewardGrowthGlobalX64",
             "docs": [
               "Q64.64 number that tracks the total tokens earned per unit of liquidity since the reward",
               "emissions were turned on."
@@ -3915,7 +3915,7 @@ export type DoxxClmmMainnet = {
             "type": "u8"
           },
           {
-            "name": "recent_epoch",
+            "name": "recentEpoch",
             "type": "u64"
           },
           {
@@ -3987,7 +3987,7 @@ export type DoxxClmmMainnet = {
         kind: "struct",
         fields: [
           {
-            name: "reward_growth_global_x64",
+            name: "rewardGrowthGlobalX64",
             docs: ["Reward info"],
             type: {
               array: ["u128", 3]

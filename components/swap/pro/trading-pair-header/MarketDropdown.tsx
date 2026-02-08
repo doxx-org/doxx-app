@@ -19,8 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { copyToClipboard, text } from "@/lib/text";
 import { ellipseAddress } from "@/lib/utils";
-import { favouritePairsAtom } from "@/lib/utils/atomWithStorage";
 import { formatNumber } from "@/lib/utils/number";
+import { favouritePairsAtom } from "@/lib/utils/storage";
 import { cn } from "@/lib/utils/style";
 import { numericSort } from "@/lib/utils/table";
 import { mockMarketPairs } from "../../ProSwapWidget";
