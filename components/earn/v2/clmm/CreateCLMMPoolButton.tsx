@@ -82,17 +82,14 @@ export const CreateCLMMPoolButton = ({
     }
   };
 
-  const {
-    createPoolAndPosition,
-    isCreating: isCreatingPool,
-    // createError: createPoolError,
-  } = useCreateClmmPoolAndPosition(
-    connection,
-    doxxClmmProgram,
-    wallet,
-    handleSuccess,
-    handleError,
-  );
+  const { createPoolAndPosition, isCreating: isCreatingPool } =
+    useCreateClmmPoolAndPosition(
+      connection,
+      doxxClmmProgram,
+      wallet,
+      handleSuccess,
+      handleError,
+    );
 
   const hasValidRange =
     priceMode === PriceMode.FULL

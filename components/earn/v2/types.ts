@@ -1,6 +1,6 @@
+import BN from "bn.js";
 import { TokenProfile } from "@/lib/config/tokens";
 import { CLMMPoolState, CPMMPoolState } from "@/lib/hooks/chain/types";
-import BN from "bn.js";
 
 export enum PoolType {
   CLMM = "CLMM",
@@ -26,9 +26,11 @@ export type Pool = {
   reward24h: number; // in usd
   cpmmPoolState?: CPMMPoolState;
   clmmPoolState?: CLMMPoolState;
-  price: number; // pool display price (usd when SOL in pair, else ratio)
-  priceAperB: number; // tokenA (token1) per tokenB (token2)
-  priceBperA: number; // tokenB (token2) per tokenA (token1)
+  // price: number; // pool display price (usd when SOL in pair, else ratio)
+  oraclePriceToken1Usd?: number;
+  oraclePriceToken2Usd?: number;
+  priceBperA: number; // tokenB (token2) per tokenA (token1); 1 tokenA = X tokenB
+  priceAperB: number; // tokenA (token1) per tokenB (token2); 1 tokenB = Y tokenA
   /** USD price of 1 unit of token1 (first token in lpToken). */
   priceToken1Usd: number;
   /** USD price of 1 unit of token2 (second token in lpToken). */

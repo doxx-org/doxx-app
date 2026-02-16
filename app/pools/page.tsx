@@ -131,7 +131,7 @@ export default function Home() {
                   <DropdownMenuItem onClick={handleOpenCreateCLMMPoolDialog}>
                     Create CLMM Pool
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleOpenCreateCPMMDrawer}>
+                  <DropdownMenuItem onClick={handleOpenCreateCPMMDrawer} disabled>
                     Create CPMM Pool
                   </DropdownMenuItem>
                 </DropdownMenuContent>

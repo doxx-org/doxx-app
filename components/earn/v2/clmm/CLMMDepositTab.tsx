@@ -1,30 +1,39 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { Loader2 } from "lucide-react";
 import { knownTokenProfiles } from "@/lib/config/tokens";
-import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
-import { useProvider } from "@/lib/hooks/chain/useProvider";
+import { usePrepareOpenCLMMPosition } from "@/lib/hooks/chain/prepare/usePrepareOpenCLMMPosition";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
-import { usePrices } from "@/lib/hooks/usePrices";
+import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
-import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
+import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
 import { Pool, PriceMode } from "../types";
 import { DepositCLMMButton } from "./DepositCLMMButton";
 import { DepositCLMMPanel } from "./DepositCLMMPanel";
 import { DepositRange } from "./DepositRange";
 
-export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
+export const CLMMDepositTab = ({
+  selectedPool,
+  raydium,
+  onDepositSuccess,
+}: {
+  selectedPool: Pool;
+  raydium: Raydium | undefined;
+  onDepositSuccess: () => void;
+}) => {
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
-  const [lpAmount, setLpAmount] = useState("");
+  const [baseIn, setBaseIn] = useState(true);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
   const [priceMode, setPriceMode] = useState<PriceMode>(PriceMode.FULL);
+  const [tokenALoading, setTokenALoading] = useState(false);
+  const [tokenBLoading, setTokenBLoading] = useState(false);
 
   // Hooks
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
-  const provider = useProvider({ connection, wallet });
-  const doxxAmmProgram = useDoxxCpmmProgram({ provider });
 
   // Fetch token balances
   const { data: splBalances, refetch: refetchAllSplBalances } =
@@ -37,9 +46,8 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
         includeToken2022: true,
       },
     );
-  console.log("🚀 ~ splBalances:", splBalances);
 
-  const { data: prices } = usePrices();
+  const { data: prices } = useOraclePrices();
 
   const depositingInfo = useMemo(() => {
     const totalValue = selectedPool.tvl;
@@ -51,31 +59,82 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
     };
   }, [selectedPool]);
 
+  const {
+    data: prepareOpenCLMMPositionData,
+    isLoading: isLoadingPrepareOpenCLMMPosition,
+  } = usePrepareOpenCLMMPosition({
+    poolId: selectedPool.poolId,
+    baseIn: baseIn,
+    baseAmount: baseIn ? tokenAAmount : tokenBAmount,
+    baseToken: baseIn
+      ? selectedPool.lpToken.token1
+      : selectedPool.lpToken.token2,
+    priceMode: priceMode,
+    minPriceAperB: minPrice,
+    maxPriceAperB: maxPrice,
+    raydium: raydium,
+  });
+
   const handleAmountAChange = useCallback((value: string) => {
     setTokenAAmount(parseDecimalsInput(value));
+    setBaseIn(true);
   }, []);
 
   const handleAmountBChange = useCallback((value: string) => {
     setTokenBAmount(parseDecimalsInput(value));
-  }, []);
-
-  const handleAmountLpChange = useCallback((value: string) => {
-    setLpAmount(parseDecimalsInput(value));
+    setBaseIn(false);
   }, []);
 
   const handleDepositSuccess = useCallback(() => {
     setTokenAAmount("");
     setTokenBAmount("");
-    setLpAmount("");
     refetchAllSplBalances();
-  }, [refetchAllSplBalances]);
+    onDepositSuccess();
+  }, [refetchAllSplBalances, onDepositSuccess]);
+
+  useEffect(() => {
+    if (isLoadingPrepareOpenCLMMPosition) {
+      if (baseIn) {
+        setTokenBLoading(true);
+      } else {
+        setTokenALoading(true);
+      }
+      return;
+    }
+
+    setTokenBLoading(false);
+    setTokenALoading(false);
+
+    if (prepareOpenCLMMPositionData && !isLoadingPrepareOpenCLMMPosition) {
+      if (baseIn) {
+        setTokenBAmount(
+          normalizeBN(
+            prepareOpenCLMMPositionData.amountSlippageB.amount,
+            selectedPool.lpToken.token2.decimals,
+          ),
+        );
+      } else {
+        setTokenAAmount(
+          normalizeBN(
+            prepareOpenCLMMPositionData.amountSlippageA.amount,
+            selectedPool.lpToken.token1.decimals,
+          ),
+        );
+      }
+    }
+  }, [prepareOpenCLMMPositionData, isLoadingPrepareOpenCLMMPosition, baseIn]);
 
   return (
     <div className="flex min-h-full flex-col">
+      {(tokenALoading || tokenBLoading) && (
+        <div className="flex h-full items-center justify-center">
+          <Loader2 className="h-4 w-4 animate-spin" />
+        </div>
+      )}
       <DepositRange
         priceMode={priceMode}
         setPriceMode={setPriceMode}
-        currentPrice={selectedPool.price}
+        currentPrice={selectedPool.priceBperA}
         minPrice={minPrice}
         maxPrice={maxPrice}
         handleMinPriceChange={setMinPrice}
@@ -89,6 +148,8 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           priceMap={prices}
           tokenAInput={tokenAAmount}
           tokenBInput={tokenBAmount}
+          tokenALoading={tokenALoading}
+          tokenBLoading={tokenBLoading}
           onAmountAChange={handleAmountAChange}
           onAmountBChange={handleAmountBChange}
         />
@@ -120,11 +181,14 @@ export const CLMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           tokenB={selectedPool.lpToken.token2}
           tokenAAmount={tokenAAmount}
           tokenBAmount={tokenBAmount}
-          lpTokenAmount={lpAmount}
+          prepareOpenCLMMPositionData={prepareOpenCLMMPositionData}
+          baseIn={baseIn}
+          priceMode={priceMode}
+          minPriceAperB={minPrice}
+          maxPriceAperB={maxPrice}
           poolState={selectedPool.clmmPoolState}
           wallet={wallet}
           walletBalances={splBalances}
-          doxxAmmProgram={doxxAmmProgram}
           onSuccess={handleDepositSuccess}
         />
       </div>

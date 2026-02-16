@@ -1,6 +1,8 @@
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import BN from "bn.js";
 import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
+import { TokenPriceDisplay } from "@/components/TokenPriceDisplay";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { TokenProfile } from "@/lib/config/tokens";
 import { copyToClipboard, text } from "@/lib/text";
@@ -8,24 +10,21 @@ import { cn, ellipseAddress, normalizeBPSString } from "@/lib/utils";
 import { getAddressExplorerUrl } from "@/lib/utils/network";
 import { Pool, PoolType } from "./types";
 
-interface PoolInfoProps {
-  symbol: string;
+interface PoolDetail2Props {
   token1: TokenProfile;
   token2: TokenProfile;
-  fee: number;
-  address: string;
-  apr: number;
-  poolType: PoolType;
   tvl: number;
-  currentPrice: number;
+  priceBperA: number;
   reward24h: number;
 }
 
 const PoolDetail2 = ({
   tvl,
-  currentPrice,
+  priceBperA,
   reward24h,
-}: Pick<PoolInfoProps, "tvl" | "currentPrice" | "reward24h">) => {
+  token1,
+  token2,
+}: PoolDetail2Props) => {
   return (
     <div className={cn(text.sb3(), "flex w-full flex-col gap-3 leading-none")}>
       <div className="flex justify-between">
@@ -34,7 +33,15 @@ const PoolDetail2 = ({
       </div>
       <div className="flex justify-between">
         <p className="text-gray-500">Current Price</p>
-        <p className="text-gray-200">{currentPrice}</p>
+        <div className="flex items-center gap-1">
+          <TokenPriceDisplay price={1} token={token1} isLoading={false} />
+          <p>=</p>
+          <TokenPriceDisplay
+            price={priceBperA}
+            token={token2}
+            isLoading={false}
+          />
+        </div>
       </div>
       <div className="flex justify-between">
         <p className="text-gray-500">Reward 24h</p>
@@ -138,9 +145,10 @@ export const PoolInfo = ({
   apr,
   tvl,
   poolType,
-  price: currentPrice,
+  priceBperA,
   reward24h,
-}: Pool) => {
+  raydium,
+}: Pool & { raydium: Raydium | undefined }) => {
   return (
     <div className="flex w-full flex-col gap-5 border-b border-gray-800 px-4 py-5">
       <PoolDetail1
@@ -154,7 +162,9 @@ export const PoolInfo = ({
       />
       <PoolDetail2
         tvl={tvl}
-        currentPrice={currentPrice}
+        token1={token1}
+        token2={token2}
+        priceBperA={priceBperA}
         reward24h={reward24h}
       />
     </div>
