@@ -99,19 +99,18 @@ const CONFIG: ScriptConfig = {
   idl: (process.env.NEXT_PUBLIC_NETWORK === WalletAdapterNetwork.Mainnet ? doxxClmmIdlMainnet : doxxClmmIdlDevnet) as DoxxClmmIdl,
   feeIndex: 1,
 
-  // Solayer devnet defaults from `lib/config/addresses/address.devnet.json`
   // tokenA: "5DA5HuM2crJLZzhrfnwLD7eA1pcHztTRR639iaaJgJTn",
   // tokenB: "9v5VCdbLZveXTJ35MPGb1HHQxEN1XHBNZinqz44gUzSC",
   tokenA: "So11111111111111111111111111111111111111112",
-  tokenB: "FicCKgiPHLUv7bjsY9ydSF91RKGikD8xr4U5orobWUiK",
+  // tokenB: "FicCKgiPHLUv7bjsY9ydSF91RKGikD8xr4U5orobWUiK",
   // tokenB: "GUewnup48zDzM5B43ZeNY6SNEYQZ93fatFJ8yuXn96zV", // create but doesn't deposit
-  // tokenB: "7zHp8PnVt5VgehRUEjGLhKC73FKZXAF3i3RV4kfc51kY",
+  tokenB: "7zHp8PnVt5VgehRUEjGLhKC73FKZXAF3i3RV4kfc51kY",
   decA: 9,
   decB: 9,
 
-  initialPriceAperB: "0.01",
-  amountA: "10",
-  amountB: "10",
+  initialPriceAperB: "0.1",
+  amountA: "0.1",
+  amountB: "10000",
   maxAmountBufferPct: "0.02", // +2% buffer to pass PriceSlippageCheck (6021)
 
   mode: PriceMode.FULL,
