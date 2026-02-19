@@ -14,11 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RawTokenProfile, knownTokenProfiles } from "@/lib/config/tokens";
-import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
+// import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
-import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
-import { useProvider } from "@/lib/hooks/chain/useProvider";
+// import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
+// import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -101,7 +101,8 @@ export default function Home() {
             )}
           >
             <div
-              className="hover:bg-green/50 bg-green/30 flex h-10.5 cursor-not-allowed flex-row items-center justify-center gap-2.5 rounded-2xl p-4 px-5 opacity-50 hover:cursor-pointer"
+              className="bg-green/20 flex h-10.5 cursor-not-allowed flex-row items-center justify-center gap-2.5 rounded-2xl p-4 px-5"
+              // className="hover:bg-green/50 bg-green/30 flex h-10.5 cursor-not-allowed flex-row items-center justify-center gap-2.5 rounded-2xl p-4 px-5"
               // TODO: add create token dialog
               // onClick={() => {}}
             >

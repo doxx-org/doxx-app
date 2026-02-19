@@ -8,7 +8,7 @@ import DoxxIcon from "@/assets/icons/doxx-icon.svg";
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
-import TradingToggle from "../TradingToggle";
+// import TradingToggle from "../TradingToggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -151,7 +151,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-4">
-            <TradingToggle />
+            {/* <TradingToggle /> */}
             <ConnectButtonWrapper className={cn(text.hsb3())} />
           </div>
 
