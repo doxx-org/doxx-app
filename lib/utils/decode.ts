@@ -308,12 +308,14 @@ export function getTickRangeFromPriceMode(
     const { tick: lowerTickRaw } = TickUtils.getPriceAndTick({
       poolInfo,
       price: startPrice,
+      // price: baseIn ? startPrice : endPrice,
       baseIn,
     });
 
     const { tick: upperTickRaw } = TickUtils.getPriceAndTick({
       poolInfo,
       price: endPrice,
+      // price: baseIn ? endPrice : startPrice,
       baseIn,
     });
 

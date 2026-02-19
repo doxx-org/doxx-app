@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Pool } from "@/components/earn/v2/types";
 import {
   Drawer,
   DrawerContent,
@@ -8,7 +9,6 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { Pool } from "@/components/earn/v2/types";
 import { PoolInfo } from "../PoolInfo";
 import { CPMMDepositTab } from "./CPMMDepositTab";
 import { CPMMPositionsTab } from "./CPMMPositionsTab";
@@ -69,7 +69,7 @@ export const DepositCPMMDrawer = ({
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
-        <PoolInfo {...selectedPool} />
+        <PoolInfo {...selectedPool} raydium={undefined} />
         <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
       </DrawerContent>
     </Drawer>

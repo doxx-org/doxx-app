@@ -72,7 +72,7 @@ export const usePrepareOpenCLMMPosition = ({
 
       const tickSpacing = poolInfo.poolInfo.config.tickSpacing;
 
-      let [lowerTick, upperTick] = getTickRangeFromPriceMode(
+      const [lowerTick, upperTick] = getTickRangeFromPriceMode(
         priceMode,
         tickSpacing,
         poolInfo.poolInfo,
@@ -82,7 +82,6 @@ export const usePrepareOpenCLMMPosition = ({
       );
 
       const epochInfo = await raydium.fetchEpochInfo();
-
       // Calculate required liquidity and other token amount
       const liquidityCalc = await PoolUtils.getLiquidityAmountOutFromAmountIn({
         poolInfo: poolInfo.poolInfo,

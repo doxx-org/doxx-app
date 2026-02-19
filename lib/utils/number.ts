@@ -1,8 +1,8 @@
 import { BN } from "@coral-xyz/anchor";
 import {
   MAXIMUM_100_MILLION,
-  MINIMUM_CAP_E9,
-  ONE_MILLION_E9,
+  // MINIMUM_CAP_E9,
+  // ONE_MILLION_E9,
 } from "../constants";
 
 export function parseDecimalsInput(value: string): string {
@@ -107,8 +107,8 @@ export function normalizeBN(
   decimals: number,
   {
     displayDecimals = decimals,
-    minCap,
-    maxCap,
+    minCap: _minCap,
+    maxCap: _maxCap,
   }: NormalizeBNOptions = {},
 ): string {
   // Convert to string and pad with zeros if needed

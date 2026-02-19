@@ -5,17 +5,17 @@ import { cn } from "@/lib/utils";
 
 // Fee tier configuration matching the AMM program's config indexes
 export const FEE_TIERS = [
-  {
-    index: 0,
-    fee: 0.25,
-    label: (
-      <div className="flex flex-row items-center gap-1">
-        <span>0.25% fee</span>
-        <span className={cn(text.sb3(), "text-green")}>(default)</span>
-      </div>
-    ),
-    description: "For testing purposes",
-  },
+  // {
+  //   index: 0,
+  //   fee: 0.25,
+  //   label: (
+  //     <div className="flex flex-row items-center gap-1">
+  //       <span>0.25% fee</span>
+  //       <span className={cn(text.sb3(), "text-green")}>(default)</span>
+  //     </div>
+  //   ),
+  //   description: "For testing purposes",
+  // },
   {
     index: 1,
     fee: 0.3,
@@ -27,6 +27,7 @@ export const FEE_TIERS = [
     fee: 0.35,
     label: "0.35% fee",
     description: "Best for stable pairs",
+    enabled: false,
   },
   // { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
   // {
@@ -103,7 +104,9 @@ export const FeeTierSelection = ({
                 selectedFeeIndex === tier.index
                   ? "border-green bg-green/10"
                   : "border-gray-700 bg-gray-800/30 hover:border-gray-600 hover:bg-gray-700/30",
+                !tier.enabled && "cursor-not-allowed opacity-50",
               )}
+              disabled={!tier.enabled}
             >
               <div className="flex w-full items-center justify-between">
                 <span className={cn(text.b3(), "font-semibold text-white")}>

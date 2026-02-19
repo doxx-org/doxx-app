@@ -1,28 +1,39 @@
-import { AccountInfo, Connection, ParsedAccountData, PublicKey, RpcResponseAndContext } from "@solana/web3.js";
-import { BalanceMapByMint, SplBalance } from "../hooks/chain/types";
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, unpackAccount, unpackMint } from "@solana/spl-token";
+import {
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  unpackAccount,
+  unpackMint,
+} from "@solana/spl-token";
+import {
+  AccountInfo,
+  Connection,
+  // ParsedAccountData,
+  PublicKey,
+  RpcResponseAndContext,
+} from "@solana/web3.js";
 import { TokenProfile } from "../config/tokens";
+import { BalanceMapByMint, SplBalance } from "../hooks/chain/types";
 import { mintSummaryCache } from "./storage";
 
-interface AccountDataParsedInfoTokenAmount {
-  amount: string;
-  decimals: number;
-  uiAmount: number;
-  uiAmountString: string;
-}
+// interface AccountDataParsedInfoTokenAmount {
+//   amount: string;
+//   decimals: number;
+//   uiAmount: number;
+//   uiAmountString: string;
+// }
 
-interface AccountDataParsedInfo {
-  isNative: boolean;
-  mint: string;
-  owner: string;
-  state: string;
-  tokenAmount: AccountDataParsedInfoTokenAmount;
-}
+// interface AccountDataParsedInfo {
+//   isNative: boolean;
+//   mint: string;
+//   owner: string;
+//   state: string;
+//   tokenAmount: AccountDataParsedInfoTokenAmount;
+// }
 
-interface AccountDataParsed {
-  info: AccountDataParsedInfo;
-  type: string;
-}
+// interface AccountDataParsed {
+//   info: AccountDataParsedInfo;
+//   type: string;
+// }
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -37,85 +48,85 @@ type MapFromAccountOptions = {
   onlyNftLike?: boolean;
 };
 
-const mapTokenBalanceFromAccount = (
-  resp: RpcResponseAndContext<
-    {
-      pubkey: PublicKey;
-      account: AccountInfo<ParsedAccountData>;
-    }[]
-  >,
-  options?: MapFromAccountOptions,
-): BalanceMapByMint => {
-  const includeTokenAccounts = options?.includeTokenAccounts ?? true;
-  const skipZeroBalances = options?.skipZeroBalances ?? false;
-  const excludeNftLike = options?.excludeNftLike ?? true;
-  const onlyNftLike = options?.onlyNftLike ?? false;
+// const mapTokenBalanceFromAccount = (
+//   resp: RpcResponseAndContext<
+//     {
+//       pubkey: PublicKey;
+//       account: AccountInfo<ParsedAccountData>;
+//     }[]
+//   >,
+//   options?: MapFromAccountOptions,
+// ): BalanceMapByMint => {
+//   const includeTokenAccounts = options?.includeTokenAccounts ?? true;
+//   const skipZeroBalances = options?.skipZeroBalances ?? false;
+//   const excludeNftLike = options?.excludeNftLike ?? true;
+//   const onlyNftLike = options?.onlyNftLike ?? false;
 
-  const balanceMap: BalanceMapByMint = {} as BalanceMapByMint;
-  for (const { pubkey, account } of resp.value) {
-    const info = (account.data.parsed as AccountDataParsed).info;
-    const tokenAmount = info.tokenAmount;
+//   const balanceMap: BalanceMapByMint = {} as BalanceMapByMint;
+//   for (const { pubkey, account } of resp.value) {
+//     const info = (account.data.parsed as AccountDataParsed).info;
+//     const tokenAmount = info.tokenAmount;
 
-    const rawAmount = BigInt(tokenAmount.amount);
-    if (skipZeroBalances && rawAmount === 0n) continue;
-    // Heuristic filter for position-NFT-like holdings.
-    // Parsed response doesn't include mint supply; use an amount-based heuristic here.
-    if (excludeNftLike && (tokenAmount.decimals ?? 0) === 0 && rawAmount === 1n) continue;
-    // If onlyNftLike is true, exclude all non-NFT-like mints
-    if (onlyNftLike && (tokenAmount.decimals ?? 0) !== 0 && rawAmount !== 1n) continue;
+//     const rawAmount = BigInt(tokenAmount.amount);
+//     if (skipZeroBalances && rawAmount === 0n) continue;
+//     // Heuristic filter for position-NFT-like holdings.
+//     // Parsed response doesn't include mint supply; use an amount-based heuristic here.
+//     if (excludeNftLike && (tokenAmount.decimals ?? 0) === 0 && rawAmount === 1n) continue;
+//     // If onlyNftLike is true, exclude all non-NFT-like mints
+//     if (onlyNftLike && (tokenAmount.decimals ?? 0) !== 0 && rawAmount !== 1n) continue;
 
-    const prev = balanceMap[info.mint] ?? {
-      mint: info.mint,
-      rawAmount: 0n,
-      amount: 0,
-      decimals: tokenAmount.decimals ?? 0,
-      tokenAccounts: [] as string[],
-    };
+//     const prev = balanceMap[info.mint] ?? {
+//       mint: info.mint,
+//       rawAmount: 0n,
+//       amount: 0,
+//       decimals: tokenAmount.decimals ?? 0,
+//       tokenAccounts: [] as string[],
+//     };
 
-    const ui =
-      typeof tokenAmount.uiAmount === "number"
-        ? tokenAmount.uiAmount
-        : parseFloat(tokenAmount.uiAmountString ?? "0");
-    prev.rawAmount += rawAmount;
-    prev.amount += ui;
-    prev.decimals = tokenAmount.decimals ?? prev.decimals;
-    if (includeTokenAccounts) prev.tokenAccounts.push(pubkey.toBase58());
-    balanceMap[info.mint] = prev;
-  }
+//     const ui =
+//       typeof tokenAmount.uiAmount === "number"
+//         ? tokenAmount.uiAmount
+//         : parseFloat(tokenAmount.uiAmountString ?? "0");
+//     prev.rawAmount += rawAmount;
+//     prev.amount += ui;
+//     prev.decimals = tokenAmount.decimals ?? prev.decimals;
+//     if (includeTokenAccounts) prev.tokenAccounts.push(pubkey.toBase58());
+//     balanceMap[info.mint] = prev;
+//   }
 
-  return balanceMap;
-};
+//   return balanceMap;
+// };
 
-async function getParsedTokenAccountsByOwnerAllTokenPrograms(
-  connection: Connection,
-  owner: PublicKey,
-  includeToken2022: boolean,
-): Promise<
-  RpcResponseAndContext<
-    {
-      pubkey: PublicKey;
-      account: AccountInfo<ParsedAccountData>;
-    }[]
-  >
-> {
-  if (!includeToken2022) {
-    const legacy = await connection.getParsedTokenAccountsByOwner(owner, {
-      programId: TOKEN_PROGRAM_ID,
-    });
-    return { context: legacy.context, value: legacy.value };
-  }
+// async function getParsedTokenAccountsByOwnerAllTokenPrograms(
+//   connection: Connection,
+//   owner: PublicKey,
+//   includeToken2022: boolean,
+// ): Promise<
+//   RpcResponseAndContext<
+//     {
+//       pubkey: PublicKey;
+//       account: AccountInfo<ParsedAccountData>;
+//     }[]
+//   >
+// > {
+//   if (!includeToken2022) {
+//     const legacy = await connection.getParsedTokenAccountsByOwner(owner, {
+//       programId: TOKEN_PROGRAM_ID,
+//     });
+//     return { context: legacy.context, value: legacy.value };
+//   }
 
-  const [legacy, token2022] = await Promise.all([
-    connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID }),
-    connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ID }),
-  ]);
+//   const [legacy, token2022] = await Promise.all([
+//     connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID }),
+//     connection.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ID }),
+//   ]);
 
-  // Note: context slots may differ slightly; using legacy context is fine for UI.
-  return {
-    context: legacy.context,
-    value: [...legacy.value, ...token2022.value],
-  };
-}
+//   // Note: context slots may differ slightly; using legacy context is fine for UI.
+//   return {
+//     context: legacy.context,
+//     value: [...legacy.value, ...token2022.value],
+//   };
+// }
 
 type RawTokenAccountByOwner = {
   pubkey: PublicKey;
@@ -140,14 +151,19 @@ export async function getTokenAccountsByOwnerAllTokenProgramsRaw(
 
   const [legacy, token2022] = await Promise.all([
     connection.getTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID }),
-    connection.getTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ID }),
+    connection.getTokenAccountsByOwner(owner, {
+      programId: TOKEN_2022_PROGRAM_ID,
+    }),
   ]);
 
   return {
     context: legacy.context,
     value: [
       ...legacy.value.map((v) => ({ ...v, programId: TOKEN_PROGRAM_ID })),
-      ...token2022.value.map((v) => ({ ...v, programId: TOKEN_2022_PROGRAM_ID })),
+      ...token2022.value.map((v) => ({
+        ...v,
+        programId: TOKEN_2022_PROGRAM_ID,
+      })),
     ],
   };
 }
@@ -170,7 +186,8 @@ export async function mapTokenBalanceFromRawAccounts(
     // Some RPCs/providers occasionally return non-token accounts here (e.g. System Program owned).
     // `unpackAccount` will throw `TokenInvalidAccountOwnerError` in that case, so we defensively skip.
     const effectiveProgramId =
-      account.owner.equals(TOKEN_PROGRAM_ID) || account.owner.equals(TOKEN_2022_PROGRAM_ID)
+      account.owner.equals(TOKEN_PROGRAM_ID) ||
+      account.owner.equals(TOKEN_2022_PROGRAM_ID)
         ? account.owner
         : programId;
     if (
@@ -260,14 +277,16 @@ export async function mapTokenBalanceFromRawAccounts(
     }
   }
 
-
   // 4) Compute UI amounts using cached decimals
   for (const mintStr of programIdByMint.keys()) {
     const entry = balanceMap[mintStr];
     if (!entry) continue;
     const decimals = mintSummaryCache.get(mintStr)?.decimals ?? 0;
     entry.decimals = decimals;
-    entry.amount = decimals > 0 ? Number(entry.rawAmount) / 10 ** decimals : Number(entry.rawAmount);
+    entry.amount =
+      decimals > 0
+        ? Number(entry.rawAmount) / 10 ** decimals
+        : Number(entry.rawAmount);
   }
 
   return balanceMap;

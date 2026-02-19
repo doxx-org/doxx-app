@@ -263,8 +263,6 @@ function determineBaseFlag(
   if (amount1.isZero() && !amount0.isZero()) return true;
 
   // Calculate price from sqrtPriceX64
-  // price = (sqrtPriceX64 / 2^64)^2
-  const Q64 = new BN(2).pow(new BN(64));
   const Q128 = new BN(2).pow(new BN(128));
 
   // priceX128 = sqrtPriceX64^2
@@ -745,7 +743,7 @@ export function useCreateClmmPoolAndPosition(
 
         console.log("🚀 ~ amount0MaxAllowed:", amount0MaxAllowed.toString());
         console.log("🚀 ~ amount1MaxAllowed:", amount1MaxAllowed.toString());
-        let openPosIx = await program.methods
+        const openPosIx = await program.methods
           .openPositionWithToken22Nft(
             tickLowerIndex,
             tickUpperIndex,
@@ -1008,6 +1006,7 @@ export function useCreateClmmPoolAndPosition(
       } catch (e) {
         const err = e as Error;
         try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const anyErr = e as any;
           const logsFromField: string[] | undefined = Array.isArray(
             anyErr?.logs,
@@ -1053,7 +1052,8 @@ export function useCreateClmmPoolAndPosition(
         return undefined;
       }
     },
-    [program, wallet?.publicKey, onSuccess, onError, resolveTokenProgramId],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [program, wallet?.publicKey, onSuccess, onError],
   );
 
   const createPoolAndOpenPositionV2 = useCallback(
@@ -1217,14 +1217,14 @@ export function useCreateClmmPoolAndPosition(
           tokenMint1,
           program.programId,
         );
-        const [observationState] = getOrcleAccountAddress(
-          poolState,
-          program.programId,
-        );
-        const [tickArrayBitmap] = getClmmTickArrayBitmapExtensionAddress({
-          pool: poolState,
-          programId: program.programId,
-        });
+        // const [observationState] = getOrcleAccountAddress(
+        //   poolState,
+        //   program.programId,
+        // );
+        // const [tickArrayBitmap] = getClmmTickArrayBitmapExtensionAddress({
+        //   pool: poolState,
+        //   programId: program.programId,
+        // });
 
         const tokenProgram0 = await resolveTokenProgramId(tokenMint0);
         const tokenProgram1 = await resolveTokenProgramId(tokenMint1);
@@ -1244,7 +1244,7 @@ export function useCreateClmmPoolAndPosition(
         );
 
         // Step 5: CREATE POOL (this sets tickCurrent = futureCurrentTick)
-        const safeOpenTime = await getSafeOpenTime(connection);
+        // const safeOpenTime = await getSafeOpenTime(connection);
         // await program.methods
         //   .createPool(sqrtPriceX64, safeOpenTime)
         //   .accounts({
@@ -1516,6 +1516,7 @@ export function useCreateClmmPoolAndPosition(
       } catch (e) {
         const err = e as Error;
         try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const anyErr = e as any;
           const logsFromField: string[] | undefined = Array.isArray(
             anyErr?.logs,
@@ -1561,7 +1562,8 @@ export function useCreateClmmPoolAndPosition(
         return undefined;
       }
     },
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [program, wallet?.publicKey, onSuccess, onError],
   );
 
   return {

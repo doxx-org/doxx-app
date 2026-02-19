@@ -101,9 +101,9 @@ export default function Home() {
             )}
           >
             <div
-              className="hover:bg-green/50 bg-green/30 flex h-10.5 flex-row items-center justify-center gap-2.5 rounded-2xl p-4 px-5 hover:cursor-pointer"
+              className="hover:bg-green/50 bg-green/30 flex h-10.5 cursor-not-allowed flex-row items-center justify-center gap-2.5 rounded-2xl p-4 px-5 opacity-50 hover:cursor-pointer"
               // TODO: add create token dialog
-              onClick={() => {}}
+              // onClick={() => {}}
             >
               <Plus />
               Create Token
@@ -131,7 +131,10 @@ export default function Home() {
                   <DropdownMenuItem onClick={handleOpenCreateCLMMPoolDialog}>
                     Create CLMM Pool
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleOpenCreateCPMMDrawer} disabled>
+                  <DropdownMenuItem
+                    onClick={handleOpenCreateCPMMDrawer}
+                    disabled
+                  >
                     Create CPMM Pool
                   </DropdownMenuItem>
                 </DropdownMenuContent>

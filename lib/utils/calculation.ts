@@ -35,53 +35,53 @@ export function getTokenAmountsFromLiquidity(
 /**
  * Convert tick to sqrt price (Q64.64 format)
  */
-function tickToSqrtPriceX64(tick: number): bigint {
-  const Q64 = BigInt(2) ** BigInt(64);
+// function tickToSqrtPriceX64(tick: number): bigint {
+//   const Q64 = BigInt(2) ** BigInt(64);
 
-  // Calculate 1.0001^tick
-  const price = Math.pow(1.0001, tick);
-  const sqrtPrice = Math.sqrt(price);
+//   // Calculate 1.0001^tick
+//   const price = Math.pow(1.0001, tick);
+//   const sqrtPrice = Math.sqrt(price);
 
-  // Convert to Q64.64 fixed point
-  return BigInt(Math.floor(sqrtPrice * Number(Q64)));
-}
+//   // Convert to Q64.64 fixed point
+//   return BigInt(Math.floor(sqrtPrice * Number(Q64)));
+// }
 
 /**
  * Calculate amount0 from liquidity
  */
-function getAmount0FromLiquidity(
-  sqrtPriceA: BN,
-  sqrtPriceB: BN,
-  liquidity: BN,
-): BN {
-  if (sqrtPriceA > sqrtPriceB) {
-    [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
-  }
+// function getAmount0FromLiquidity(
+//   sqrtPriceA: BN,
+//   sqrtPriceB: BN,
+//   liquidity: BN,
+// ): BN {
+//   if (sqrtPriceA > sqrtPriceB) {
+//     [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
+//   }
 
-  const Q64 = new BN(2).pow(new BN(64));
+//   const Q64 = new BN(2).pow(new BN(64));
 
-  const numerator = liquidity.mul(Q64).mul(sqrtPriceB.sub(sqrtPriceA));
-  const denominator = sqrtPriceB.mul(sqrtPriceA);
+//   const numerator = liquidity.mul(Q64).mul(sqrtPriceB.sub(sqrtPriceA));
+//   const denominator = sqrtPriceB.mul(sqrtPriceA);
 
-  return numerator.div(denominator);
-}
+//   return numerator.div(denominator);
+// }
 
 /**
  * Calculate amount1 from liquidity
  */
-function getAmount1FromLiquidity(
-  sqrtPriceA: BN,
-  sqrtPriceB: BN,
-  liquidity: BN,
-): BN {
-  if (sqrtPriceA > sqrtPriceB) {
-    [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
-  }
+// function getAmount1FromLiquidity(
+//   sqrtPriceA: BN,
+//   sqrtPriceB: BN,
+//   liquidity: BN,
+// ): BN {
+//   if (sqrtPriceA > sqrtPriceB) {
+//     [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
+//   }
 
-  const Q64 = new BN(2).pow(new BN(64));
+//   const Q64 = new BN(2).pow(new BN(64));
 
-  return liquidity.mul(sqrtPriceB.sub(sqrtPriceA)).div(Q64);
-}
+//   return liquidity.mul(sqrtPriceB.sub(sqrtPriceA)).div(Q64);
+// }
 
 const TWO_POW_128 = 1n << 128n;
 

@@ -18,7 +18,6 @@ import {
   parseAmountBN,
 } from "@/lib/utils";
 import { pollSignatureStatus } from "@/lib/utils/solanaTxFallback";
-import { CLMMPoolState } from "./types";
 
 type DepositClmmPoolParams = {
   poolId: string;
@@ -61,7 +60,7 @@ export function useDepositClmmPool(
   const [depositError, setDepositError] = useState<Error | undefined>();
   const mintProgramCache = useRef(new Map<string, PublicKey>());
 
-  const resolveTokenProgramId = useCallback(
+  const _resolveTokenProgramId = useCallback(
     async (mint: PublicKey): Promise<PublicKey> => {
       const key = mint.toBase58();
       const cached = mintProgramCache.current.get(key);
@@ -192,7 +191,7 @@ export function useDepositClmmPool(
         });
 
         // Execute transaction
-        const { txId, signedTx } = await execute({ sendAndConfirm: true });
+        const { txId } = await execute({ sendAndConfirm: true });
         console.log("Transaction sent:", txId);
 
         // Poll for confirmation
@@ -226,6 +225,7 @@ export function useDepositClmmPool(
         return undefined;
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [program, wallet?.publicKey, connection, onSuccess, onError],
   );
 

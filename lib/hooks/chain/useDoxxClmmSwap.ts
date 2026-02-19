@@ -12,17 +12,15 @@ import {
   SendTransactionError,
   Transaction,
 } from "@solana/web3.js";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@/lib/constants";
 import { CLMMPoolState } from "@/lib/hooks/chain/types";
 import { DoxxClmmIdl } from "@/lib/idl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   PROVIDER_UNAVAILABLE_ERROR,
 } from "@/lib/utils";
-import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@/lib/constants";
 import { getPoolAddress } from "@/lib/utils/instructions";
-import {
-  pollSignatureStatus,
-} from "@/lib/utils/solanaTxFallback";
+import { pollSignatureStatus } from "@/lib/utils/solanaTxFallback";
 
 const MEMO_PROGRAM_ID = new PublicKey(
   "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
@@ -87,7 +85,9 @@ function buildTickArrayStartIndices(params: {
 
   const indices: number[] = [];
   for (let i = 0; i < w; i++) {
-    indices.push(startTickIndex + (zeroForOne ? -i * arraySpacing : i * arraySpacing));
+    indices.push(
+      startTickIndex + (zeroForOne ? -i * arraySpacing : i * arraySpacing),
+    );
   }
   return indices;
 }
@@ -176,14 +176,16 @@ export function useDoxxClmmSwap(
         // CLMM pools store ordered mints (tokenMint0 < tokenMint1)
         if (
           !(
-            (inputMint.equals(pool.tokenMint0) && outputMint.equals(pool.tokenMint1)) ||
-            (inputMint.equals(pool.tokenMint1) && outputMint.equals(pool.tokenMint0))
+            (inputMint.equals(pool.tokenMint0) &&
+              outputMint.equals(pool.tokenMint1)) ||
+            (inputMint.equals(pool.tokenMint1) &&
+              outputMint.equals(pool.tokenMint0))
           )
         ) {
           throw new Error(
             `Swap mints do not match pool. ` +
-            `pool=[${pool.tokenMint0.toBase58()}, ${pool.tokenMint1.toBase58()}] ` +
-            `swap=[${inputMint.toBase58()} -> ${outputMint.toBase58()}]`,
+              `pool=[${pool.tokenMint0.toBase58()}, ${pool.tokenMint1.toBase58()}] ` +
+              `swap=[${inputMint.toBase58()} -> ${outputMint.toBase58()}]`,
           );
         }
 
@@ -235,17 +237,20 @@ export function useDoxxClmmSwap(
           pool.tokenMint1,
           program.programId,
         );
-        console.log("🚀 ~ pool.tickArrayBitmap.map(c=>c.toString()):", pool.tickArrayBitmap.map(c => c.toString()))
+        console.log(
+          "🚀 ~ pool.tickArrayBitmap.map(c=>c.toString()):",
+          pool.tickArrayBitmap.map((c) => c.toString()),
+        );
         // Provide a small window of tick arrays around current tick.
         const tickCurrent = pool.tickCurrent;
-        console.log("🚀 ~ tickCurrent:", tickCurrent)
+        console.log("🚀 ~ tickCurrent:", tickCurrent);
         const tickSpacing = pool.tickSpacing;
-        console.log("🚀 ~ tickSpacing:", tickSpacing)
+        console.log("🚀 ~ tickSpacing:", tickSpacing);
         const start = getClmmTickArrayStartIndex({
           tickCurrent,
           tickSpacing,
         });
-        console.log("🚀 ~ start:", start)
+        console.log("🚀 ~ start:", start);
         const zeroForOne = inputIs0; // token0 -> token1 moves price down
 
         const startIndices = buildTickArrayStartIndices({
@@ -264,30 +269,42 @@ export function useDoxxClmmSwap(
           });
           return addr;
         });
-        console.log("🚀 ~ startIndices:", startIndices)
-        const tickArrayInfos = await connection.getMultipleAccountsInfo(
-          tickArrayPks,
-        );
-        console.log("🚀 ~ tickArrayInfos:", tickArrayInfos)
+        console.log("🚀 ~ startIndices:", startIndices);
+        const tickArrayInfos =
+          await connection.getMultipleAccountsInfo(tickArrayPks);
+        console.log("🚀 ~ tickArrayInfos:", tickArrayInfos);
         // The current tick array must exist for swaps; fail early with a clear error
         if (!tickArrayInfos[0]) {
           throw new Error(
             `Missing current tick array account (startTickIndex=${start}). ` +
-            `This pool has no tick-array initialized at the current price, so swapping will fail. ` +
-            `Try a different pool, or initialize liquidity/positions spanning the current price.`,
+              `This pool has no tick-array initialized at the current price, so swapping will fail. ` +
+              `Try a different pool, or initialize liquidity/positions spanning the current price.`,
           );
         }
         // Only pass tick arrays that exist on-chain. Passing PDAs for uninitialized tick arrays
         // causes AccountOwnedByWrongProgram (3007) because the account is system-owned.
         const tickArrayMetas = tickArrayPks
-          .map((pk, i) => (tickArrayInfos[i] ? { pubkey: pk, isWritable: true as const, isSigner: false as const } : null))
-          .filter((m): m is { pubkey: PublicKey; isWritable: true; isSigner: false } => m != null);
-        console.log("🚀 ~ tickArrayMetas:", tickArrayMetas)
+          .map((pk, i) =>
+            tickArrayInfos[i]
+              ? {
+                  pubkey: pk,
+                  isWritable: true as const,
+                  isSigner: false as const,
+                }
+              : null,
+          )
+          .filter(
+            (
+              m,
+            ): m is { pubkey: PublicKey; isWritable: true; isSigner: false } =>
+              m != null,
+          );
+        console.log("🚀 ~ tickArrayMetas:", tickArrayMetas);
 
         if (tickArrayMetas.length < MIN_TICK_ARRAYS_FOR_SWAP) {
           throw new Error(
             `Not enough initialized tick arrays for swap (${tickArrayMetas.length}, need at least ${MIN_TICK_ARRAYS_FOR_SWAP}). ` +
-            `Add liquidity (deposit) into this pool in a range that spans the current price so more tick arrays are initialized, or use a different pool.`,
+              `Add liquidity (deposit) into this pool in a range that spans the current price so more tick arrays are initialized, or use a different pool.`,
           );
         }
 
@@ -304,13 +321,15 @@ export function useDoxxClmmSwap(
         };
         const remainingAccounts = [...tickArrayMetas, tickArrayBitmapExtMeta];
 
-        const amount = kind === "in"
-          ? (params as SwapBaseInputParams).amountIn
-          : (params as SwapBaseOutputParams).amountOut;
+        const amount =
+          kind === "in"
+            ? (params as SwapBaseInputParams).amountIn
+            : (params as SwapBaseOutputParams).amountOut;
 
-        const otherAmountThreshold = kind === "in"
-          ? (params as SwapBaseInputParams).minOut
-          : (params as SwapBaseOutputParams).maxAmountIn;
+        const otherAmountThreshold =
+          kind === "in"
+            ? (params as SwapBaseInputParams).minOut
+            : (params as SwapBaseOutputParams).maxAmountIn;
 
         // Some chains/RPCs don't have the Memo program deployed as executable.
         // `swap_v2` requires `memo_program` and will fail with Anchor's InvalidProgramExecutable (3009).
@@ -320,46 +339,49 @@ export function useDoxxClmmSwap(
 
         const ix = memoExecutable
           ? await program.methods
-            .swapV2(
-              amount,
-              otherAmountThreshold,
-              new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
-              kind === "in",
-            )
-            .accounts({
-              payer: wallet.publicKey,
-              ammConfig: pool.ammConfig,
-              poolState: poolAddress,
-              inputTokenAccount,
-              outputTokenAccount,
-              inputVault,
-              outputVault,
-              observationState: pool.observationKey,
-              inputVaultMint: inputMint,
-              outputVaultMint: outputMint,
-            })
-            .remainingAccounts(remainingAccounts)
-            .instruction()
+              .swapV2(
+                amount,
+                otherAmountThreshold,
+                new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
+                kind === "in",
+              )
+              .accounts({
+                payer: wallet.publicKey,
+                ammConfig: pool.ammConfig,
+                poolState: poolAddress,
+                inputTokenAccount,
+                outputTokenAccount,
+                inputVault,
+                outputVault,
+                observationState: pool.observationKey,
+                inputVaultMint: inputMint,
+                outputVaultMint: outputMint,
+              })
+              .remainingAccounts(remainingAccounts)
+              .instruction()
           : await program.methods
-            .swap(
-              amount,
-              otherAmountThreshold,
-              new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
-              kind === "in",
-            )
-            .accounts({
-              payer: wallet.publicKey,
-              ammConfig: pool.ammConfig,
-              poolState: poolAddress,
-              inputTokenAccount,
-              outputTokenAccount,
-              inputVault,
-              outputVault,
-              observationState: pool.observationKey,
-              tickArray: tickArrayMetas[0]!.pubkey,
-            })
-            .remainingAccounts([...tickArrayMetas.slice(1), tickArrayBitmapExtMeta])
-            .instruction();
+              .swap(
+                amount,
+                otherAmountThreshold,
+                new BN(0), // sqrtPriceLimitX64 = 0 (no limit)
+                kind === "in",
+              )
+              .accounts({
+                payer: wallet.publicKey,
+                ammConfig: pool.ammConfig,
+                poolState: poolAddress,
+                inputTokenAccount,
+                outputTokenAccount,
+                inputVault,
+                outputVault,
+                observationState: pool.observationKey,
+                tickArray: tickArrayMetas[0]!.pubkey,
+              })
+              .remainingAccounts([
+                ...tickArrayMetas.slice(1),
+                tickArrayBitmapExtMeta,
+              ])
+              .instruction();
 
         const tx = new Transaction().add(...cuIxs, ...ataIxs, ix);
         tx.feePayer = wallet.publicKey;
@@ -390,6 +412,7 @@ export function useDoxxClmmSwap(
         setIsSwapping(false);
         return sig;
       } catch (e) {
+        console.log("🚀 ~ e:", e);
         const err = e as Error;
         let message = err instanceof Error ? err.message : "Unknown error";
         if (e instanceof SendTransactionError) {
@@ -397,14 +420,20 @@ export function useDoxxClmmSwap(
             const logs = await e.getLogs(connection);
             console.error("CLMM swap simulation logs:\n" + logs.join("\n"));
             const logStr = logs.join(" ");
-            if (logStr.includes("6027") || logStr.includes("NotEnoughTickArrayAccount")) {
+            if (
+              logStr.includes("6027") ||
+              logStr.includes("NotEnoughTickArrayAccount")
+            ) {
               message =
                 "Not enough tick arrays for swap (6027). Add liquidity (deposit) into this pool in a range that spans the current price to initialize more tick arrays, or use a different pool.";
             }
           } catch {
             // ignore
           }
-        } else if (message.includes("6027") || message.includes("NotEnoughTickArrayAccount")) {
+        } else if (
+          message.includes("6027") ||
+          message.includes("NotEnoughTickArrayAccount")
+        ) {
           message =
             "Not enough tick arrays for swap (6027). Add liquidity (deposit) into this pool in a range that spans the current price to initialize more tick arrays, or use a different pool.";
         }
@@ -437,4 +466,3 @@ export function useDoxxClmmSwap(
     swapError,
   };
 }
-

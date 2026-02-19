@@ -4,7 +4,7 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { BN } from "bn.js";
 import { Pool, PoolType } from "@/components/earn/v2/types";
-import { TokenSymbol, unknownToken } from "@/lib/config/tokens";
+import { unknownToken } from "@/lib/config/tokens";
 import { NATIVE_SOL_MINT, SOLANA_PRICE, ZERO } from "@/lib/constants";
 import { calculateCLMMTokenPrices } from "@/lib/utils/calculation";
 import { useOraclePrices } from "../useOraclePrices";
@@ -65,7 +65,7 @@ export function useGetAllPools() {
     });
 
     return [...cpmmPoolTokens, ...clmmPoolTokens];
-  }, [clmmPoolsData]);
+  }, [clmmPoolsData, cpmmPoolsData]);
 
   const {
     data: allTokenProfiles,
@@ -108,18 +108,18 @@ export function useGetAllPools() {
         return { priceToken0Usd: 0, priceToken1Usd: 0 };
       };
 
-      const poolPriceUsdFromSolPair = (params: {
-        token0Mint: string;
-        token1Mint: string;
-        priceToken1PerToken0: number;
-      }): number | undefined => {
-        const { token0Mint, token1Mint, priceToken1PerToken0 } = params;
-        if (token0Mint === NATIVE_SOL_MINT)
-          return priceToken1PerToken0 * SOLANA_PRICE;
-        if (token1Mint === NATIVE_SOL_MINT)
-          return (1 / priceToken1PerToken0) * SOLANA_PRICE;
-        return undefined;
-      };
+      // const poolPriceUsdFromSolPair = (params: {
+      //   token0Mint: string;
+      //   token1Mint: string;
+      //   priceToken1PerToken0: number;
+      // }): number | undefined => {
+      //   const { token0Mint, token1Mint, priceToken1PerToken0 } = params;
+      //   if (token0Mint === NATIVE_SOL_MINT)
+      //     return priceToken1PerToken0 * SOLANA_PRICE;
+      //   if (token1Mint === NATIVE_SOL_MINT)
+      //     return (1 / priceToken1PerToken0) * SOLANA_PRICE;
+      //   return undefined;
+      // };
 
       // CPMM: price from vault reserves
       for (const poolData of cpmmPoolsData ?? []) {
@@ -263,6 +263,7 @@ export function useGetAllPools() {
 
   useEffect(() => {
     if (result.isFetched) {
+      // eslint-disable-next-line
       setIsLoading(false);
     }
   }, [result.isFetched]);

@@ -102,7 +102,7 @@ function buildMockTicksFromIntervals(args: {
     const a = Math.min(fromP, toP);
     const b = Math.max(fromP, toP);
 
-    let t0 = snapToSpacing(
+    const t0 = snapToSpacing(
       tickFromPrice(a, currentPrice, currentTick),
       tickSpacing,
     );
@@ -225,7 +225,7 @@ export function LiquidityRangeChart({
     const nextMax = clamp(currentPrice * 1.05, absMin, absMax);
     setViewMin(Math.min(nextMin, nextMax));
     setViewMax(Math.max(nextMin, nextMax));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [currentPrice, absMax]);
 
   const domain = useMemo(() => {
@@ -692,7 +692,7 @@ export function LiquidityRangeChart({
             const isThick = v >= thickCutoff;
             return (
               <div
-                // eslint-disable-next-line react/no-array-index-key
+                 
                 key={idx}
                 className={cn(
                   "w-full",

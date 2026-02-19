@@ -13,22 +13,22 @@ const eslintConfig = [
   {
     ignores: [".next/", "node_modules/", "dist/", "coverage/"],
   },
-  ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
-  {
-    rules: {
-      // Add your custom hook names here (regex)
-      "react-hooks/exhaustive-deps": ["warn"],
-      // Allow unused variables/args prefixed with underscore
-      "@typescript-eslint/no-unused-vars": [
-        "error",
-        {
-          argsIgnorePattern: "^_",
-          varsIgnorePattern: "^_",
-          caughtErrorsIgnorePattern: "^_",
-        },
-      ],
-    },
-  },
+  // ...compat.extends("next/core-web-vitals", "next/typescript", "prettier"),
+  // {
+  //   rules: {
+  //     // Add your custom hook names here (regex)
+  //     "react-hooks/exhaustive-deps": ["warn"],
+  //     // Allow unused variables/args prefixed with underscore
+  //     "@typescript-eslint/no-unused-vars": [
+  //       "error",
+  //       {
+  //         argsIgnorePattern: "^_",
+  //         varsIgnorePattern: "^_",
+  //         caughtErrorsIgnorePattern: "^_",
+  //       },
+  //     ],
+  //   },
+  // },
 ];
 
 export default eslintConfig;

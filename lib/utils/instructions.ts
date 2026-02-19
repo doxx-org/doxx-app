@@ -11,8 +11,8 @@ import {
   SEED_POSITION,
   TICK_ARRAY_SEED,
 } from "@/lib/constants";
-import { i32ToBeBytes, u16ToBytes } from "./decode";
 import { DoxxClmmIdl } from "../idl";
+import { i32ToBeBytes, u16ToBytes } from "./decode";
 
 export function getPoolAddress(
   ammConfig: PublicKey,
@@ -146,9 +146,15 @@ export function getPersonalPositionAddress(
   )[0];
 }
 
-export function idlHasAccount(idl: DoxxClmmIdl, ixName: string, accountName: string) {
+export function idlHasAccount(
+  idl: DoxxClmmIdl,
+  ixName: string,
+  accountName: string,
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ix = (idl?.instructions as any[] | undefined)?.find(
     (i) => i?.name === ixName,
   );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return !!ix?.accounts?.some((a: any) => a?.name === accountName);
 }

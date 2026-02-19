@@ -1,17 +1,17 @@
 "use client";
 
 import React, { FC, ReactNode, useEffect, useMemo, useState } from "react";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
+// import { WalletAdapterNetwork } from "@solana/wallet-adapter-base"
 import {
   ConnectionProvider,
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import {
-  BitgetWalletAdapter,
-  CoinbaseWalletAdapter,
-  PhantomWalletAdapter,
+  // BitgetWalletAdapter,
+  // CoinbaseWalletAdapter,
+  // PhantomWalletAdapter,
   SolflareWalletAdapter,
-  WalletConnectWalletAdapter,
+  // WalletConnectWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { toast } from "sonner";
 import { clientEnvConfig } from "@/lib/config/envConfig";
@@ -21,7 +21,7 @@ interface WalletConnectionProviderProps {
   children: ReactNode;
 }
 
-const network = clientEnvConfig.NEXT_PUBLIC_NETWORK;
+// const network = clientEnvConfig.NEXT_PUBLIC_NETWORK;
 const endpoint = clientEnvConfig.NEXT_PUBLIC_RPC_URL;
 
 export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
@@ -69,11 +69,7 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
         confirmTransactionInitialTimeout: 120_000,
       }}
     >
-      <WalletProvider
-        wallets={wallets}
-        autoConnect
-        // onError={handleError}
-      >
+      <WalletProvider wallets={wallets} autoConnect onError={handleError}>
         {children}
       </WalletProvider>
     </ConnectionProvider>
