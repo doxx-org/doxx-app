@@ -1,9 +1,7 @@
-import { useEffect, useMemo } from "react";
-import { TokenLabel } from "@/components/TokenLabel";
+import { useMemo } from "react";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, PriceMap } from "@/lib/hooks/chain/types";
-import { text } from "@/lib/text";
-import { NumberFormatter, cn, formatNumber } from "@/lib/utils";
+import { BalanceMapByMint } from "@/lib/hooks/chain/types";
+import { NumberFormatter } from "@/lib/utils";
 import { TokenSelectionRow } from "../../TokenSelectionRow";
 
 interface Formatter {
@@ -15,10 +13,13 @@ interface Formatter {
 interface DepositCLMMLPPanelProps {
   tokenA: TokenProfile | null;
   tokenB: TokenProfile | null;
+  tokenAPriceUsd: number | undefined;
+  tokenBPriceUsd: number | undefined;
   tokenAInput: string;
+  tokenALoading: boolean;
   tokenBInput: string;
+  tokenBLoading: boolean;
   walletBalances: BalanceMapByMint | undefined;
-  priceMap: PriceMap | undefined;
   formatter?: {
     tokenA?: Formatter;
     tokenB?: Formatter;
@@ -33,10 +34,13 @@ interface DepositCLMMLPPanelProps {
 export const DepositCLMMLPPanel = ({
   tokenA,
   tokenB,
+  tokenAPriceUsd,
+  tokenBPriceUsd,
   tokenAInput,
+  tokenALoading,
   tokenBInput,
+  tokenBLoading,
   walletBalances,
-  priceMap,
   formatter,
   onAmountAChange,
   onAmountBChange,
@@ -53,7 +57,10 @@ export const DepositCLMMLPPanel = ({
       };
     }
 
-    const inputUsd = Number(tokenAInput) * (priceMap?.[tokenA.address] ?? 0);
+    const inputUsd =
+      tokenAPriceUsd !== undefined
+        ? Number(tokenAInput) * tokenAPriceUsd
+        : undefined;
     const balance = walletBalances?.[tokenA.address]?.amount ?? 0;
 
     return {
@@ -62,7 +69,7 @@ export const DepositCLMMLPPanel = ({
       inputAmount: tokenAInput,
       inputUsd: inputUsd,
     };
-  }, [tokenA, walletBalances, priceMap, tokenAInput]);
+  }, [tokenA, walletBalances, tokenAPriceUsd, tokenAInput]);
 
   const tokenBInfo = useMemo(() => {
     if (!tokenB) {
@@ -74,7 +81,10 @@ export const DepositCLMMLPPanel = ({
       };
     }
 
-    const inputUsd = Number(tokenBInput) * (priceMap?.[tokenB.address] ?? 0);
+    const inputUsd =
+      tokenBPriceUsd !== undefined
+        ? Number(tokenBInput) * tokenBPriceUsd
+        : undefined;
     const balance = walletBalances?.[tokenB.address]?.amount ?? 0;
 
     return {
@@ -83,7 +93,7 @@ export const DepositCLMMLPPanel = ({
       inputAmount: tokenBInput,
       inputUsd: inputUsd,
     };
-  }, [tokenB, walletBalances, priceMap, tokenBInput]);
+  }, [tokenB, walletBalances, tokenBPriceUsd, tokenBInput]);
 
   return (
     <div className="flex flex-col gap-1">
@@ -97,6 +107,8 @@ export const DepositCLMMLPPanel = ({
             onTokenSelect={
               onTokenASelect !== undefined ? onTokenASelect : () => {}
             }
+            isLoading={tokenALoading}
+            disabled={tokenALoading}
             onAmountChange={onAmountAChange}
             balance={tokenAInfo.balance}
             usdValue={tokenAInfo.inputUsd}
@@ -114,6 +126,8 @@ export const DepositCLMMLPPanel = ({
             onTokenSelect={
               onTokenBSelect !== undefined ? onTokenBSelect : () => {}
             }
+            isLoading={tokenBLoading}
+            disabled={tokenBLoading}
             onAmountChange={onAmountBChange}
             balance={tokenBInfo.balance}
             usdValue={tokenBInfo.inputUsd}

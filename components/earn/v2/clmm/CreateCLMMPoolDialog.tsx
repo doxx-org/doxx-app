@@ -3,13 +3,14 @@
 import { useMemo, useState } from "react";
 import { BN } from "@coral-xyz/anchor";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { TokenProfile } from "@/lib/config/tokens";
+import { TokenProfile, solana } from "@/lib/config/tokens";
 import { BPS } from "@/lib/constants";
 import {
   BalanceMapByMint,
   CLMMPoolStateWithConfig,
 } from "@/lib/hooks/chain/types";
-import { usePrices } from "@/lib/hooks/usePrices";
+import { useAllPrices } from "@/lib/hooks/useAllPrices";
+import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
 import { cn, parseDecimalsInput } from "@/lib/utils";
 import { TokenLabel } from "../../../TokenLabel";
@@ -40,6 +41,8 @@ enum SelectTokenType {
   TOKEN_B,
 }
 
+const tokenA = solana;
+
 export const CreateCLMMPoolDialog = ({
   isOpen,
   splBalances,
@@ -47,7 +50,7 @@ export const CreateCLMMPoolDialog = ({
   poolsData,
   onOpenChange,
 }: CreateCLMMPoolDialogProps) => {
-  const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
+  // const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
@@ -60,25 +63,32 @@ export const CreateCLMMPoolDialog = ({
   );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
+  const [tokenALoading, setTokenALoading] = useState(false);
+  const [tokenBLoading, setTokenBLoading] = useState(false);
 
-  const { data: prices } = usePrices();
+  const { data: allPrices } = useAllPrices();
 
-  const handleSelectToken = (token: TokenProfile) => {
-    if (selectedTokenType === SelectTokenType.TOKEN_A) {
-      // If token B is the same as the new token A, clear it
-      if (tokenB?.address.toLowerCase() === token.address.toLowerCase()) {
-        setTokenB(null);
-        setAmountB("");
-      }
-      setTokenA(token);
-    } else if (selectedTokenType === SelectTokenType.TOKEN_B) {
-      // If token A is the same as the new token B, clear it
-      if (tokenA?.address.toLowerCase() === token.address.toLowerCase()) {
-        setTokenA(null);
-        setAmountA("");
-      }
-      setTokenB(token);
-    }
+  // const handleSelectToken = (token: TokenProfile) => {
+  //   if (selectedTokenType === SelectTokenType.TOKEN_A) {
+  //     // If token B is the same as the new token A, clear it
+  //     if (tokenB?.address.toLowerCase() === token.address.toLowerCase()) {
+  //       setTokenB(null);
+  //       setAmountB("");
+  //     }
+  //     setTokenA(token);
+  //   } else if (selectedTokenType === SelectTokenType.TOKEN_B) {
+  //     // If token A is the same as the new token B, clear it
+  //     if (tokenA?.address.toLowerCase() === token.address.toLowerCase()) {
+  //       setTokenA(null);
+  //       setAmountA("");
+  //     }
+  //     setTokenB(token);
+  //   }
+  //   setIsTokenSelectorOpen(false);
+  // };
+
+  const handleSelectTokenB = (token: TokenProfile) => {
+    setTokenB(token);
     setIsTokenSelectorOpen(false);
   };
 
@@ -150,10 +160,10 @@ export const CreateCLMMPoolDialog = ({
                         token={tokenA}
                         label="Select Token A"
                         address={tokenA?.address}
-                        disableTokenSelect={false}
-                        onTokenSelect={() =>
-                          handleOpenTokenSelector(SelectTokenType.TOKEN_A)
-                        }
+                        disableTokenSelect
+                        // onTokenSelect={() =>
+                        //   handleOpenTokenSelector(SelectTokenType.TOKEN_A)
+                        // }
                         className="w-full justify-between p-5"
                         tokenClassName="gap-4.5"
                       />
@@ -264,9 +274,16 @@ export const CreateCLMMPoolDialog = ({
                       tokenA={tokenA}
                       tokenB={tokenB}
                       walletBalances={splBalances}
-                      priceMap={prices}
+                      tokenAPriceUsd={
+                        tokenA ? allPrices?.[tokenA.address] : undefined
+                      }
+                      tokenBPriceUsd={
+                        tokenB ? allPrices?.[tokenB.address] : undefined
+                      }
                       tokenAInput={amountA}
+                      tokenALoading={tokenALoading}
                       tokenBInput={amountB}
+                      tokenBLoading={tokenBLoading}
                       onAmountAChange={setAmountA}
                       onAmountBChange={setAmountB}
                       className="p-0"
@@ -288,7 +305,7 @@ export const CreateCLMMPoolDialog = ({
                 priceMode={priceMode}
                 minPrice={minPrice}
                 maxPrice={maxPrice}
-                onSelectTokenA={setTokenA}
+                // onSelectTokenA={setTokenA}
                 onSelectTokenB={setTokenB}
                 onAmountChangeA={setAmountA}
                 onAmountChangeB={setAmountB}
@@ -308,7 +325,7 @@ export const CreateCLMMPoolDialog = ({
           isOpen={isTokenSelectorOpen}
           onOpenChange={setIsTokenSelectorOpen}
           tokenProfiles={allTokenProfiles}
-          onSelectToken={handleSelectToken}
+          onSelectToken={handleSelectTokenB}
         />
       )}
     </>

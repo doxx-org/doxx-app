@@ -1,5 +1,6 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn, formatNumber } from "@/lib/utils";
@@ -17,6 +18,7 @@ interface TokenSelectionRowProps {
   usdValue?: number;
   disableTokenSelect?: boolean;
   className?: string;
+  isLoading?: boolean;
 }
 
 export const TokenSelectionRow = ({
@@ -31,6 +33,7 @@ export const TokenSelectionRow = ({
   usdValue = 0,
   disableTokenSelect = false,
   className,
+  isLoading = false,
 }: TokenSelectionRowProps) => {
   return (
     <div
@@ -39,12 +42,17 @@ export const TokenSelectionRow = ({
         className,
       )}
     >
-      <TokenLabel
-        token={token}
-        label={label}
-        disableTokenSelect={disableTokenSelect}
-        onTokenSelect={onTokenSelect}
-      />
+      <div className="flex w-full items-center justify-between gap-4">
+        <TokenLabel
+          token={token}
+          label={label}
+          disableTokenSelect={disableTokenSelect}
+          onTokenSelect={onTokenSelect}
+        />
+        {isLoading && (
+          <Loader2 className="h-5 w-5 animate-spin text-gray-600" />
+        )}
+      </div>
       <input
         type="text"
         value={amount !== "" ? `-${amount}` : amount}

@@ -1,4 +1,6 @@
+import { LiquidityMath, SqrtPriceMath } from "@raydium-io/raydium-sdk-v2";
 import BN from "bn.js";
+import { normalizeBN } from "./number";
 
 /**
  * Calculate token amounts from liquidity and tick range
@@ -8,52 +10,25 @@ export function getTokenAmountsFromLiquidity(
   liquidity: BN,
   tickLower: number,
   tickUpper: number,
-  currentTick: number,
+  currentSqrtPriceX64: BN,
   decimals0: number,
   decimals1: number,
 ): { amount0: number; amount1: number } {
   // Convert ticks to sqrt prices
-  const sqrtPriceLower = new BN(tickToSqrtPriceX64(tickLower));
-  const sqrtPriceUpper = new BN(tickToSqrtPriceX64(tickUpper));
-  const sqrtPriceCurrent = new BN(tickToSqrtPriceX64(currentTick));
+  const sqrtPriceX64Lower = SqrtPriceMath.getSqrtPriceX64FromTick(tickLower);
+  const sqrtPriceX64Upper = SqrtPriceMath.getSqrtPriceX64FromTick(tickUpper);
 
-  let amount0 = new BN(0);
-  let amount1 = new BN(0);
+  const amounts = LiquidityMath.getAmountsFromLiquidity(
+    currentSqrtPriceX64, // Current pool price
+    sqrtPriceX64Lower, // Position lower bound
+    sqrtPriceX64Upper, // Position upper bound
+    liquidity, // Position liquidity
+    true,
+  );
 
-  // Position is entirely in token1
-  if (currentTick < tickLower) {
-    amount0 = getAmount0FromLiquidity(
-      sqrtPriceLower,
-      sqrtPriceUpper,
-      liquidity
-    );
-  }
-  // Position is entirely in token0
-  else if (currentTick >= tickUpper) {
-    amount1 = getAmount1FromLiquidity(
-      sqrtPriceLower,
-      sqrtPriceUpper,
-      liquidity
-    );
-  }
-  // Position is active (has both tokens)
-  else {
-    amount0 = getAmount0FromLiquidity(
-      sqrtPriceCurrent,
-      sqrtPriceUpper,
-      liquidity
-    );
-    amount1 = getAmount1FromLiquidity(
-      sqrtPriceLower,
-      sqrtPriceCurrent,
-      liquidity
-    );
-  }
-
-  // Convert to human-readable amounts
   return {
-    amount0: Number(amount0) / Math.pow(10, decimals0),
-    amount1: Number(amount1) / Math.pow(10, decimals1),
+    amount0: Number(normalizeBN(amounts.amountA, decimals0)),
+    amount1: Number(normalizeBN(amounts.amountB, decimals1)),
   };
 }
 
@@ -77,7 +52,7 @@ function tickToSqrtPriceX64(tick: number): bigint {
 function getAmount0FromLiquidity(
   sqrtPriceA: BN,
   sqrtPriceB: BN,
-  liquidity: BN
+  liquidity: BN,
 ): BN {
   if (sqrtPriceA > sqrtPriceB) {
     [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
@@ -97,7 +72,7 @@ function getAmount0FromLiquidity(
 function getAmount1FromLiquidity(
   sqrtPriceA: BN,
   sqrtPriceB: BN,
-  liquidity: BN
+  liquidity: BN,
 ): BN {
   if (sqrtPriceA > sqrtPriceB) {
     [sqrtPriceA, sqrtPriceB] = [sqrtPriceB, sqrtPriceA];
@@ -106,4 +81,68 @@ function getAmount1FromLiquidity(
   const Q64 = new BN(2).pow(new BN(64));
 
   return liquidity.mul(sqrtPriceB.sub(sqrtPriceA)).div(Q64);
+}
+
+const TWO_POW_128 = 1n << 128n;
+
+/**
+ * Convert bigint to BN helper
+ */
+export function bnToBigint(bn: BN): bigint {
+  return BigInt(bn.toString());
+}
+
+/**
+ * Convert sqrtPriceX64 to priceX128
+ * sqrtPriceX64 is Q64.64, squaring gives Q128.128
+ */
+export function priceX128FromSqrtPriceX64(sqrtPriceX64: BN): bigint {
+  const s = bnToBigint(sqrtPriceX64);
+  return s * s; // numerator, denom=2^128
+}
+
+/**
+ * Get token prices from CLMM pool
+ *
+ * @param sqrtPriceX64 - Pool's sqrt price in Q64.64 format
+ * @param decimalsToken0 - Decimals for token0 (mintA)
+ * @param decimalsToken1 - Decimals for token1 (mintB)
+ * @returns Price in both directions with human-readable values
+ */
+export function calculateCLMMTokenPrices(params: {
+  sqrtPriceX64: BN;
+  decimalsToken0: number;
+  decimalsToken1: number;
+}): {
+  priceToken1PerToken0: number; // How many token1 per 1 token0
+  priceToken0PerToken1: number; // How many token0 per 1 token1
+  raw: {
+    priceX128: bigint;
+    sqrtPriceX64: BN;
+  };
+} {
+  const { sqrtPriceX64, decimalsToken0, decimalsToken1 } = params;
+
+  // Calculate priceX128 using bigint for precision
+  const priceX128 = priceX128FromSqrtPriceX64(sqrtPriceX64);
+
+  // Convert to human-readable price
+  // price_human = (priceX128 / 2^128) * 10^(dec0 - dec1)
+  const decimalDiff = decimalsToken0 - decimalsToken1;
+  const decimalScale = 10 ** decimalDiff;
+
+  const priceToken1PerToken0 =
+    (Number(priceX128) / Number(TWO_POW_128)) * decimalScale;
+
+  const priceToken0PerToken1 =
+    priceToken1PerToken0 <= 0 ? 0 : 1 / priceToken1PerToken0;
+
+  return {
+    priceToken1PerToken0,
+    priceToken0PerToken1,
+    raw: {
+      priceX128,
+      sqrtPriceX64,
+    },
+  };
 }

@@ -4,7 +4,11 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { NextRequest, NextResponse } from "next/server";
 import pLimit from "p-limit";
 import QuickLRU from "quick-lru";
-import { TokenProfile, knownTokenProfilesMap } from "@/lib/config/tokens";
+import {
+  PriceSource,
+  TokenProfile,
+  knownTokenProfilesMap,
+} from "@/lib/config/tokens";
 import { apiEnvConfig } from "../configs/apiEnvConfig";
 import {
   GetAllTokenInfosPayload,
@@ -257,7 +261,7 @@ export async function POST(
   }
 
   // 1) cache
-  const results: Record<string, TokenDisplay> = {};
+  const results: Partial<Record<string, TokenDisplay>> = {};
   const toFetch: { address: string; decimals: number }[] = [];
   for (const p of params) {
     const cached = lru.get(p.address);
@@ -281,7 +285,7 @@ export async function POST(
           symbol: t.symbol,
           image: t.image,
           decimals: t.decimals,
-          // source: "list",
+          priceSource: t.priceSource,
         };
         lru.set(p.address, td);
         results[p.address] = td;
@@ -349,6 +353,7 @@ export async function POST(
         decimals: td.decimals,
         displayDecimals: 4,
         image: td.image,
+        priceSource: td.priceSource,
       });
     } else {
       // Token not found, make it an unknown token
@@ -359,6 +364,7 @@ export async function POST(
         decimals: p.decimals,
         displayDecimals: 4,
         image: undefined,
+        priceSource: PriceSource.POOL,
       });
     }
   }

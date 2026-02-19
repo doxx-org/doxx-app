@@ -1,7 +1,7 @@
 import { BN, Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
-import { Pool } from "@/components/earn/v2/types";
+import { Pool, PoolType } from "@/components/earn/v2/types";
 import { TokenProfile } from "@/lib/config/tokens";
 import { DoxxClmmIdl } from "@/lib/idl";
 import { normalizeBN } from "@/lib/utils";
@@ -10,7 +10,7 @@ import {
   mapTokenBalanceFromRawAccounts,
 } from "@/lib/utils/balance";
 import { getTokenAmountsFromLiquidity } from "@/lib/utils/calculation";
-import { CLMMPersonalPositionState, CLMMPoolStateWithConfig } from "./types";
+import { CLMMPersonalPositionState, CLMMPoolState } from "./types";
 
 export interface PersonalPositionState {
   publicKey: PublicKey;
@@ -23,10 +23,12 @@ export interface PositionRewardInfo {
   rewardDecimals: number;
   pendingAmount: number;
   pendingAmountRaw: BN;
+  pendingValueUsd: number | undefined;
 }
 
 interface PositionFee {
   amount: number;
+  valueUsd: number;
   amountRaw: BN;
   mint: PublicKey;
   decimals: number;
@@ -40,7 +42,8 @@ export interface PositionFees {
 
 export interface UserPositionWithNFT extends PersonalPositionState {
   nftTokenAccount: PublicKey;
-  pool: CLMMPoolStateWithConfig; // Pool state
+  poolId: PublicKey;
+  pool: CLMMPoolState; // Pool state
   amount0: number;
   amount1: number;
   fees: PositionFees;
@@ -51,19 +54,15 @@ export function useGetUserClmmPositions(
   program: Program<DoxxClmmIdl> | undefined,
   userWallet: PublicKey | undefined,
   allPools: Pool[] | undefined,
-  pools: CLMMPoolStateWithConfig[] | undefined,
 ): UseQueryResult<UserPositionWithNFT[] | undefined, Error> {
   return useQuery({
     queryKey: ["userPositionsWithPools", userWallet?.toString()],
     queryFn: async (): Promise<UserPositionWithNFT[] | undefined> => {
-      if (
-        !program ||
-        !userWallet ||
-        !pools ||
-        pools.length === 0 ||
-        !allPools ||
-        allPools.length === 0
-      )
+      const clmmPools = allPools
+        ?.filter((p) => p.poolType === PoolType.CLMM)
+        .filter((p) => p.clmmPoolState !== undefined);
+
+      if (!program || !userWallet || !clmmPools || clmmPools.length === 0)
         return undefined;
 
       const connection = program.provider.connection;
@@ -102,7 +101,7 @@ export function useGetUserClmmPositions(
         nftMintsSet.has(pos.account.nftMint.toBase58()),
       );
 
-      const tokenMap = allPools.reduce(
+      const tokenMap = clmmPools.reduce(
         (acc, c) => {
           if (!acc[c.lpToken.token1.address]) {
             acc[c.lpToken.token1.address] = c.lpToken.token1;
@@ -123,9 +122,8 @@ export function useGetUserClmmPositions(
       const poolStateMap = new Map(
         uniquePoolIds.map((id) => [
           id.toBase58(),
-          pools?.find(
-            (p) =>
-              p.poolId.toBase58().toLowerCase() === id.toBase58().toLowerCase(),
+          clmmPools.find(
+            (p) => p.poolId.toLowerCase() === id.toBase58().toLowerCase(),
           ),
         ]),
       );
@@ -134,29 +132,37 @@ export function useGetUserClmmPositions(
       const positionsWithPools: UserPositionWithNFT[] = userPositions
         .map((pos) => {
           const pool = poolStateMap.get(pos.account.poolId.toBase58());
-          if (!pool) return undefined;
+          const clmmPoolState = pool?.clmmPoolState;
+          if (!pool || !clmmPoolState || clmmPoolState === undefined)
+            return undefined;
           const nftAccount = nftAccounts.find(
             (acc) => acc.mint === pos.account.nftMint.toBase58(),
           );
 
-          const token0Mint = pool.poolState.tokenMint0;
-          const token1Mint = pool.poolState.tokenMint1;
-          const mintDecimals0 = pool.poolState.mintDecimals0;
-          const mintDecimals1 = pool.poolState.mintDecimals1;
+          const token0Mint = new PublicKey(pool.lpToken.token1.address);
+          const token1Mint = new PublicKey(pool.lpToken.token2.address);
+          const mintDecimals0 = pool.lpToken.token1.decimals;
+          const mintDecimals1 = pool.lpToken.token2.decimals;
+          const token0Price = pool.oraclePriceToken1Usd
+            ? pool.oraclePriceToken1Usd
+            : pool.priceToken1Usd;
+          const token1Price = pool.oraclePriceToken2Usd
+            ? pool.oraclePriceToken2Usd
+            : pool.priceToken2Usd;
 
           // Calculate token amounts from liquidity
           const { amount0, amount1 } = getTokenAmountsFromLiquidity(
             pos.account.liquidity,
             pos.account.tickLowerIndex,
             pos.account.tickUpperIndex,
-            pool.poolState.tickCurrent, // Current tick from pool state
+            clmmPoolState.sqrtPriceX64, // Current tick from pool state
             mintDecimals0,
             mintDecimals1,
           );
 
           const positionRewardInfos: PositionRewardInfo[] =
             pos.account.rewardInfos.reduce((acc, cur, index) => {
-              const rewardToken = pool.poolState.rewardInfos[index];
+              const rewardToken = clmmPoolState.rewardInfos[index];
               if (
                 !rewardToken ||
                 rewardToken.tokenMint.equals(PublicKey.default)
@@ -176,26 +182,34 @@ export function useGetUserClmmPositions(
                 rewardDecimals: rewardTokenProfile?.decimals ?? 9,
                 pendingAmount,
                 pendingAmountRaw: rewardAmountRaw,
+                // TODO: Calculate pending value USD
+                pendingValueUsd: undefined,
               });
 
               return acc;
             }, [] as PositionRewardInfo[]);
 
           // Trading fees (token0 and token1)
+          const fees0Amount = Number(
+            normalizeBN(pos.account.tokenFeesOwed0, mintDecimals0),
+          );
+          const fees1Amount = Number(
+            normalizeBN(pos.account.tokenFeesOwed1, mintDecimals1),
+          );
+          const fees0ValueUsd = fees0Amount * token0Price;
+          const fees1ValueUsd = fees1Amount * token1Price;
           const fees: PositionFees = {
             token0: {
-              amount: Number(
-                normalizeBN(pos.account.tokenFeesOwed0, mintDecimals0),
-              ),
+              amount: fees0Amount,
+              valueUsd: fees0ValueUsd,
               amountRaw: pos.account.tokenFeesOwed0,
               mint: token0Mint,
               decimals: mintDecimals0,
               tokenProfile: tokenMap[token0Mint.toBase58()] ?? undefined,
             },
             token1: {
-              amount: Number(
-                normalizeBN(pos.account.tokenFeesOwed1, mintDecimals1),
-              ),
+              amount: fees1Amount,
+              valueUsd: fees1ValueUsd,
               amountRaw: pos.account.tokenFeesOwed1,
               mint: token1Mint,
               decimals: mintDecimals1,
@@ -206,7 +220,8 @@ export function useGetUserClmmPositions(
           return {
             ...pos,
             nftTokenAccount: new PublicKey(nftAccount?.tokenAccounts[0] ?? 0),
-            pool,
+            poolId: pos.account.poolId,
+            pool: clmmPoolState,
             amount0,
             amount1,
             fees,
@@ -217,13 +232,7 @@ export function useGetUserClmmPositions(
 
       return positionsWithPools;
     },
-    enabled:
-      !!program &&
-      !!userWallet &&
-      !!pools &&
-      pools.length > 0 &&
-      !!allPools &&
-      allPools.length > 0,
+    enabled: !!program && !!userWallet && !!allPools && allPools.length > 0,
     staleTime: 2 * 60 * 1000, // 2 minutes - token balances don't change frequently
     gcTime: 5 * 60 * 1000, // 5 minutes cache
     refetchOnWindowFocus: false,

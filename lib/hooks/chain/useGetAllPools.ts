@@ -1,19 +1,20 @@
-import { Pool, PoolType } from "@/components/earn/v2/types";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo, useState } from "react";
 import { getAccount } from "@solana/spl-token";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { BN } from "bn.js";
+import { Pool, PoolType } from "@/components/earn/v2/types";
+import { TokenSymbol, unknownToken } from "@/lib/config/tokens";
 import { NATIVE_SOL_MINT, SOLANA_PRICE, ZERO } from "@/lib/constants";
-import { unknownToken } from "@/lib/config/tokens";
+import { calculateCLMMTokenPrices } from "@/lib/utils/calculation";
+import { useOraclePrices } from "../useOraclePrices";
+import { PoolToken } from "./types";
+import { useDoxxClmmProgram } from "./useDoxxClmmProgram";
+import { useDoxxCpmmProgram } from "./useDoxxCpmmProgram";
 import { useGetAllTokenInfos } from "./useGetAllTokenInfos";
 import { useGetCLMMPools } from "./useGetCLMMPools";
 import { useGetCPMMPools } from "./useGetCPMMPools";
-import { useDoxxClmmProgram } from "./useDoxxClmmProgram";
-import { useDoxxCpmmProgram } from "./useDoxxCpmmProgram";
 import { useProvider } from "./useProvider";
-import { PoolToken } from "./types";
-import { priceFromClmmSqrtPriceX64 } from "@/lib/utils";
 
 export function useGetAllPools() {
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +36,12 @@ export function useGetAllPools() {
     isLoading: isLoadingClmmPools,
     refetch: refetchClmmPoolStates,
   } = useGetCLMMPools(doxxClmmProgram);
+
+  const {
+    data: prices,
+    isLoading: isLoadingPrices,
+    refetch: refetchPrices,
+  } = useOraclePrices();
 
   const poolTokens: PoolToken[] = useMemo(() => {
     if (!cpmmPoolsData || !clmmPoolsData) return [];
@@ -60,8 +67,11 @@ export function useGetAllPools() {
     return [...cpmmPoolTokens, ...clmmPoolTokens];
   }, [clmmPoolsData]);
 
-  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles, refetch: refetchAllTokenProfiles } =
-    useGetAllTokenInfos({ poolTokens });
+  const {
+    data: allTokenProfiles,
+    isLoading: isLoadingAllTokenProfiles,
+    refetch: refetchAllTokenProfiles,
+  } = useGetAllTokenInfos({ poolTokens });
 
   const result = useQuery({
     queryKey: ["getAllPools"],
@@ -74,13 +84,19 @@ export function useGetAllPools() {
       const usdPricesFromSolPair = (params: {
         token0Mint: string;
         token1Mint: string;
+        priceToken0PerToken1: number;
         priceToken1PerToken0: number;
       }): { priceToken0Usd: number; priceToken1Usd: number } => {
-        const { token0Mint, token1Mint, priceToken1PerToken0 } = params;
+        const {
+          token0Mint,
+          token1Mint,
+          priceToken0PerToken1,
+          priceToken1PerToken0,
+        } = params;
         if (token0Mint === NATIVE_SOL_MINT) {
           return {
             priceToken0Usd: SOLANA_PRICE,
-            priceToken1Usd: priceToken1PerToken0 * SOLANA_PRICE,
+            priceToken1Usd: priceToken0PerToken1 * SOLANA_PRICE,
           };
         }
         if (token1Mint === NATIVE_SOL_MINT) {
@@ -98,8 +114,10 @@ export function useGetAllPools() {
         priceToken1PerToken0: number;
       }): number | undefined => {
         const { token0Mint, token1Mint, priceToken1PerToken0 } = params;
-        if (token0Mint === NATIVE_SOL_MINT) return priceToken1PerToken0 * SOLANA_PRICE;
-        if (token1Mint === NATIVE_SOL_MINT) return (1 / priceToken1PerToken0) * SOLANA_PRICE;
+        if (token0Mint === NATIVE_SOL_MINT)
+          return priceToken1PerToken0 * SOLANA_PRICE;
+        if (token1Mint === NATIVE_SOL_MINT)
+          return (1 / priceToken1PerToken0) * SOLANA_PRICE;
         return undefined;
       };
 
@@ -123,34 +141,40 @@ export function useGetAllPools() {
           const reserve0 = new BN(vault0Account.amount.toString())
             .sub(poolState.protocolFeesToken0)
             .sub(poolState.fundFeesToken0)
-            .sub(poolState.enableCreatorFee ? poolState.creatorFeesToken0 : ZERO);
+            .sub(
+              poolState.enableCreatorFee ? poolState.creatorFeesToken0 : ZERO,
+            );
           const reserve1 = new BN(vault1Account.amount.toString())
             .sub(poolState.protocolFeesToken1)
             .sub(poolState.fundFeesToken1)
-            .sub(poolState.enableCreatorFee ? poolState.creatorFeesToken1 : ZERO);
+            .sub(
+              poolState.enableCreatorFee ? poolState.creatorFeesToken1 : ZERO,
+            );
           if (reserve0.gt(ZERO) && reserve1.gt(ZERO)) {
             const dec0 = poolState.mint0Decimals;
             const dec1 = poolState.mint1Decimals;
             priceToken1PerToken0 =
-              (reserve1.toNumber() / 10 ** dec1) / (reserve0.toNumber() / 10 ** dec0);
+              reserve1.toNumber() /
+              10 ** dec1 /
+              (reserve0.toNumber() / 10 ** dec0);
           }
         } catch {
           // leave 0 on vault fetch error
         }
 
-        const priceToken0PerToken1 = priceToken1PerToken0 > 0 ? 1 / priceToken1PerToken0 : 0;
+        const priceToken0PerToken1 =
+          priceToken1PerToken0 > 0 ? 1 / priceToken1PerToken0 : 0;
         const priceAperB = priceToken0PerToken1; // lpToken.token1 = token0, token2 = token1 → A/B = token0/token1
         const priceBperA = priceToken1PerToken0;
         const { priceToken0Usd, priceToken1Usd } = usdPricesFromSolPair({
           token0Mint: poolState.token0Mint.toBase58(),
           token1Mint: poolState.token1Mint.toBase58(),
+          priceToken0PerToken1,
           priceToken1PerToken0,
         });
-        const priceUsd = poolPriceUsdFromSolPair({
-          token0Mint: poolState.token0Mint.toBase58(),
-          token1Mint: poolState.token1Mint.toBase58(),
-          priceToken1PerToken0,
-        });
+
+        const oraclePriceToken1Usd = prices?.[token0Profile.address];
+        const oraclePriceToken2Usd = prices?.[token1Profile.address];
 
         pools.push({
           poolId: poolData.poolId.toString(),
@@ -162,7 +186,8 @@ export function useGetAllPools() {
           dailyVolperTvl: 0,
           reward24h: 0.001,
           cpmmPoolState: poolState,
-          price: priceUsd ?? priceAperB,
+          oraclePriceToken1Usd,
+          oraclePriceToken2Usd,
           priceAperB,
           priceBperA,
           priceToken1Usd: priceToken0Usd,
@@ -182,23 +207,23 @@ export function useGetAllPools() {
           (t) => t.address === poolState.tokenMint1.toBase58(),
         ) ?? { ...unknownToken, address: poolState.tokenMint1.toBase58() };
 
-        const { priceToken1PerToken0, priceToken0PerToken1 } = priceFromClmmSqrtPriceX64({
-          sqrtPriceX64: new BN(poolState.sqrtPriceX64.toString()),
-          dec0: poolState.mintDecimals0,
-          dec1: poolState.mintDecimals1,
-        });
-        const priceAperB = priceToken0PerToken1; // lpToken.token1 = token0, token2 = token1
+        const { priceToken1PerToken0, priceToken0PerToken1 } =
+          calculateCLMMTokenPrices({
+            sqrtPriceX64: new BN(poolState.sqrtPriceX64.toString()),
+            decimalsToken0: poolState.mintDecimals0,
+            decimalsToken1: poolState.mintDecimals1,
+          });
+
+        const priceAperB = priceToken0PerToken1;
         const priceBperA = priceToken1PerToken0;
         const { priceToken0Usd, priceToken1Usd } = usdPricesFromSolPair({
           token0Mint: poolState.tokenMint0.toBase58(),
           token1Mint: poolState.tokenMint1.toBase58(),
+          priceToken0PerToken1,
           priceToken1PerToken0,
         });
-        const priceUsd = poolPriceUsdFromSolPair({
-          token0Mint: poolState.tokenMint0.toBase58(),
-          token1Mint: poolState.tokenMint1.toBase58(),
-          priceToken1PerToken0,
-        });
+        const oraclePriceToken1Usd = prices?.[token0Profile.address];
+        const oraclePriceToken2Usd = prices?.[token1Profile.address];
 
         pools.push({
           poolId: poolData.poolId.toString(),
@@ -210,7 +235,8 @@ export function useGetAllPools() {
           dailyVolperTvl: 0,
           reward24h: 0.001,
           clmmPoolState: poolState,
-          price: priceUsd ?? priceAperB,
+          oraclePriceToken1Usd,
+          oraclePriceToken2Usd,
           priceAperB,
           priceBperA,
           priceToken1Usd: priceToken0Usd,
@@ -222,7 +248,12 @@ export function useGetAllPools() {
       return pools;
     },
     refetchOnWindowFocus: false,
-    enabled: !(isLoadingCpmmPools || isLoadingClmmPools || isLoadingAllTokenProfiles),
+    enabled: !(
+      isLoadingCpmmPools ||
+      isLoadingClmmPools ||
+      isLoadingAllTokenProfiles ||
+      isLoadingPrices
+    ),
     refetchInterval: 15 * 1000, // 15 seconds
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 60 * 1000, // 60 seconds
@@ -244,9 +275,10 @@ export function useGetAllPools() {
       refetchCpmmPoolStates();
       refetchClmmPoolStates();
       refetchAllTokenProfiles();
+      refetchPrices();
       result.refetch();
     },
     cpmmPoolsData,
-    clmmPoolsData
+    clmmPoolsData,
   };
 }

@@ -60,6 +60,9 @@ export const CLMM_MIN_TICK = -443_636;
 export const CLMM_MAX_TICK = 443_636;
 export const LOG_1P0001 = Math.log(1.0001);
 export const CLMM_TICK_ARRAY_SIZE = 60;
+export const Q64 = 2n ** 64n;
+export const Q128 = 2n ** 128n;
+
 export const TICK_ARRAY_SEED = Buffer.from("tick_array", "utf8");
 export const PROTOCOL_POSITION_SEED = Buffer.from("protocol_position", "utf8");
 export const SEED_POSITION = Buffer.from("position", "utf8");
@@ -67,8 +70,7 @@ export const CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED = Buffer.from(
   // "pool_tick_array_bitmap_extension"
   [
     112, 111, 111, 108, 95, 116, 105, 99, 107, 95, 97, 114, 114, 97, 121, 95,
-    98, 105, 116, 109, 97, 112, 95, 101, 120, 116, 101, 110, 115, 105, 111,
-    110,
+    98, 105, 116, 109, 97, 112, 95, 101, 120, 116, 101, 110, 115, 105, 111, 110,
   ],
 );
 
@@ -79,3 +81,5 @@ export const SOLANA_PRICE = 85;
 export const USDC_PRICE = 1;
 /** Wrapped SOL mint (used for USD conversion when a pair contains SOL). */
 export const NATIVE_SOL_MINT = "So11111111111111111111111111111111111111112";
+
+export const DEFAULT_CREATE_CLMM_SLIPPAGE = 0.02;

@@ -25,7 +25,7 @@ interface CreateCLMMPoolButtonProps {
   priceMode: PriceMode;
   minPrice: string;
   maxPrice: string;
-  onSelectTokenA: (token: TokenProfile | null) => void;
+  // onSelectTokenA: (token: TokenProfile | null) => void;
   onSelectTokenB: (token: TokenProfile | null) => void;
   onAmountChangeA: (amount: string) => void;
   onAmountChangeB: (amount: string) => void;
@@ -44,7 +44,7 @@ export const CreateCLMMPoolButton = ({
   priceMode,
   minPrice,
   maxPrice,
-  onSelectTokenA,
+  // onSelectTokenA,
   onSelectTokenB,
   onAmountChangeA,
   onAmountChangeB,
@@ -66,7 +66,7 @@ export const CreateCLMMPoolButton = ({
     }
 
     // Reset form
-    onSelectTokenA(null);
+    // onSelectTokenA(null);
     onSelectTokenB(null);
     onAmountChangeA("");
     onAmountChangeB("");

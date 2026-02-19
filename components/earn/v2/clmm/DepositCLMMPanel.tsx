@@ -8,9 +8,12 @@ interface DepositCLMMPanelProps {
   tokenA: TokenProfile | null;
   tokenB: TokenProfile | null;
   walletBalances: BalanceMapByMint | undefined;
-  priceMap: PriceMap | undefined;
+  tokenAPriceUsd: number | undefined;
+  tokenBPriceUsd: number | undefined;
   tokenAInput: string;
+  tokenALoading: boolean;
   tokenBInput: string;
+  tokenBLoading: boolean;
   onAmountAChange: (value: string) => void;
   onAmountBChange: (value: string) => void;
   className?: string;
@@ -21,14 +24,28 @@ export const DepositCLMMPanel = ({
   tokenA,
   tokenB,
   walletBalances,
-  priceMap,
+  tokenAPriceUsd,
+  tokenBPriceUsd,
   tokenAInput,
+  tokenALoading,
   tokenBInput,
+  tokenBLoading,
   onAmountAChange,
   onAmountBChange,
   className,
   ratioClassName,
 }: DepositCLMMPanelProps) => {
+  // const [depositRatio, setDepositRatio] = useMemo(() => {
+  //   if (!tokenAInput || !tokenBInput || tokenAInput === "" || tokenBInput === "") {
+  //     return ["-", "-"];
+  //   }
+
+  //   const totalAmount = parseFloat(tokenAInput) + parseFloat(tokenBInput);
+  //   const ratioA = parseFloat(tokenAInput) / totalAmount;
+  //   const ratioB = parseFloat(tokenBInput) / totalAmount;
+  //   return [50, 50];
+  // }, [tokenAInput, tokenBInput]);
+
   return (
     <div className={cn("flex flex-col gap-4 px-4", className)}>
       <p className={cn(text.b4(), "leading-none text-white")}>Deposit Amount</p>
@@ -37,9 +54,12 @@ export const DepositCLMMPanel = ({
         tokenA={tokenA}
         tokenB={tokenB}
         walletBalances={walletBalances}
-        priceMap={priceMap}
+        tokenAPriceUsd={tokenAPriceUsd}
+        tokenBPriceUsd={tokenBPriceUsd}
         tokenAInput={tokenAInput}
+        tokenALoading={tokenALoading}
         tokenBInput={tokenBInput}
+        tokenBLoading={tokenBLoading}
         onAmountAChange={onAmountAChange}
         onAmountBChange={onAmountBChange}
       />

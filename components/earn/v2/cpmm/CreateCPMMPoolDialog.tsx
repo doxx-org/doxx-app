@@ -7,7 +7,7 @@ import {
   BalanceMapByMint,
   CPMMPoolStateWithConfig,
 } from "@/lib/hooks/chain/types";
-import { usePrices } from "@/lib/hooks/usePrices";
+import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
 import { cn, parseDecimalsInput } from "@/lib/utils";
 import { TokenSelectorDialog } from "../../../swap/TokenSelectorDialog";
@@ -53,7 +53,7 @@ export const CreateCPMMPoolDialog = ({
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
 
-  const { data: prices } = usePrices();
+  const { data: prices } = useOraclePrices();
 
   const handleSelectToken = (token: TokenProfile) => {
     if (selectedTokenType === SelectTokenType.TOKEN_A) {

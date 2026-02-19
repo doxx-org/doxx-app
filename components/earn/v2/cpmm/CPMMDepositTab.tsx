@@ -1,12 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Button } from "@/components/ui/button";
 import { knownTokenProfiles } from "@/lib/config/tokens";
 import { CPMMPoolState } from "@/lib/hooks/chain/types";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
-import { usePrices } from "@/lib/hooks/usePrices";
+import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
 import { DepositPanel } from "../DepositPanel";
@@ -36,7 +35,7 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
       },
     );
 
-  const { data: prices } = usePrices();
+  const { data: prices } = useOraclePrices();
 
   const depositingInfo = useMemo(() => {
     const totalValue = selectedPool.tvl;

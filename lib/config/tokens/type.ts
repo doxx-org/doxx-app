@@ -2,8 +2,15 @@
 export enum TokenSymbol {
   LAYER = "LAYER",
   sUSD = "sUSD",
-  USDC = "USDCsad112fnwjfhwejkqwd1",
-  sSOL = "sqweqw1231sadkS1212eOLEEIQ",
+  USDC = "USDC",
+  sSOL = "sSOL",
+  SOL = "SOL",
+  UNKNOWN = "UNK",
+}
+
+export enum PriceSource {
+  POOL,
+  ORACLE,
 }
 
 export interface RawTokenProfile {
@@ -21,4 +28,5 @@ export interface TokenProfile {
   decimals: number;
   displayDecimals: number;
   image?: string;
+  priceSource?: PriceSource;
 }

@@ -1,18 +1,19 @@
 import { addressConfig } from "../addresses";
-import { TokenProfile, TokenSymbol } from "./type";
+import { PriceSource, TokenProfile, TokenSymbol } from "./type";
 
 export const solana: TokenProfile = {
   name: "SOLANA",
-  symbol: "SOL",
+  symbol: TokenSymbol.SOL,
   address: addressConfig.tokens.solana,
   decimals: 9,
   displayDecimals: 4,
   image: "/coins/solana.png",
+  priceSource: PriceSource.ORACLE,
 };
 
 export const unknownToken: TokenProfile = {
   name: "UNKNOWN",
-  symbol: "UNK",
+  symbol: TokenSymbol.UNKNOWN,
   address: "",
   decimals: 9,
   displayDecimals: 4,
@@ -26,6 +27,7 @@ export const solayer: TokenProfile = {
   decimals: 6,
   displayDecimals: 4,
   image: "/coins/layer.svg",
+  priceSource: PriceSource.ORACLE,
 };
 
 export const solayerUSD: TokenProfile = {
@@ -35,6 +37,7 @@ export const solayerUSD: TokenProfile = {
   decimals: 6,
   displayDecimals: 4,
   image: "/coins/susd.svg",
+  priceSource: PriceSource.ORACLE,
 };
 
 export const usdc: TokenProfile = {
@@ -45,6 +48,7 @@ export const usdc: TokenProfile = {
   displayDecimals: 4,
   image:
     "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
+  priceSource: PriceSource.ORACLE,
 };
 
 export const ssol: TokenProfile = {
@@ -54,6 +58,7 @@ export const ssol: TokenProfile = {
   decimals: 9,
   displayDecimals: 4,
   image: "/coins/ssol.svg",
+  priceSource: PriceSource.ORACLE,
 };
 
 // For testing purposes
@@ -63,6 +68,7 @@ export const token1: TokenProfile = {
   address: addressConfig.tokens.token1,
   decimals: 9,
   displayDecimals: 4,
+  priceSource: PriceSource.POOL,
 };
 
 // For testing purposes
@@ -72,4 +78,5 @@ export const token2: TokenProfile = {
   address: addressConfig.tokens.token2,
   decimals: 9,
   displayDecimals: 4,
+  priceSource: PriceSource.POOL,
 };

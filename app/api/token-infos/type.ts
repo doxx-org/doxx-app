@@ -1,9 +1,12 @@
+import { PriceSource } from "@/lib/config/tokens";
+
 export type TokenDisplay = {
   mint: string;
   name?: string;
   symbol?: string;
   image?: string;
   decimals: number;
+  priceSource?: PriceSource;
   // source: "list" | "metaplex" | "token2022" | "fallback";
 };
 

@@ -155,7 +155,6 @@ export function SwapWidget() {
     | undefined = useMemo(() => {
     return allPools?.reduce(
       (acc, p) => {
-        acc.poolPrice[p.poolId.toLowerCase()] = p.price;
         acc.splPrice[p.lpToken.token1.address.toLowerCase()] = p.priceToken1Usd;
         acc.splPrice[p.lpToken.token2.address.toLowerCase()] = p.priceToken2Usd;
         return acc;

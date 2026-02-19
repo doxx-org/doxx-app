@@ -12,9 +12,13 @@ interface UseGetAllTokenInfosProps {
   rawTokenProfiles?: RawTokenProfile[];
 }
 
-export function useGetAllTokenInfos(
-  { poolTokens, rawTokenProfiles }: UseGetAllTokenInfosProps,
-): UseQueryResult<TokenProfile[] | undefined, Error> {
+export function useGetAllTokenInfos({
+  poolTokens,
+  rawTokenProfiles,
+}: UseGetAllTokenInfosProps): UseQueryResult<
+  TokenProfile[] | undefined,
+  Error
+> {
   const allTokenProfiles: RawTokenProfile[] | undefined = useMemo(() => {
     return mapPoolTokenToProfiles(poolTokens ?? [], rawTokenProfiles);
   }, [poolTokens, rawTokenProfiles]);
@@ -45,13 +49,14 @@ export function useGetAllTokenInfos(
         if (!res.ok) throw new Error("Failed to fetch");
         const json = (await res.json()) as { data: TokenProfile[] };
 
-        const displays = json.data.map((d) => ({
+        const displays: TokenProfile[] = json.data.map((d) => ({
           address: d.address,
           name: d.name,
           symbol: d.symbol,
           decimals: d.decimals,
           displayDecimals: d.displayDecimals,
           image: d.image,
+          priceSource: d.priceSource,
         }));
 
         return displays;

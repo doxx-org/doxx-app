@@ -1,6 +1,17 @@
-import { Keypair, PublicKey, Transaction, TransactionInstruction } from "@solana/web3.js";
+import {
+  ApiV3PoolInfoConcentratedItem,
+  TickUtils,
+} from "@raydium-io/raydium-sdk-v2";
+import {
+  Keypair,
+  PublicKey,
+  Transaction,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import BN from "bn.js";
-import { CLMM_MAX_TICK, CLMM_MIN_TICK, CLMM_TICK_ARRAY_SIZE, LOG_1P0001 } from "../constants";
+import Decimal from "decimal.js";
+import { PriceMode } from "@/components/earn/v2/types";
+import { CLMM_MAX_TICK, CLMM_MIN_TICK, LOG_1P0001 } from "../constants";
 
 export function u16ToBytes(num: number): Uint8Array {
   const arr = new ArrayBuffer(2);
@@ -24,7 +35,6 @@ export function bigintToBn(x: bigint): BN {
   return new BN(x.toString());
 }
 
-
 export function mulByPpm(x: bigint, ppm: number): bigint {
   return (x * BigInt(ppm)) / 1_000_000n;
 }
@@ -42,6 +52,7 @@ export function priceX128FromSqrtPriceX64(sqrtPriceX64: BN): bigint {
 const TWO_POW_128 = 1n << 128n;
 
 /**
+ * @deprecated Use @see calculateCLMMPrices from @see @/lib/utils/calculation.ts instead
  * Convert CLMM sqrtPriceX64 to human-readable price (token1 per token0 and token0 per token1).
  * sqrtPriceX64 is sqrt(token1/token0) in base units, Q64.64.
  */
@@ -57,7 +68,7 @@ export function priceFromClmmSqrtPriceX64(params: {
   const decDiff = dec0 - dec1;
   const scale = 10 ** decDiff;
   const priceToken1PerToken0 =
-    Number(priceX128) / Number(TWO_POW_128) * scale;
+    (Number(priceX128) / Number(TWO_POW_128)) * scale;
   const priceToken0PerToken1 =
     priceToken1PerToken0 <= 0 ? 0 : 1 / priceToken1PerToken0;
   return { priceToken1PerToken0, priceToken0PerToken1 };
@@ -68,7 +79,10 @@ export function pow10(exp: number): bigint {
   return 10n ** BigInt(exp);
 }
 
-export function parseDecimalToFraction(value: string): { num: bigint; den: bigint } {
+export function parseDecimalToFraction(value: string): {
+  num: bigint;
+  den: bigint;
+} {
   const v = value.trim();
   if (!v) throw new Error("Price is required");
   if (v.startsWith("-")) throw new Error("Price must be positive");
@@ -116,6 +130,12 @@ export function computeSqrtPriceX64(params: {
     priceAperB,
   } = params;
 
+  // Add validation
+  const priceNum = Number(priceAperB);
+  if (!Number.isFinite(priceNum) || priceNum <= 0) {
+    throw new Error("Price must be a positive number");
+  }
+
   const { num: pabNum, den: pabDen } = parseDecimalToFraction(priceAperB);
   if (pabNum === 0n) throw new Error("Price must be greater than 0");
 
@@ -142,10 +162,11 @@ export function computeSqrtPriceX64(params: {
   if (decDiff >= 0) p10Num = p10Num * pow10(decDiff);
   else p10Den = p10Den * pow10(-decDiff);
 
-  const scaled = (p10Num << 128n) / p10Den;
+  const scaled = (p10Num << 128n) / p10Den; // Q128.128
   const sqrt = bigintSqrt(scaled);
   const maxU128 = (1n << 128n) - 1n;
-  if (sqrt < 0n || sqrt > maxU128) throw new Error("Price out of supported range");
+  if (sqrt < 0n || sqrt > maxU128)
+    throw new Error("Price out of supported range");
   return new BN(sqrt.toString());
 }
 
@@ -200,10 +221,16 @@ export function tickFromPriceAperB(params: {
   return Math.floor(logPriceBase / LOG_1P0001);
 }
 
-export function tickArrayStartIndex(tickIndex: number, tickSpacing: number): number {
-  const arraySpacing = tickSpacing * CLMM_TICK_ARRAY_SIZE;
-  if (arraySpacing === 0) return 0;
-  return Math.floor(tickIndex / arraySpacing) * arraySpacing;
+export function tickArrayStartIndex(
+  tickIndex: number,
+  tickSpacing: number,
+): number {
+  // const arraySpacing = tickSpacing * CLMM_TICK_ARRAY_SIZE;
+  // if (arraySpacing === 0) return 0;
+  // return Math.floor(tickIndex / arraySpacing) * arraySpacing;
+
+  // Use Raydium SDK to get the tick array start index
+  return TickUtils.getTickArrayStartIndexByTick(tickIndex, tickSpacing);
 }
 
 export function applyBuffer(amount: BN, bufferPct: number | undefined): BN {
@@ -227,10 +254,80 @@ export function estimateLegacyTxSize(params: {
     tx.recentBlockhash = recentBlockhash;
     if (signers.length > 0) tx.partialSign(...signers);
     // Signature bytes are a fixed-width part of the serialized tx; content doesn't change size.
-    return tx.serialize({ requireAllSignatures: false, verifySignatures: false }).length;
+    return tx.serialize({
+      requireAllSignatures: false,
+      verifySignatures: false,
+    }).length;
   } catch {
     // `Transaction.serialize` throws when the legacy tx is too large.
     // For sizing/planning purposes, treat this as "definitely too large".
     return Number.POSITIVE_INFINITY;
   }
+}
+
+export function getTickRangeFromPriceMode(
+  priceMode: PriceMode,
+  tickSpacing: number,
+  poolInfo: ApiV3PoolInfoConcentratedItem,
+  baseIn: boolean,
+  minPriceAperB?: string,
+  maxPriceAperB?: string,
+): [number, number] {
+  // Determine tick range based on price mode
+  let lowerTick: number;
+  let upperTick: number;
+
+  if (priceMode === PriceMode.FULL) {
+    // ============ FULL RANGE MODE ============
+    console.log("Using Full Range mode");
+
+    // Round to tick spacing
+    lowerTick = clampTick(CLMM_MIN_TICK, tickSpacing);
+    upperTick = clampTick(CLMM_MAX_TICK, tickSpacing);
+
+    console.log("Full range ticks:", { lowerTick, upperTick });
+  } else {
+    // ============ CUSTOM RANGE MODE ============
+    console.log("Using Custom Range mode");
+
+    if (!minPriceAperB || !maxPriceAperB) {
+      throw new Error(
+        "minPriceAperB and maxPriceAperB are required for Custom mode",
+      );
+    }
+
+    const startPrice = new Decimal(minPriceAperB);
+    const endPrice = new Decimal(maxPriceAperB);
+
+    console.log("Custom price range:", {
+      minPrice: startPrice.toString(),
+      maxPrice: endPrice.toString(),
+    });
+
+    // Get ticks from prices using SDK
+    const { tick: lowerTickRaw } = TickUtils.getPriceAndTick({
+      poolInfo,
+      price: startPrice,
+      baseIn,
+    });
+
+    const { tick: upperTickRaw } = TickUtils.getPriceAndTick({
+      poolInfo,
+      price: endPrice,
+      baseIn,
+    });
+
+    // Round to tick spacing (floor for lower, ceil for upper to widen range)
+    lowerTick = clampTick(lowerTickRaw, tickSpacing);
+    upperTick = clampTick(upperTickRaw, tickSpacing);
+
+    console.log("Custom range ticks:", {
+      lowerTick,
+      upperTick,
+      lowerTickRaw,
+      upperTickRaw,
+    });
+  }
+
+  return [lowerTick, upperTick];
 }

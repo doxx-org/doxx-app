@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { Loader2 } from "lucide-react";
 import { knownTokenProfiles } from "@/lib/config/tokens";
 import { usePrepareOpenCLMMPosition } from "@/lib/hooks/chain/prepare/usePrepareOpenCLMMPosition";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
-import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
+import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
 import { Pool, PriceMode } from "../types";
@@ -47,7 +46,7 @@ export const CLMMDepositTab = ({
       },
     );
 
-  const { data: prices } = useOraclePrices();
+  const { data: allPrices } = useAllPrices();
 
   const depositingInfo = useMemo(() => {
     const totalValue = selectedPool.tvl;
@@ -126,11 +125,6 @@ export const CLMMDepositTab = ({
 
   return (
     <div className="flex min-h-full flex-col">
-      {(tokenALoading || tokenBLoading) && (
-        <div className="flex h-full items-center justify-center">
-          <Loader2 className="h-4 w-4 animate-spin" />
-        </div>
-      )}
       <DepositRange
         priceMode={priceMode}
         setPriceMode={setPriceMode}
@@ -145,7 +139,8 @@ export const CLMMDepositTab = ({
           tokenA={selectedPool.lpToken.token1}
           tokenB={selectedPool.lpToken.token2}
           walletBalances={splBalances}
-          priceMap={prices}
+          tokenAPriceUsd={allPrices?.[selectedPool.lpToken.token1.address]}
+          tokenBPriceUsd={allPrices?.[selectedPool.lpToken.token2.address]}
           tokenAInput={tokenAAmount}
           tokenBInput={tokenBAmount}
           tokenALoading={tokenALoading}

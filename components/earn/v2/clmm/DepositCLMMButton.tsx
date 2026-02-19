@@ -1,15 +1,19 @@
 import { useCallback, useMemo } from "react";
-import { Program } from "@coral-xyz/anchor";
-import { AnchorWallet } from "@solana/wallet-adapter-react";
+import { ReturnTypeGetLiquidityAmountOut } from "@raydium-io/raydium-sdk-v2";
+import { AnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { toast } from "sonner";
 import { DepositPoolSuccessToast } from "@/components/toast/DepositPool";
 import { Button } from "@/components/ui/button";
 import { TokenProfile } from "@/lib/config/tokens";
 import { BalanceMapByMint, CLMMPoolState } from "@/lib/hooks/chain/types";
-import { DoxxCpmmIdl } from "@/lib/idl";
+import { useDepositClmmPool } from "@/lib/hooks/chain/useDepositClmmPool";
+import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
+import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
+import { PriceMode } from "../types";
 
 interface IDepositCLMMButtonProps {
   poolId: string;
@@ -17,11 +21,14 @@ interface IDepositCLMMButtonProps {
   tokenB: TokenProfile;
   tokenAAmount: string;
   tokenBAmount: string;
-  lpTokenAmount: string;
+  priceMode: PriceMode;
+  minPriceAperB: string | undefined;
+  maxPriceAperB: string | undefined;
+  baseIn: boolean;
+  prepareOpenCLMMPositionData: ReturnTypeGetLiquidityAmountOut | undefined;
   poolState: CLMMPoolState | undefined;
   wallet: AnchorWallet | undefined;
   walletBalances: BalanceMapByMint | undefined;
-  doxxAmmProgram: Program<DoxxCpmmIdl> | undefined;
   onSuccess?: () => void;
   onError?: () => void;
 }
@@ -32,15 +39,22 @@ export const DepositCLMMButton = ({
   tokenB,
   tokenAAmount,
   tokenBAmount,
-  lpTokenAmount,
+  priceMode,
+  minPriceAperB,
+  maxPriceAperB,
+  baseIn,
+  prepareOpenCLMMPositionData,
   wallet,
   walletBalances,
   poolState,
-  doxxAmmProgram,
   onSuccess,
   onError,
 }: IDepositCLMMButtonProps) => {
-  const [amount0, amount1, lpAmount] = useMemo(() => {
+  const { connection } = useConnection();
+  const provider = useProvider({ connection, wallet });
+  const doxxClmmProgram = useDoxxClmmProgram({ provider });
+
+  const [amount0, amount1] = useMemo(() => {
     if (!poolState) {
       return [new BN(0), new BN(0), new BN(0)];
     }
@@ -60,10 +74,9 @@ export const DepositCLMMButton = ({
     // Convert amounts to BN with proper decimals
     const amount0 = parseAmountBN(actualAmount0, actualToken0Decimal);
     const amount1 = parseAmountBN(actualAmount1, actualToken1Decimal);
-    const lpAmount = parseAmountBN(lpTokenAmount, 9); // LP tokens typically use 9 decimals
 
-    return [amount0, amount1, lpAmount];
-  }, [poolState, tokenAAmount, tokenBAmount, lpTokenAmount, tokenA, tokenB]);
+    return [amount0, amount1];
+  }, [poolState, tokenAAmount, tokenBAmount, tokenA, tokenB]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
@@ -86,12 +99,13 @@ export const DepositCLMMButton = ({
     [onError],
   );
 
-  // const { deposit, isDepositing } = useDepositCPMM(
-  //   doxxAmmProgram,
-  //   wallet,
-  //   handleSuccess,
-  //   handleError,
-  // );
+  const { createPosition, isDepositing } = useDepositClmmPool(
+    connection,
+    doxxClmmProgram,
+    wallet,
+    handleSuccess,
+    handleError,
+  );
 
   const handleDeposit = useCallback(async () => {
     if (
@@ -100,45 +114,13 @@ export const DepositCLMMButton = ({
       !tokenA ||
       !tokenB ||
       !tokenAAmount ||
-      !tokenBAmount ||
-      !doxxAmmProgram
+      !tokenBAmount
     ) {
       toast.error("Please enter amounts for both tokens");
       return;
     }
 
     try {
-      // IMPORTANT: tokenA/tokenB in UI might not match token0/token1 in pool
-      // poolState.token0Mint is always < token1Mint (sorted by public key)
-      // We need to map our UI amounts to the correct pool tokens
-
-      // // Check which UI token corresponds to which pool token
-      // const isTokenAToken0 = poolState.token0Mint.toBase58() === tokenA.address;
-
-      // // Map amounts correctly
-      // const actualAmount0 = isTokenAToken0 ? tokenAAmount : tokenBAmount;
-      // const actualAmount1 = isTokenAToken0 ? tokenBAmount : tokenAAmount;
-      // const actualToken0Decimal = isTokenAToken0
-      //   ? tokenA.decimals
-      //   : tokenB.decimals;
-      // const actualToken1Decimal = isTokenAToken0
-      //   ? tokenB.decimals
-      //   : tokenA.decimals;
-
-      // // Convert amounts to BN with proper decimals
-      // const amount0 = parseAmountBN(actualAmount0, actualToken0Decimal);
-      // const amount1 = parseAmountBN(actualAmount1, actualToken1Decimal);
-      // const lpAmount = parseAmountBN(lpTokenAmount, 9); // LP tokens typically use 9 decimals
-
-      // Use higher slippage tolerance (10%) for safety
-      const slippageTolerance = 0.1;
-      const maxAmount0 = amount0
-        .muln(Math.floor(100 * (1 + slippageTolerance)))
-        .divn(100);
-      const maxAmount1 = amount1
-        .muln(Math.floor(100 * (1 + slippageTolerance)))
-        .divn(100);
-
       console.log("Depositing to pool:", {
         poolId,
         uiTokenA: tokenA.symbol,
@@ -147,47 +129,50 @@ export const DepositCLMMButton = ({
         uiAmountB: tokenBAmount,
         poolToken0: poolState?.tokenMint0.toBase58(),
         poolToken1: poolState?.tokenMint1.toBase58(),
-        // isTokenAToken0,
         actualAmount0: amount0,
         actualAmount1: amount1,
-        lpAmount: lpAmount.toString(),
-        // maxAmount0: maxAmount0.toString(),
-        // maxAmount1: maxAmount1.toString(),
-        slippage: `${slippageTolerance * 100}%`,
       });
 
-      // await deposit({
-      //   poolState: new PublicKey(poolId),
-      //   token0Mint: poolState.token0Mint,
-      //   token1Mint: poolState.token1Mint,
-      //   lpMint: poolState.lpMint,
-      //   token0Vault: poolState.token0Vault,
-      //   token1Vault: poolState.token1Vault,
-      //   token0Program: poolState.token0Program,
-      //   token1Program: poolState.token1Program,
-      //   lpTokenAmount: lpAmount,
-      //   maximumToken0Amount: amount0,
-      //   maximumToken1Amount: amount1,
-      // });
+      await createPosition({
+        poolId,
+        prepareOpenCLMMPositionData,
+        // poolState: poolState,
+        // ammConfig: poolState.ammConfig,
+        tickSpacing: poolState.tickSpacing,
+        // tokenAMint: new PublicKey(tokenA.address),
+        // tokenBMint: new PublicKey(tokenB.address),
+        // tokenADecimals: tokenA.decimals,
+        // tokenBDecimals: tokenB.decimals,
+        baseIn,
+        amountA: tokenAAmount,
+        amountB: tokenBAmount,
+        priceMode,
+        minPriceAperB,
+        maxPriceAperB,
+      });
     } catch (error) {
       console.error("Deposit error:", error);
       // Error is already handled by handleError callback
     }
-  }, [amount0, amount1, lpAmount]);
+  }, [
+    amount0,
+    amount1,
+    priceMode,
+    minPriceAperB,
+    maxPriceAperB,
+    prepareOpenCLMMPositionData,
+    baseIn,
+    poolState,
+  ]);
 
   const [label, disabled, handleDepositButton] = useMemo(() => {
-    // if (isDepositing) {
-    //   return ["Depositing Pool...", true, undefined];
-    // }
+    if (isDepositing) {
+      return ["Depositing Pool...", true, undefined];
+    }
 
     const tokenABalance = walletBalances?.[tokenA.address]?.rawAmount;
-    console.log("🚀 ~ tokenABalance:", tokenABalance);
     const tokenBBalance = walletBalances?.[tokenB.address]?.rawAmount;
-    console.log("🚀 ~ tokenBBalance:", tokenBBalance);
 
-    console.log("🚀 ~ amount0:", amount0.toString());
-
-    console.log("🚀 ~ amount1:", amount1.toString());
     if (
       tokenABalance === undefined ||
       tokenBBalance === undefined ||
@@ -203,8 +188,15 @@ export const DepositCLMMButton = ({
     }
 
     return ["Deposit", false, handleDeposit];
-  }, [amount0, amount1, lpAmount, handleDeposit, walletBalances]);
-  // }, [amount0, amount1, lpAmount, isDepositing, handleDeposit, walletBalances]);
+  }, [
+    amount0,
+    amount1,
+    handleDeposit,
+    walletBalances,
+    isDepositing,
+    tokenA,
+    tokenB,
+  ]);
 
   return (
     <Button

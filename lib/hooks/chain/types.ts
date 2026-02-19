@@ -42,6 +42,6 @@ export interface PoolToken {
 }
 
 // Token balance map by token address
-export type BalanceMapByMint = Partial<Record<string, SplBalance>>;
+export type BalanceMapByMint = Partial<Record<string, SplBalance>>; // token address -> SplBalance
 
-export type PriceMap = Partial<Record<string, number>>;
+export type PriceMap = Partial<Record<string, number>>; // token address -> price
