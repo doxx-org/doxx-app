@@ -97,7 +97,7 @@ export function SwapInput({
             disabled={disabled || !isActionable}
           />
           {inputValue !== undefined ? (
-            Number.isInteger(inputValue) ? (
+            inputValue > 0 ? (
               <p className="text-right text-gray-600">
                 ${inputValue.toFixed(2)}
               </p>

@@ -33,6 +33,7 @@ import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
+import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
 import { text } from "@/lib/text";
@@ -139,6 +140,8 @@ export function SwapWidget() {
     // refetch: refetchAllPools,
   } = useGetAllPools();
 
+  const { data: allPrices } = useAllPrices();
+
   const poolTokens = useMemo(() => {
     return allPools?.map((p) => {
       return {
@@ -150,24 +153,24 @@ export function SwapWidget() {
     });
   }, [allPools]);
 
-  const prices:
-    | { poolPrice: Record<string, number>; splPrice: Record<string, number> }
-    | undefined = useMemo(() => {
-    return allPools?.reduce(
-      (acc, p) => {
-        acc.splPrice[p.lpToken.token1.address.toLowerCase()] = p.priceToken1Usd;
-        acc.splPrice[p.lpToken.token2.address.toLowerCase()] = p.priceToken2Usd;
-        return acc;
-      },
-      {
-        poolPrice: {},
-        splPrice: {},
-      } as {
-        poolPrice: Record<string, number>;
-        splPrice: Record<string, number>;
-      },
-    );
-  }, [allPools]);
+  // const prices:
+  //   | { poolPrice: Record<string, number>; splPrice: Record<string, number> }
+  //   | undefined = useMemo(() => {
+  //   return allPools?.reduce(
+  //     (acc, p) => {
+  //       acc.splPrice[p.lpToken.token1.address.toLowerCase()] = p.priceToken1Usd;
+  //       acc.splPrice[p.lpToken.token2.address.toLowerCase()] = p.priceToken2Usd;
+  //       return acc;
+  //     },
+  //     {
+  //       poolPrice: {},
+  //       splPrice: {},
+  //     } as {
+  //       poolPrice: Record<string, number>;
+  //       splPrice: Record<string, number>;
+  //     },
+  //   );
+  // }, [allPools]);
 
   const {
     data: allTokenProfiles,
@@ -411,8 +414,21 @@ export function SwapWidget() {
   };
 
   const [tokenAValue, tokenBValue] = useMemo(() => {
-    const tokenAPrice = prices?.splPrice[sellToken.address.toLowerCase()];
-    const tokenBPrice = prices?.splPrice[buyToken.address.toLowerCase()];
+    if (!allPrices) {
+      return [undefined, undefined];
+    }
+
+    const tokenAPrice = allPrices[sellToken.address];
+    const tokenBPrice = allPrices[buyToken.address];
+    console.log("🚀 ~ tokenBPrice:", tokenBPrice);
+    console.log("🚀 ~ buyAmount:", buyAmount);
+    console.log("🚀 ~ sellAmount:", sellAmount);
+    console.log(
+      "🚀 ~ tokenBPrice * parseFloat(buyAmount):",
+      tokenBPrice !== undefined
+        ? tokenBPrice * parseFloat(buyAmount)
+        : undefined,
+    );
     return [
       tokenAPrice !== undefined
         ? sellAmount !== ""
@@ -425,7 +441,9 @@ export function SwapWidget() {
           : 0
         : undefined,
     ];
-  }, [prices, sellToken.address, sellAmount, buyToken.address, buyAmount]);
+  }, [allPrices, sellToken.address, sellAmount, buyToken.address, buyAmount]);
+  console.log("🚀 ~ tokenBValue:", tokenBValue);
+  console.log("🚀 ~ tokenAValue:", tokenAValue);
 
   useEffect(() => {
     if (!!errorBestRouteV2) {

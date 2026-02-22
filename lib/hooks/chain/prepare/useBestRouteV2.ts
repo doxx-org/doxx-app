@@ -105,7 +105,6 @@ export function useBestRouteV2({
             slippageBps,
           });
 
-          if (!clmmQuote) return null;
           return {
             ...clmmQuote,
             poolType: PoolType.CLMM,
@@ -122,8 +121,6 @@ export function useBestRouteV2({
           epochInfo,
           slippageBps,
         });
-
-        if (!clmmQuote) return null;
 
         return {
           ...clmmQuote,

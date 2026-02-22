@@ -46,6 +46,7 @@ import {
 } from "../hooks/chain/types";
 import { DoxxClmmIdl } from "../idl";
 import { isTokenMatchPool } from "./address";
+import { RoutingError } from "./errors";
 import { normalizeBPS } from "./number";
 
 interface IFindBestClmmSwapParams {
@@ -223,8 +224,8 @@ export async function findBestClmmSwapBaseIn({
   outputToken,
   epochInfo,
   slippageBps,
-}: IFindBestClmmSwapBaseInParams): Promise<IBestRouteV2BaseIn | undefined> {
-  if (!clmmPools) return undefined;
+}: IFindBestClmmSwapBaseInParams): Promise<IBestRouteV2BaseIn> {
+  if (!clmmPools) throw Error(RoutingError.NO_POOLS_FOUND);
 
   const slippage = normalizeBPS(slippageBps);
 
@@ -328,7 +329,7 @@ export async function findBestClmmSwapBaseIn({
     !bestPoolInfo ||
     !bestPoolKeys
   )
-    return undefined;
+    throw Error(RoutingError.NO_BEST_QUOTE_FOUND);
 
   return {
     poolType: PoolType.CLMM,
@@ -405,8 +406,8 @@ export async function findBestClmmSwapBaseOut({
   outputToken,
   epochInfo,
   slippageBps,
-}: IFindBestClmmSwapBaseOutParams): Promise<IBestRouteV2BaseOut | undefined> {
-  if (!clmmPools) return undefined;
+}: IFindBestClmmSwapBaseOutParams): Promise<IBestRouteV2BaseOut> {
+  if (!clmmPools) throw Error(RoutingError.NO_POOLS_FOUND);
 
   const slippage = normalizeBPS(slippageBps);
 
@@ -501,7 +502,7 @@ export async function findBestClmmSwapBaseOut({
     !bestPoolInfo ||
     !bestPoolKeys
   )
-    return undefined;
+    throw Error(RoutingError.NO_BEST_QUOTE_FOUND);
 
   return {
     poolType: PoolType.CLMM,

@@ -1,4 +1,5 @@
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import axios from "axios";
 import { solana, solayer, solayerUSD, ssol, usdc } from "../config/tokens";
 import { SOLANA_PRICE } from "../constants";
 import { PriceMap } from "./chain/types";
@@ -19,9 +20,21 @@ export const useOraclePrices = (): UseQueryResult<PriceMap, Error> => {
   return useQuery({
     queryKey: ["oraclePrices"],
     queryFn: async () => {
-      // TODO: Get prices from API
+      const priceMap: PriceMap = mockPrices;
 
-      return mockPrices;
+      try {
+        // TODO: Get all prices from API
+        const prices = await axios.get(
+          "https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd",
+        );
+        priceMap[solana.address] = prices.data.solana.usd;
+      } catch {
+        console.error("Error fetching prices, use mock prices instead");
+      }
+
+      return priceMap;
     },
+    staleTime: 1000 * 60,
+    refetchInterval: 1000 * 60,
   });
 };
