@@ -20,7 +20,9 @@ export function useGetAllTokenInfos({
   Error
 > {
   const allTokenProfiles: RawTokenProfile[] | undefined = useMemo(() => {
-    return mapPoolTokenToProfiles(poolTokens ?? [], rawTokenProfiles);
+    if (poolTokens === undefined) return undefined;
+
+    return mapPoolTokenToProfiles(poolTokens, rawTokenProfiles);
   }, [poolTokens, rawTokenProfiles]);
 
   return useQuery({
@@ -64,7 +66,10 @@ export function useGetAllTokenInfos({
         throw new Error(simplifyGetAllTokenInfosErrorMsg(error));
       }
     },
-    enabled: !!allTokenProfiles && allTokenProfiles.length > 0,
+    enabled:
+      poolTokens !== undefined &&
+      !!allTokenProfiles &&
+      allTokenProfiles.length > 0,
     staleTime: 120_000, // align with s-maxage
     gcTime: 15 * 60 * 1000,
   });

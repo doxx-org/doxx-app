@@ -143,7 +143,10 @@ export function SwapWidget() {
   const { data: allPrices } = useAllPrices();
 
   const poolTokens = useMemo(() => {
-    return allPools?.map((p) => {
+    if (!allPools) return undefined;
+    if (allPools.length === 0) return [];
+
+    return allPools.map((p) => {
       return {
         mint0Address: p.lpToken.token1.address,
         mint0Decimals: p.lpToken.token1.decimals,
@@ -189,6 +192,7 @@ export function SwapWidget() {
     allTokenProfiles,
     true,
   );
+  console.log("🚀 ~ isLoadingSplBalances:", isLoadingSplBalances);
 
   // Initialize Raydium SDK
   const { data: raydium } = useRaydium({ connection, wallet });
@@ -236,10 +240,14 @@ export function SwapWidget() {
     token1BalanceBN,
   ] = useMemo(() => {
     const sellTokenBalance = splBalances?.[sellToken.address]?.amount;
+    console.log("🚀 ~ sellTokenBalance:", sellTokenBalance);
     const buyTokenBalance = splBalances?.[buyToken.address]?.amount;
+    console.log("🚀 ~ buyTokenBalance:", buyTokenBalance);
 
     const rawToken0Balance = splBalances?.[sellToken.address]?.rawAmount;
+    console.log("🚀 ~ rawToken0Balance:", rawToken0Balance);
     const rawToken1Balance = splBalances?.[buyToken.address]?.rawAmount;
+    console.log("🚀 ~ rawToken1Balance:", rawToken1Balance);
 
     const token0BalanceBN =
       rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;
@@ -420,15 +428,6 @@ export function SwapWidget() {
 
     const tokenAPrice = allPrices[sellToken.address];
     const tokenBPrice = allPrices[buyToken.address];
-    console.log("🚀 ~ tokenBPrice:", tokenBPrice);
-    console.log("🚀 ~ buyAmount:", buyAmount);
-    console.log("🚀 ~ sellAmount:", sellAmount);
-    console.log(
-      "🚀 ~ tokenBPrice * parseFloat(buyAmount):",
-      tokenBPrice !== undefined
-        ? tokenBPrice * parseFloat(buyAmount)
-        : undefined,
-    );
     return [
       tokenAPrice !== undefined
         ? sellAmount !== ""
@@ -442,8 +441,6 @@ export function SwapWidget() {
         : undefined,
     ];
   }, [allPrices, sellToken.address, sellAmount, buyToken.address, buyAmount]);
-  console.log("🚀 ~ tokenBValue:", tokenBValue);
-  console.log("🚀 ~ tokenAValue:", tokenAValue);
 
   useEffect(() => {
     if (!!errorBestRouteV2) {
@@ -636,9 +633,9 @@ export function SwapWidget() {
           />
         </div>
       </CardContent>
-      <CardFooter className="flex w-full flex-row items-center justify-between p-3">
+      <CardFooter className="flex w-full flex-row items-center justify-between p-3 pt-0">
         <ConnectButtonWrapper
-          className={cn(text.hsb1(), "h-16 w-full rounded-xl p-6")}
+          className={cn(text.hsb1(), "mt-3 h-16 w-full rounded-xl p-6")}
         >
           <SwapButton
             errors={{

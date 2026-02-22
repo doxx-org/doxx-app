@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
@@ -47,6 +47,9 @@ export function SwapButton({
   onError,
   raydium,
 }: SwapButtonProps) {
+  const [isHighPriceImpactAccepted, setIsHighPriceImpactAccepted] =
+    useState(false);
+
   // inside a React component
   // const cpmm = useDoxxCpmmSwap(cpmmProgram, wallet, onSuccess, onError);
   // const clmm = useDoxxClmmSwap(
@@ -147,6 +150,21 @@ export function SwapButton({
     }
   }, [bestRoute, token0Balance, token1Balance, swapBaseIn, swapBaseOut]);
 
+  const highPriceImpact = useMemo(() => {
+    if (!bestRoute) return undefined;
+    // reset high price impact accepted state
+    // eslint-disable-next-line react-hooks/set-state-in-render
+    setIsHighPriceImpactAccepted(false);
+
+    const priceImpact = parseFloat(bestRoute.swapState.priceImpact);
+    const isHighPriceImpact = priceImpact > 15; // 15%
+
+    return {
+      isHighPriceImpact,
+      priceImpact,
+    };
+  }, [bestRoute]);
+
   // build button label and disabled state
   // Order matters
   const [label, disabled] = useMemo(() => {
@@ -163,7 +181,13 @@ export function SwapButton({
       return [simplifyRoutingErrorMsg(errorBestRoute), true];
 
     // validate best route
-    if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
+    if (
+      !bestRoute ||
+      !token0Balance ||
+      !token1Balance ||
+      (highPriceImpact?.isHighPriceImpact && !isHighPriceImpactAccepted)
+    )
+      return ["Swap", true];
 
     // validate balance
     const requiredIn = bestRoute.swapState.isBaseExactIn
@@ -186,6 +210,8 @@ export function SwapButton({
     errorAllTokenProfiles,
     isActionable,
     errorBestRoute,
+    highPriceImpact,
+    isHighPriceImpactAccepted,
   ]);
 
   const isLoading = useMemo(() => {
@@ -193,13 +219,33 @@ export function SwapButton({
   }, [isSwapping, isQuotingRoute]);
 
   return (
-    <Button
-      className={cn(text.hsb1(), "text-green h-16 w-full rounded-xl p-6")}
-      onClick={handleSwap}
-      disabled={disabled}
-      loading={isLoading}
-    >
-      {label}
-    </Button>
+    <div className="flex w-full flex-col">
+      {highPriceImpact?.isHighPriceImpact && !isHighPriceImpactAccepted && (
+        <div className="border-orange/70 bg-orange/10 flex w-full items-center justify-between rounded-xl border px-3 py-3">
+          <div className={cn("flex flex-col gap-1 text-gray-200", text.sb3())}>
+            <p>Price impact is over 15%!</p>
+            <p>Are you confirm to proceed?</p>
+          </div>
+          <Button
+            className={cn(
+              text.sb3(),
+              "bg-orange/30 border-orange/70 hover:bg-orange/40 h-4 rounded-xl border px-3 py-4 text-gray-200",
+            )}
+            onClick={() => setIsHighPriceImpactAccepted(true)}
+          >
+            Confirm
+          </Button>
+        </div>
+      )}
+      <Button
+        className={cn(text.hsb1(), "text-green mt-3 h-16 w-full rounded-xl")}
+        onClick={handleSwap}
+        disabled={disabled}
+        loading={isLoading}
+      >
+        {label}
+      </Button>
+      {/* </div> */}
+    </div>
   );
 }

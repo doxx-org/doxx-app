@@ -43,8 +43,8 @@ export function useGetAllPools() {
     refetch: refetchPrices,
   } = useOraclePrices();
 
-  const poolTokens: PoolToken[] = useMemo(() => {
-    if (!cpmmPoolsData || !clmmPoolsData) return [];
+  const poolTokens: PoolToken[] | undefined = useMemo(() => {
+    if (!cpmmPoolsData || !clmmPoolsData) return undefined;
 
     const cpmmPoolTokens: PoolToken[] = cpmmPoolsData.map((p) => {
       return {
