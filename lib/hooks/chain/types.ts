@@ -1,4 +1,10 @@
 import { IdlAccounts } from "@coral-xyz/anchor";
+import {
+  ApiV3PoolInfoConcentratedItem,
+  ClmmKeys,
+  ComputeClmmPoolInfo,
+  ReturnTypeFetchMultiplePoolTickArrays,
+} from "@raydium-io/raydium-sdk-v2";
 import { PublicKey } from "@solana/web3.js";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 
@@ -19,11 +25,19 @@ export type CLMMObservationState = IdlAccounts<DoxxClmmIdl>["observationState"];
 export type CLMMPersonalPositionState =
   IdlAccounts<DoxxClmmIdl>["personalPositionState"];
 
+interface RawPoolInfo {
+  poolInfo: ApiV3PoolInfoConcentratedItem;
+  poolKeys: ClmmKeys;
+  computePoolInfo: ComputeClmmPoolInfo;
+  tickData: ReturnTypeFetchMultiplePoolTickArrays;
+}
+
 export interface CLMMPoolStateWithConfig {
   poolId: PublicKey;
   poolState: CLMMPoolState;
   ammConfig: CLMMAmmConfig;
   observationState: CLMMObservationState | null | undefined;
+  // rawPoolInfo: RawPoolInfo;
 }
 
 export type SplBalance = {

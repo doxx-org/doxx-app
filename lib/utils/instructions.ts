@@ -1,7 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
+import {
+  ApiV3PoolInfoConcentratedItem,
+  ClmmKeys,
+} from "@raydium-io/raydium-sdk-v2";
+import {
+  TOKEN_PROGRAM_ID,
+  getAccount,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
+import { Connection, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import {
   CLMM_TICK_ARRAY_BITMAP_EXTENSION_SEED,
+  NATIVE_SOL_MINT,
   ORACLE_SEED,
   POOL_AUTH_SEED,
   POOL_LPMINT_SEED,
@@ -157,4 +168,137 @@ export function idlHasAccount(
   );
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return !!ix?.accounts?.some((a: any) => a?.name === accountName);
+}
+
+/**
+ * Check all balances before swap
+ */
+export async function diagnoseSwapIssues(params: {
+  connection: Connection;
+  wallet: PublicKey;
+  inputMint: PublicKey;
+  outputMint: PublicKey;
+  amountIn: BN;
+  poolKeys: ClmmKeys;
+  poolInfo: ApiV3PoolInfoConcentratedItem;
+  programId: PublicKey;
+}): Promise<{
+  canSwap: boolean;
+  issues: string[];
+}> {
+  const {
+    connection,
+    wallet,
+    inputMint,
+    outputMint,
+    amountIn,
+    poolKeys,
+    poolInfo,
+    programId,
+  } = params;
+
+  const issues: string[] = [];
+
+  // 1. Check wallet SOL balance
+  const walletBalance = await connection.getBalance(wallet);
+  console.log("💰 Wallet SOL:", walletBalance / LAMPORTS_PER_SOL);
+
+  if (walletBalance < 0.01 * LAMPORTS_PER_SOL) {
+    issues.push(
+      `Wallet needs at least 0.01 SOL for fees. Current: ${
+        walletBalance / LAMPORTS_PER_SOL
+      } SOL`,
+    );
+  }
+
+  // 2. Check program account balance
+  const programBalance = await connection.getBalance(programId);
+  console.log("🏦 Program balance:", programBalance / LAMPORTS_PER_SOL, "SOL");
+
+  if (programBalance < 0.01 * LAMPORTS_PER_SOL) {
+    issues.push(
+      `Program account needs at least 0.01 SOL. Current: ${
+        programBalance / LAMPORTS_PER_SOL
+      } SOL`,
+    );
+  }
+
+  // 3. Check input token balance
+  try {
+    let inputBalance = new BN(0);
+    if (inputMint.toString() === NATIVE_SOL_MINT) {
+      inputBalance = new BN(walletBalance);
+    } else {
+      const inputTokenAccount = getAssociatedTokenAddressSync(
+        inputMint,
+        wallet,
+        false,
+        TOKEN_PROGRAM_ID,
+      );
+
+      console.log("🚀 ~ inputTokenAccount:", inputTokenAccount.toString());
+      const inputAccount = await getAccount(connection, inputTokenAccount);
+      console.log("🚀 ~ inputAccount:", inputAccount.address.toString());
+      inputBalance = new BN(inputAccount.amount);
+    }
+
+    console.log("💵 Input token balance:", inputBalance.toString());
+
+    if (inputBalance.lt(amountIn)) {
+      issues.push(
+        `Insufficient input token. Have: ${inputBalance}, Need: ${amountIn}`,
+      );
+    }
+  } catch (error) {
+    issues.push("Input token account doesn't exist");
+  }
+
+  // 4. Check pool vault balances
+  try {
+    console.log("🚀 ~ poolKeys.vault.A:", poolKeys.vault.A);
+    const vault0Info = await connection.getTokenAccountBalance(
+      new PublicKey(poolKeys.vault.A),
+    );
+    console.log("🚀 ~ poolKeys.vault.B:", poolKeys.vault.B);
+    const vault1Info = await connection.getTokenAccountBalance(
+      new PublicKey(poolKeys.vault.B),
+    );
+
+    console.log("🏊 Pool liquidity:", {
+      vault0: vault0Info.value.uiAmount,
+      vault1: vault1Info.value.uiAmount,
+    });
+
+    if (vault0Info.value.uiAmount === 0 || vault1Info.value.uiAmount === 0) {
+      issues.push("Pool has no liquidity in one or both vaults");
+    }
+  } catch (error) {
+    issues.push("Could not fetch pool vault balances");
+  }
+
+  // 5. Check output token account exists
+  try {
+    const outputTokenAccount = getAssociatedTokenAddressSync(
+      outputMint,
+      wallet,
+      false,
+      TOKEN_PROGRAM_ID,
+    );
+
+    const outputAccountInfo =
+      await connection.getAccountInfo(outputTokenAccount);
+
+    if (!outputAccountInfo) {
+      console.log("⚠️ Output token account will be created during swap");
+    } else {
+      console.log("✅ Output token account exists");
+    }
+  } catch (error) {
+    // Not critical - will be created
+  }
+
+  return {
+    canSwap: issues.length === 0,
+    issues,
+  };
 }

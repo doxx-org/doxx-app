@@ -95,7 +95,6 @@ export const DepositLPPanel = ({
     if (lpTokenMint && lpTokenMint !== "") {
       balance = walletBalances?.[lpTokenMint]?.amount ?? 0;
     }
-    console.log("🚀 ~ balance:", balance);
 
     if (
       !tokenAInfo.token ||

@@ -1,28 +1,23 @@
 import { useCallback, useMemo } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Connection } from "@solana/web3.js";
 import { ZERO } from "@/lib/constants";
-import {
-  CLMMPoolStateWithConfig,
-  CPMMPoolStateWithConfig,
-} from "@/lib/hooks/chain/types";
-import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
-import { useDoxxClmmSwap } from "@/lib/hooks/chain/useDoxxClmmSwap";
-import { useDoxxCpmmSwap } from "@/lib/hooks/chain/useDoxxCpmmSwap";
+import { IUseBestRouteV2Response } from "@/lib/hooks/chain/prepare/useBestRouteV2";
+import { useDoxxClmmSwapV2 } from "@/lib/hooks/chain/prepare/useDoxxClmmSwapV2";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
 import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
 import { cn } from "@/lib/utils/style";
-import { PoolType } from "../earn/v2/types";
 import { Button } from "../ui/button";
 
 interface SwapButtonProps {
   connection: Connection;
   cpmmProgram: Program<DoxxCpmmIdl> | undefined;
   clmmProgram: Program<DoxxClmmIdl> | undefined;
-  bestRoute: IUseBestRouteResponse | undefined;
+  bestRoute: IUseBestRouteV2Response | undefined;
   isQuotingRoute: boolean;
   wallet: AnchorWallet | undefined;
   token0Balance: BN | undefined;
@@ -34,6 +29,7 @@ interface SwapButtonProps {
   isActionable: boolean;
   onSuccess: (txSignature: string | undefined) => void;
   onError: (error: Error) => void;
+  raydium: Raydium | undefined;
 }
 
 export function SwapButton({
@@ -49,18 +45,31 @@ export function SwapButton({
   isActionable,
   onSuccess,
   onError,
+  raydium,
 }: SwapButtonProps) {
   // inside a React component
-  const cpmm = useDoxxCpmmSwap(cpmmProgram, wallet, onSuccess, onError);
-  const clmm = useDoxxClmmSwap(
-    connection,
-    clmmProgram,
+  // const cpmm = useDoxxCpmmSwap(cpmmProgram, wallet, onSuccess, onError);
+  // const clmm = useDoxxClmmSwap(
+  //   connection,
+  //   clmmProgram,
+  //   wallet,
+  //   raydium,
+  //   onSuccess,
+  //   onError,
+  // );
+
+  const { swapBaseIn, swapBaseOut, isSwapping } = useDoxxClmmSwapV2({
+    raydium,
+    program: clmmProgram,
+    poolInfo: bestRoute?.poolInfo,
+    poolKeys: bestRoute?.poolKeys,
+    remainingAccounts: bestRoute?.remainingAccounts,
     wallet,
     onSuccess,
     onError,
-  );
+  });
 
-  const isSwapping = cpmm.isSwapping || clmm.isSwapping;
+  // const isSwapping = cpmm.isSwapping || clmm.isSwapping;
 
   const handleSwap = useCallback(async () => {
     // invalid inputs / balances
@@ -82,48 +91,68 @@ export function SwapButton({
 
     if (bestRoute.swapState.isBaseExactIn) {
       const minOut = bestRoute.swapState.minMaxAmount;
-      if (bestRoute.poolType === PoolType.CPMM) {
-        const pool = bestRoute.pool as CPMMPoolStateWithConfig;
-        await cpmm.swapBaseInput(pool.poolState, {
-          inputMint,
-          outputMint,
-          amountIn: bestRoute.swapState.token0Amount,
-          minOut,
-        });
-      } else {
-        const pool = bestRoute.pool as CLMMPoolStateWithConfig;
-        await clmm.swapBaseInput(pool.poolState, {
-          inputMint,
-          outputMint,
-          amountIn: bestRoute.swapState.token0Amount,
-          minOut,
-        });
-      }
+      await swapBaseIn({
+        inputMint,
+        outputMint,
+        amountIn: bestRoute.swapState.token0Amount,
+        minOut,
+      });
+      // TODO: uncomment when cpmm is ready
+      // if (bestRoute.poolType === PoolType.CPMM) {
+      //   const pool = bestRoute.pool as CPMMPoolStateWithConfig;
+      //   await cpmm.swapBaseInput(pool.poolState, {
+      //     inputMint,
+      //     outputMint,
+      //     amountIn: bestRoute.swapState.token0Amount,
+      //     minOut,
+      //   });
+      // } else {
+      //   // await clmm.swapBaseInput(pool.poolState, {
+      //   await swapBaseIn({
+      //     inputMint,
+      //     outputMint,
+      //     amountIn: bestRoute.swapState.token0Amount,
+      //     minOut,
+      //   });
+      // }
     } else {
       const maxAmountIn = bestRoute.swapState.minMaxAmount;
-      if (bestRoute.poolType === PoolType.CPMM) {
-        const pool = bestRoute.pool as CPMMPoolStateWithConfig;
-        await cpmm.swapBaseOutput(pool.poolState, {
-          inputMint,
-          outputMint,
-          maxAmountIn,
-          amountOut: bestRoute.swapState.token1Amount,
-        });
-      } else {
-        const pool = bestRoute.pool as CLMMPoolStateWithConfig;
-        await clmm.swapBaseOutput(pool.poolState, {
-          inputMint,
-          outputMint,
-          maxAmountIn,
-          amountOut: bestRoute.swapState.token1Amount,
-        });
-      }
+
+      await swapBaseOut({
+        inputMint,
+        outputMint,
+        maxAmountIn,
+        amountOut: bestRoute.swapState.token1Amount,
+      });
+
+      // TODO: uncomment when cpmm is ready
+      // if (bestRoute.poolType === PoolType.CPMM) {
+      //   const pool = bestRoute.pool as CPMMPoolStateWithConfig;
+      //   await cpmm.swapBaseOutput(pool.poolState, {
+      //     inputMint,
+      //     outputMint,
+      //     maxAmountIn,
+      //     amountOut: bestRoute.swapState.token1Amount,
+      //   });
+      // } else {
+      // const pool = bestRoute.pool as CLMMPoolStateWithConfig;
+      // await clmm.swapBaseOutput(pool.poolState, {
+      // await swapBaseOut({
+      //   inputMint,
+      //   outputMint,
+      //   maxAmountIn,
+      //   amountOut: bestRoute.swapState.token1Amount,
+      // });
+      // }
     }
-  }, [bestRoute, token0Balance, token1Balance, cpmm, clmm]);
+  }, [bestRoute, token0Balance, token1Balance, swapBaseIn, swapBaseOut]);
 
   // build button label and disabled state
   // Order matters
   const [label, disabled] = useMemo(() => {
+    // validate swapping
+    if (isSwapping) return ["Swapping...", true];
+
     if (errorAllTokenProfiles)
       return [simplifyGetAllTokenInfosErrorMsg(errorAllTokenProfiles), true];
 
@@ -135,9 +164,6 @@ export function SwapButton({
 
     // validate best route
     if (!bestRoute || !token0Balance || !token1Balance) return ["Swap", true];
-
-    // validate swapping
-    if (isSwapping) return ["Swapping...", true];
 
     // validate balance
     const requiredIn = bestRoute.swapState.isBaseExactIn

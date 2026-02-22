@@ -4,10 +4,10 @@ import { getAccount } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { BPS, MAX_UINT128, ONE_E9, ZERO } from "@/lib/constants";
 import {
+  CLMMPoolStateWithConfig,
   CPMMAmmConfig,
   CPMMPoolState,
   CPMMPoolStateWithConfig,
-  CLMMPoolStateWithConfig,
 } from "@/lib/hooks/chain/types";
 import { parseAmountBN } from "@/lib/utils";
 import { RoutingError } from "./errors/routing-error";
@@ -34,7 +34,7 @@ export interface SwapState {
   amountOutPerOneTokenIn: BN;
   amountInPerOneTokenOut: BN;
   minMaxAmount: BN;
-  priceImpact: BN;
+  priceImpact: string;
 }
 
 type GetBestQuotePool = {
@@ -278,7 +278,7 @@ export async function getBestQuoteSingleHopExactIn(
         token1Decimals: poolState.mint1Decimals,
         amountOutPerOneTokenIn,
         amountInPerOneTokenOut,
-        priceImpact,
+        priceImpact: "N/A",
       };
 
       best = {
@@ -401,9 +401,9 @@ export async function getBestQuoteSingleHopExactOut(
         .div(newAmountIn);
 
       // amount in per one token out
-      const amountInPerOneTokenOut = newAmountIn.mul(ONE_E9).div(
-        amountOutTokenDecimals,
-      );
+      const amountInPerOneTokenOut = newAmountIn
+        .mul(ONE_E9)
+        .div(amountOutTokenDecimals);
 
       // TODO: handle this
       const priceImpact = newAmountIn
@@ -420,7 +420,7 @@ export async function getBestQuoteSingleHopExactOut(
         token1Decimals: poolState.mint1Decimals,
         amountOutPerOneTokenIn,
         amountInPerOneTokenOut,
-        priceImpact,
+        priceImpact: "N/A",
       };
 
       best = {
@@ -460,11 +460,11 @@ type GetBestQuoteClmmPool = {
   pool: CLMMPoolStateWithConfig;
 };
 
-type GetBestQuoteClmmExactInResult = GetBestQuoteClmmPool & {
+export type GetBestQuoteClmmExactInResult = GetBestQuoteClmmPool & {
   swapState: GetBestQuoteSwapStateBase & { minAmountOut: BN };
 };
 
-type GetBestQuoteClmmExactOutResult = GetBestQuoteClmmPool & {
+export type GetBestQuoteClmmExactOutResult = GetBestQuoteClmmPool & {
   swapState: GetBestQuoteSwapStateBase & { maxAmountIn: BN };
 };
 
@@ -548,7 +548,15 @@ function clmmAmountInFromSqrtPriceX64(params: {
 export async function getBestQuoteClmmSingleHopExactIn(
   opts: IGetBestQuoteClmmParams & { amountIn: string },
 ): Promise<GetBestQuoteClmmExactInResult | undefined> {
-  const { connection, clmmProgramId, pools, inputMint, outputMint, amountIn, slippageBps } = opts;
+  const {
+    connection,
+    clmmProgramId,
+    pools,
+    inputMint,
+    outputMint,
+    amountIn,
+    slippageBps,
+  } = opts;
   let best: GetBestQuoteClmmExactInResult | undefined;
 
   // Pre-filter candidates and batch-check existence of current tick array PDA.
@@ -620,8 +628,12 @@ export async function getBestQuoteClmmSingleHopExactIn(
     if (minAmountOut.lte(ZERO)) continue;
 
     if (!best || minAmountOut.gt(best.swapState.minAmountOut)) {
-      const amountOutPerOneTokenIn = amountOut.mul(ONE_E9).div(amountInTokenDecimals);
-      const amountInPerOneTokenOut = amountInTokenDecimals.mul(ONE_E9).div(amountOut);
+      const amountOutPerOneTokenIn = amountOut
+        .mul(ONE_E9)
+        .div(amountInTokenDecimals);
+      const amountInPerOneTokenOut = amountInTokenDecimals
+        .mul(ONE_E9)
+        .div(amountOut);
       const swapState: GetBestQuoteSwapStateBase = {
         token0: inputMint,
         token1: outputMint,
@@ -631,7 +643,7 @@ export async function getBestQuoteClmmSingleHopExactIn(
         token1Decimals: outputDecimals,
         amountOutPerOneTokenIn,
         amountInPerOneTokenOut,
-        priceImpact: ZERO,
+        priceImpact: "N/A",
       };
       best = { pool, swapState: { ...swapState, minAmountOut } };
     }
@@ -643,7 +655,15 @@ export async function getBestQuoteClmmSingleHopExactIn(
 export async function getBestQuoteClmmSingleHopExactOut(
   opts: IGetBestQuoteClmmParams & { amountOut: string },
 ): Promise<GetBestQuoteClmmExactOutResult | undefined> {
-  const { connection, clmmProgramId, pools, inputMint, outputMint, amountOut, slippageBps } = opts;
+  const {
+    connection,
+    clmmProgramId,
+    pools,
+    inputMint,
+    outputMint,
+    amountOut,
+    slippageBps,
+  } = opts;
   let best: GetBestQuoteClmmExactOutResult | undefined;
 
   const candidates: CLMMPoolStateWithConfig[] = [];
@@ -713,8 +733,12 @@ export async function getBestQuoteClmmSingleHopExactOut(
     if (maxAmountIn.lte(ZERO) || maxAmountIn.gte(MAX_UINT128)) continue;
 
     if (!best || maxAmountIn.lt(best.swapState.maxAmountIn)) {
-      const amountOutPerOneTokenIn = amountOutTokenDecimals.mul(ONE_E9).div(amountIn);
-      const amountInPerOneTokenOut = amountIn.mul(ONE_E9).div(amountOutTokenDecimals);
+      const amountOutPerOneTokenIn = amountOutTokenDecimals
+        .mul(ONE_E9)
+        .div(amountIn);
+      const amountInPerOneTokenOut = amountIn
+        .mul(ONE_E9)
+        .div(amountOutTokenDecimals);
       const swapState: GetBestQuoteSwapStateBase = {
         token0: inputMint,
         token1: outputMint,
@@ -724,7 +748,7 @@ export async function getBestQuoteClmmSingleHopExactOut(
         token1Decimals: outputDecimals,
         amountOutPerOneTokenIn,
         amountInPerOneTokenOut,
-        priceImpact: ZERO,
+        priceImpact: "N/A",
       };
       best = { pool, swapState: { ...swapState, maxAmountIn } };
     }

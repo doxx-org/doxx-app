@@ -7,6 +7,7 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import {
+  NightlyWalletAdapter,
   // BitgetWalletAdapter,
   // CoinbaseWalletAdapter,
   // PhantomWalletAdapter,
@@ -48,15 +49,16 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
       //   },
       // }),
       new SolflareWalletAdapter(),
+      new NightlyWalletAdapter(),
       // new BitgetWalletAdapter(),
       // new CoinbaseWalletAdapter(),
     ],
     [],
   );
 
-  const handleError = (error: Error) => {
-    toast.error(simplifyErrorMessage(error));
-  };
+  // const handleError = (error: Error) => {
+  //   toast.error(simplifyErrorMessage(error));
+  // };
 
   if (!mounted) return null;
 
@@ -69,7 +71,11 @@ export const WalletConnectionProvider: FC<WalletConnectionProviderProps> = ({
         confirmTransactionInitialTimeout: 120_000,
       }}
     >
-      <WalletProvider wallets={wallets} autoConnect onError={handleError}>
+      <WalletProvider
+        wallets={wallets}
+        autoConnect
+        // onError={handleError}
+      >
         {children}
       </WalletProvider>
     </ConnectionProvider>

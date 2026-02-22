@@ -1,5 +1,9 @@
 import { Program } from "@coral-xyz/anchor";
-import { keepPreviousData, UseQueryResult, useQuery } from "@tanstack/react-query";
+import {
+  UseQueryResult,
+  keepPreviousData,
+  useQuery,
+} from "@tanstack/react-query";
 import { DoxxClmmIdl } from "@/lib/idl";
 import { CLMMPoolStateWithConfig } from "./types";
 
@@ -62,8 +66,8 @@ export function useGetCLMMPools(
       );
 
       // combine pool states, amm configs and observation states
-      const allPoolStatesData: CLMMPoolStateWithConfig[] = allPoolStates.map(
-        (poolState) => {
+      const allPoolStatesData: CLMMPoolStateWithConfig[] = allPoolStates
+        .map((poolState) => {
           const ammConfig = ammConfigByAddress.get(
             poolState.account.ammConfig.toBase58(),
           );
@@ -81,8 +85,8 @@ export function useGetCLMMPools(
             ammConfig,
             observationState,
           };
-        },
-      ).filter(c => c !== undefined);
+        })
+        .filter((c) => c !== undefined);
 
       return allPoolStatesData;
     },

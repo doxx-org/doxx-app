@@ -225,7 +225,6 @@ export function LiquidityRangeChart({
     const nextMax = clamp(currentPrice * 1.05, absMin, absMax);
     setViewMin(Math.min(nextMin, nextMax));
     setViewMax(Math.max(nextMin, nextMax));
-     
   }, [currentPrice, absMax]);
 
   const domain = useMemo(() => {
@@ -239,7 +238,7 @@ export function LiquidityRangeChart({
   const tickData = useMemo(() => {
     return liquidityData ?? defaultMockLiquidityData(currentPrice);
   }, [currentPrice, liquidityData]);
-  console.log("🚀 ~ tickData:", tickData);
+  // console.log("🚀 ~ tickData:", tickData);
 
   // Uniswap-style: ticks -> active liquidity -> log-binned histogram.
   const bars = useMemo(() => {
@@ -506,14 +505,12 @@ export function LiquidityRangeChart({
   };
 
   const onPointerDownCapture = (e: React.PointerEvent) => {
-    console.log("🚀 ~ down capture e.pointerId:", e.pointerId);
     pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
   };
 
   const onPointerMoveCapture = (e: React.PointerEvent) => {
     const map = pointersRef.current;
     if (!map.has(e.pointerId)) return;
-    console.log("🚀 ~ map:", map);
     map.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     if (map.size !== 2) {
@@ -569,7 +566,6 @@ export function LiquidityRangeChart({
 
   const onPointerUpCapture = (e: React.PointerEvent) => {
     pointersRef.current.delete(e.pointerId);
-    console.log("🚀 ~ up capture e.pointerId:", e.pointerId);
     if (pointersRef.current.size < 2) pinchRef.current = null;
   };
 
@@ -692,7 +688,6 @@ export function LiquidityRangeChart({
             const isThick = v >= thickCutoff;
             return (
               <div
-                 
                 key={idx}
                 className={cn(
                   "w-full",

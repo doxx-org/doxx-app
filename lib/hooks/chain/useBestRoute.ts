@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
+import { PoolType } from "@/components/earn/v2/types";
 import { DEFAULT_SLIPPAGE_BPS } from "@/lib/constants";
 import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
 import {
@@ -10,8 +12,6 @@ import {
   getBestQuoteSingleHopExactOut,
 } from "../../utils/routing";
 import { CLMMPoolStateWithConfig, CPMMPoolStateWithConfig } from "./types";
-import { useMemo } from "react";
-import { PoolType } from "@/components/earn/v2/types";
 
 export type IUseBestRouteResponse = {
   poolType: PoolType;
@@ -46,12 +46,12 @@ export function useBestRoute({
     return (
       !!baseInput &&
       baseInput !== "0" &&
-      ((cpmmPools && cpmmPools.length > 0) || (clmmPools && clmmPools.length > 0)) &&
+      ((cpmmPools && cpmmPools.length > 0) ||
+        (clmmPools && clmmPools.length > 0)) &&
       inputMint.toString() !== "" &&
       outputMint.toString() !== ""
     );
   }, [baseInput, cpmmPools, clmmPools, inputMint, outputMint]);
-
 
   return useQuery({
     queryKey: [
@@ -109,13 +109,31 @@ export function useBestRoute({
 
           const best =
             cpmmQuote && clmmQuote
-              ? cpmmQuote.swapState.minAmountOut.gte(clmmQuote.swapState.minAmountOut)
-                ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
-                : { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+              ? cpmmQuote.swapState.minAmountOut.gte(
+                  clmmQuote.swapState.minAmountOut,
+                )
+                ? {
+                    poolType: PoolType.CPMM,
+                    pool: cpmmQuote.pool,
+                    swap: cpmmQuote.swapState,
+                  }
+                : {
+                    poolType: PoolType.CLMM,
+                    pool: clmmQuote.pool,
+                    swap: clmmQuote.swapState,
+                  }
               : cpmmQuote
-                ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
+                ? {
+                    poolType: PoolType.CPMM,
+                    pool: cpmmQuote.pool,
+                    swap: cpmmQuote.swapState,
+                  }
                 : clmmQuote
-                  ? { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+                  ? {
+                      poolType: PoolType.CLMM,
+                      pool: clmmQuote.pool,
+                      swap: clmmQuote.swapState,
+                    }
                   : undefined;
 
           if (!best) return null;
@@ -165,13 +183,31 @@ export function useBestRoute({
 
         const best =
           cpmmQuote && clmmQuote
-            ? cpmmQuote.swapState.maxAmountIn.lte(clmmQuote.swapState.maxAmountIn)
-              ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
-              : { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+            ? cpmmQuote.swapState.maxAmountIn.lte(
+                clmmQuote.swapState.maxAmountIn,
+              )
+              ? {
+                  poolType: PoolType.CPMM,
+                  pool: cpmmQuote.pool,
+                  swap: cpmmQuote.swapState,
+                }
+              : {
+                  poolType: PoolType.CLMM,
+                  pool: clmmQuote.pool,
+                  swap: clmmQuote.swapState,
+                }
             : cpmmQuote
-              ? { poolType: PoolType.CPMM, pool: cpmmQuote.pool, swap: cpmmQuote.swapState }
+              ? {
+                  poolType: PoolType.CPMM,
+                  pool: cpmmQuote.pool,
+                  swap: cpmmQuote.swapState,
+                }
               : clmmQuote
-                ? { poolType: PoolType.CLMM, pool: clmmQuote.pool, swap: clmmQuote.swapState }
+                ? {
+                    poolType: PoolType.CLMM,
+                    pool: clmmQuote.pool,
+                    swap: clmmQuote.swapState,
+                  }
                 : undefined;
 
         if (!best) return null;
@@ -187,7 +223,7 @@ export function useBestRoute({
           },
         };
       } catch (error) {
-        console.log("🚀 ~ error:", error)
+        console.log("🚀 ~ error:", error);
         throw new Error(simplifyRoutingErrorMsg(error));
       }
     },

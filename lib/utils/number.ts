@@ -1,5 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
 import {
+  BPS,
   MAXIMUM_100_MILLION,
   // MINIMUM_CAP_E9,
   // ONE_MILLION_E9,
@@ -88,6 +89,10 @@ export function normalizeBPSString(bpsString: string): string {
   return normalizeBN(toBN(bpsString), 4, {
     minCap: parseAmountBN("0.01", 4),
   });
+}
+
+export function normalizeBPS(bps: number): number {
+  return (bps / BPS) * 100;
 }
 
 interface NormalizeBNOptions extends FormatAmountBNOptions {

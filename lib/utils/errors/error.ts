@@ -34,7 +34,7 @@ const KNOWN_ERRORS: KnownError[] = [
 ];
 
 export const simplifyErrorMessage = (error: Error, defaultMessage?: string) => {
-  console.log("🚀 ~ error:", error)
+  console.log("🚀 ~ error:", error.message);
   const unhandledError = defaultMessage ?? "An unknown error occurred.";
   // try to simplify the error message
   try {

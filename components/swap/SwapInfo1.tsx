@@ -3,14 +3,15 @@ import { ArrowLeftRight, RefreshCw } from "lucide-react";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
 import { TokenProfile } from "@/lib/config/tokens";
-import { IUseBestRouteResponse } from "@/lib/hooks/chain/useBestRoute";
+import { IUseBestRouteV2Response } from "@/lib/hooks/chain/prepare/useBestRouteV2";
 import { cn, normalizeBN } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 
 interface SwapInfo1Props {
-  bestRoute: IUseBestRouteResponse | null | undefined;
+  bestRoute: IUseBestRouteV2Response | null | undefined;
+  // bestRoute: IUseBestRouteResponse | null | undefined;
   isBaseExactIn: boolean;
   buyToken: TokenProfile;
   sellToken: TokenProfile;
@@ -160,12 +161,7 @@ export function SwapInfo1({
         {isFetchingBestRoute ? (
           <Skeleton />
         ) : (
-          <p>
-            {bestRoute
-              ? "N/A"
-              : // ? `${normalizeBN(bestRoute.swapState.priceImpact, 4)}%`
-                "-"}
-          </p>
+          <p>{bestRoute ? `${bestRoute.swapState.priceImpact}%` : "-"}</p>
         )}
       </div>
     </>

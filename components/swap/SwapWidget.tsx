@@ -10,7 +10,6 @@ import {
 } from "react";
 import { BN } from "@coral-xyz/anchor";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
 import ArrowDown from "@/assets/icons/arrow-down.svg";
 import Zap from "@/assets/icons/zap.svg";
@@ -24,7 +23,7 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
-import { useBestRoute } from "@/lib/hooks/chain/useBestRoute";
+import { useBestRouteV2 } from "@/lib/hooks/chain/prepare/useBestRouteV2";
 import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
@@ -32,6 +31,7 @@ import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useGetCLMMPools } from "@/lib/hooks/chain/useGetCLMMPools";
 import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
+import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
@@ -187,17 +187,37 @@ export function SwapWidget() {
     true,
   );
 
+  // Initialize Raydium SDK
+  const { data: raydium } = useRaydium({ connection, wallet });
+
+  // const {
+  //   data: bestRoute,
+  //   isLoading: isLoadingBestRoute,
+  //   error: errorBestRoute,
+  //   isRefetching: isRefetchingBestRoute,
+  //   refetch: refetchBestRoute,
+  // } = useBestRoute({
+  //   connection,
+  //   clmmProgramId: doxxClmmProgram?.programId,
+  //   inputMint: new PublicKey(sellToken.address),
+  //   outputMint: new PublicKey(buyToken.address),
+  //   cpmmPools: cpmmPoolStates,
+  //   clmmPools: clmmPoolStates,
+  //   baseInput,
+  //   isBaseExactIn,
+  //   slippageBps,
+  // });
+
   const {
-    data: bestRoute,
-    isLoading: isLoadingBestRoute,
-    error: errorBestRoute,
-    isRefetching: isRefetchingBestRoute,
-    refetch: refetchBestRoute,
-  } = useBestRoute({
-    connection,
-    clmmProgramId: doxxClmmProgram?.programId,
-    inputMint: new PublicKey(sellToken.address),
-    outputMint: new PublicKey(buyToken.address),
+    data: bestRouteV2,
+    isLoading: isLoadingBestRouteV2,
+    error: errorBestRouteV2,
+    isRefetching: isRefetchingBestRouteV2,
+    refetch: refetchBestRouteV2,
+  } = useBestRouteV2({
+    raydium,
+    inputToken: sellToken,
+    outputToken: buyToken,
     cpmmPools: cpmmPoolStates,
     clmmPools: clmmPoolStates,
     baseInput,
@@ -244,17 +264,17 @@ export function SwapWidget() {
     }
 
     return (
-      isLoadingBestRoute ||
+      isLoadingBestRouteV2 ||
       isTyping ||
-      isRefetchingBestRoute ||
+      isRefetchingBestRouteV2 ||
       isRefetchingCPMMPoolStates ||
       isRefetchingCLMMPoolStates
     );
   }, [
-    isLoadingBestRoute,
+    isLoadingBestRouteV2,
     isTyping,
     isEmptyInput,
-    isRefetchingBestRoute,
+    isRefetchingBestRouteV2,
     isRefetchingCPMMPoolStates,
     isRefetchingCLMMPoolStates,
   ]);
@@ -354,8 +374,10 @@ export function SwapWidget() {
   const handleRefreshBestRoute = useCallback(() => {
     refetchCPMMPoolStates();
     refetchCLMMPoolStates();
-    refetchBestRoute();
-  }, [refetchCPMMPoolStates, refetchCLMMPoolStates, refetchBestRoute]);
+    refetchBestRouteV2();
+    // refetchBestRoute();
+    // }, [refetchCPMMPoolStates, refetchCLMMPoolStates, refetchBestRoute]);
+  }, [refetchCPMMPoolStates, refetchCLMMPoolStates, refetchBestRouteV2]);
 
   const handleSuccess = useCallback(
     (txSignature: string | undefined) => {
@@ -391,8 +413,6 @@ export function SwapWidget() {
   const [tokenAValue, tokenBValue] = useMemo(() => {
     const tokenAPrice = prices?.splPrice[sellToken.address.toLowerCase()];
     const tokenBPrice = prices?.splPrice[buyToken.address.toLowerCase()];
-    console.log("🚀 ~ sellAmount:", sellAmount);
-    console.log("🚀 ~ buyAmount:", buyAmount);
     return [
       tokenAPrice !== undefined
         ? sellAmount !== ""
@@ -408,7 +428,7 @@ export function SwapWidget() {
   }, [prices, sellToken.address, sellAmount, buyToken.address, buyAmount]);
 
   useEffect(() => {
-    if (!!errorBestRoute) {
+    if (!!errorBestRouteV2) {
       if (isBaseExactIn) {
         setBuyAmount("");
       } else {
@@ -417,11 +437,11 @@ export function SwapWidget() {
       return;
     }
 
-    if (!bestRoute && isFetchingBestRoute) {
+    if (!bestRouteV2 && isFetchingBestRoute) {
       return;
     }
 
-    if (!bestRoute) {
+    if (!bestRouteV2) {
       // setBuyAmount("");
       // setSellAmount("");
       // setBaseInput("");
@@ -431,30 +451,80 @@ export function SwapWidget() {
     if (isBaseExactIn) {
       // normalize amount to human readable format
       const normalizedAmountOut = normalizeBN(
-        bestRoute.swapState.token1Amount,
-        bestRoute.swapState.token1Decimals,
+        bestRouteV2.swapState.token1Amount,
+        bestRouteV2.swapState.token1Decimals,
         {
-          minCap: parseAmountBN("0.00001", bestRoute.swapState.token1Decimals),
+          minCap: parseAmountBN(
+            "0.00001",
+            bestRouteV2.swapState.token1Decimals,
+          ),
         },
       );
       setBuyAmount(normalizedAmountOut);
     } else {
       // normalize amount to human readable format
-      console.log(
-        "🚀 ~ bestRoute.swapState.token0Amount:",
-        bestRoute.swapState.token0Amount.toString(),
-      );
       const normalizedAmountIn = normalizeBN(
-        bestRoute.swapState.token0Amount,
-        bestRoute.swapState.token0Decimals,
+        bestRouteV2.swapState.token0Amount,
+        bestRouteV2.swapState.token0Decimals,
         {
-          minCap: parseAmountBN("0.00001", bestRoute.swapState.token0Decimals),
+          minCap: parseAmountBN(
+            "0.00001",
+            bestRouteV2.swapState.token0Decimals,
+          ),
         },
       );
-      console.log("🚀 ~ normalizedAmountIn:", normalizedAmountIn);
       setSellAmount(normalizedAmountIn);
     }
-  }, [isBaseExactIn, bestRoute, isFetchingBestRoute, errorBestRoute]);
+  }, [isBaseExactIn, bestRouteV2, isFetchingBestRoute, errorBestRouteV2]);
+
+  // useEffect(() => {
+  //   if (!!errorBestRoute) {
+  //     if (isBaseExactIn) {
+  //       setBuyAmount("");
+  //     } else {
+  //       setSellAmount("");
+  //     }
+  //     return;
+  //   }
+
+  //   if (!bestRoute && isFetchingBestRoute) {
+  //     return;
+  //   }
+
+  //   if (!bestRoute) {
+  //     // setBuyAmount("");
+  //     // setSellAmount("");
+  //     // setBaseInput("");
+  //     return;
+  //   }
+
+  //   if (isBaseExactIn) {
+  //     // normalize amount to human readable format
+  //     const normalizedAmountOut = normalizeBN(
+  //       bestRoute.swapState.token1Amount,
+  //       bestRoute.swapState.token1Decimals,
+  //       {
+  //         minCap: parseAmountBN("0.00001", bestRoute.swapState.token1Decimals),
+  //       },
+  //     );
+  //     setBuyAmount(normalizedAmountOut);
+  //   } else {
+  //     // normalize amount to human readable format
+  //     console.log(
+  //       "🚀 ~ bestRoute.swapState.token0Amount:",
+  //       bestRoute.swapState.token0Amount.toString(),
+  //     );
+  //     const normalizedAmountIn = normalizeBN(
+  //       bestRoute.swapState.token0Amount,
+  //       bestRoute.swapState.token0Decimals,
+  //       {
+  //         minCap: parseAmountBN("0.00001", bestRoute.swapState.token0Decimals),
+  //       },
+  //     );
+  //     console.log("🚀 ~ normalizedAmountIn:", normalizedAmountIn);
+  //     setSellAmount(normalizedAmountIn);
+  //   }
+  // }, [isBaseExactIn, bestRoute, isFetchingBestRoute, errorBestRoute]);
 
   useEffect(() => {
     if (isBaseExactIn) {
@@ -533,7 +603,7 @@ export function SwapWidget() {
         {/* details */}
         <div className={cn(text.sb3(), "flex flex-col gap-2 text-gray-600")}>
           <SwapInfo1
-            bestRoute={bestRoute}
+            bestRoute={bestRouteV2}
             isBaseExactIn={isBaseExactIn}
             buyToken={buyToken}
             sellToken={sellToken}
@@ -542,7 +612,7 @@ export function SwapWidget() {
           />
           <Separator className="bg-gray-800" />
           <SwapInfo2
-            bestRoute={bestRoute}
+            bestRoute={bestRouteV2}
             isFetchingBestRoute={isFetchingBestRoute}
             slippage={slippage}
           />
@@ -555,12 +625,12 @@ export function SwapWidget() {
           <SwapButton
             errors={{
               errorAllTokenProfiles,
-              errorBestRoute,
+              errorBestRoute: errorBestRouteV2,
             }}
             cpmmProgram={doxxCpmmProgram}
             clmmProgram={doxxClmmProgram}
             connection={connection}
-            bestRoute={bestRoute ?? undefined}
+            bestRoute={bestRouteV2 ?? undefined}
             isActionable={isActionable}
             isQuotingRoute={isFetchingBestRoute}
             wallet={wallet}
@@ -568,6 +638,7 @@ export function SwapWidget() {
             token1Balance={token1BalanceBN}
             onSuccess={handleSuccess}
             onError={handleError}
+            raydium={raydium}
           />
         </ConnectButtonWrapper>
       </CardFooter>
