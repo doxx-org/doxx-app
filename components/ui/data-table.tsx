@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import {
   ColumnDef,
   PaginationState,
@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useNoMemo } from "@/lib/hooks/useNoMemo";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
 import { DataTablePagination } from "./data-table-pagination";
@@ -79,6 +78,7 @@ export function DataTable<TData, TValue>({
   // const scrollContainerRef = useRef<HTMLDivElement>(null);
   // const isLoadingRef = useRef(false);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
     columns,

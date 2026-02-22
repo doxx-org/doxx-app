@@ -131,6 +131,7 @@ export function useDepositClmmPool(
         const poolKeys = data.poolKeys;
 
         // Determine tick range based on price mode
+        // eslint-disable-next-line prefer-const
         let [lowerTick, upperTick] = getTickRangeFromPriceMode(
           priceMode,
           tickSpacing,

@@ -10,7 +10,6 @@ import {
   CLMMPoolStateWithConfig,
 } from "@/lib/hooks/chain/types";
 import { useAllPrices } from "@/lib/hooks/useAllPrices";
-import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
 import { cn, parseDecimalsInput } from "@/lib/utils";
 import { TokenLabel } from "../../../TokenLabel";
@@ -36,10 +35,10 @@ interface CreateCLMMPoolDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-enum SelectTokenType {
-  TOKEN_A,
-  TOKEN_B,
-}
+// enum SelectTokenType {
+//   TOKEN_A,
+//   TOKEN_B,
+// }
 
 const tokenA = solana;
 
@@ -58,13 +57,13 @@ export const CreateCLMMPoolDialog = ({
   const [priceMode, setPriceMode] = useState<PriceMode>(PriceMode.FULL);
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
-  const [selectedTokenType, setSelectedTokenType] = useState<SelectTokenType>(
-    SelectTokenType.TOKEN_A,
-  );
+  // const [selectedTokenType, setSelectedTokenType] = useState<SelectTokenType>(
+  //   SelectTokenType.TOKEN_A,
+  // );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
   const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
-  const [tokenALoading, setTokenALoading] = useState(false);
-  const [tokenBLoading, setTokenBLoading] = useState(false);
+  const [tokenALoading, _setTokenALoading] = useState(false);
+  const [tokenBLoading, _setTokenBLoading] = useState(false);
 
   const { data: allPrices } = useAllPrices();
 
@@ -99,10 +98,10 @@ export const CreateCLMMPoolDialog = ({
     setter(parseDecimalsInput(value));
   };
 
-  const handleOpenTokenSelector = (tokenType: SelectTokenType) => {
-    setSelectedTokenType(tokenType);
-    setIsTokenSelectorOpen(true);
-  };
+  // const handleOpenTokenSelector = (tokenType: SelectTokenType) => {
+  //   // setSelectedTokenType(tokenType);
+  //   setIsTokenSelectorOpen(true);
+  // };
 
   const isPoolExists = useMemo(() => {
     if (!tokenA || !tokenB || !poolsData) {
@@ -120,6 +119,7 @@ export const CreateCLMMPoolDialog = ({
         )
       );
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [poolsData, tokenA, tokenB, selectedFeeIndex]);
 
   return (
@@ -174,9 +174,9 @@ export const CreateCLMMPoolDialog = ({
                         label="Select Token B"
                         address={tokenB?.address}
                         disableTokenSelect={false}
-                        onTokenSelect={() =>
-                          handleOpenTokenSelector(SelectTokenType.TOKEN_B)
-                        }
+                        // onTokenSelect={() =>
+                        //   handleOpenTokenSelector(SelectTokenType.TOKEN_B)
+                        // }
                         className="w-full justify-between p-5"
                         tokenClassName="gap-4.5"
                       />

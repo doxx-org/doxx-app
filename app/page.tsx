@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtom } from "jotai";
-import { ProSwapWidget, SwapWidget, TrendingTokens } from "@/components/swap";
+import { ProSwapWidget, SwapWidget } from "@/components/swap";
 import { TradingMode, tradingModeAtom } from "@/lib/utils/storage";
 
 export default function Home() {

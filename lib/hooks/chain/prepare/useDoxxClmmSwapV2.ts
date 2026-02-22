@@ -8,7 +8,7 @@ import {
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { DoxxClmmIdl } from "@/lib/idl";
-import { diagnoseSwapIssues } from "@/lib/utils";
+// import { diagnoseSwapIssues } from "@/lib/utils";
 import {
   buildSwapExecuteBaseIn,
   buildSwapExecuteBaseOut,

@@ -345,7 +345,7 @@ const PositionItem = ({
 
 export const CLMMPositionsTab = ({
   selectedPool,
-  raydium,
+  // raydium,
   positions: rawPositions,
   isLoadingPositions,
   allPools,

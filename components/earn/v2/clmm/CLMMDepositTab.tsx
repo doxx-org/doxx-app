@@ -94,14 +94,18 @@ export const CLMMDepositTab = ({
   useEffect(() => {
     if (isLoadingPrepareOpenCLMMPosition) {
       if (baseIn) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTokenBLoading(true);
       } else {
+         
         setTokenALoading(true);
       }
       return;
     }
 
+     
     setTokenBLoading(false);
+     
     setTokenALoading(false);
 
     if (prepareOpenCLMMPositionData && !isLoadingPrepareOpenCLMMPosition) {
@@ -121,7 +125,13 @@ export const CLMMDepositTab = ({
         );
       }
     }
-  }, [prepareOpenCLMMPositionData, isLoadingPrepareOpenCLMMPosition, baseIn]);
+  }, [
+    prepareOpenCLMMPositionData,
+    isLoadingPrepareOpenCLMMPosition,
+    baseIn,
+    selectedPool.lpToken.token2.decimals,
+    selectedPool.lpToken.token1.decimals,
+  ]);
 
   return (
     <div className="flex min-h-full flex-col">

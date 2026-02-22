@@ -146,6 +146,7 @@ export const DepositLPPanel = ({
 
   useEffect(() => {
     onAmountLPChange?.(lpToken.amount.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lpToken]);
 
   return (

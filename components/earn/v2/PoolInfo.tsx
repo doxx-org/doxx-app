@@ -147,7 +147,7 @@ export const PoolInfo = ({
   poolType,
   priceBperA,
   reward24h,
-  raydium,
+  // raydium,
 }: Pool & { raydium: Raydium | undefined }) => {
   return (
     <div className="flex w-full flex-col gap-5 border-b border-gray-800 px-4 py-5">

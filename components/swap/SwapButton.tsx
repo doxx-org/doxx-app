@@ -33,8 +33,8 @@ interface SwapButtonProps {
 }
 
 export function SwapButton({
-  connection,
-  cpmmProgram,
+  // connection,
+  // cpmmProgram,
   clmmProgram,
   isQuotingRoute,
   bestRoute,

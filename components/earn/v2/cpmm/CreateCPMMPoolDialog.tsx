@@ -88,6 +88,7 @@ export const CreateCPMMPoolDialog = ({
 
   useEffect(() => {
     if (!poolsData || !tokenA || !tokenB || poolsData.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLpTokenMint("");
       return;
     }
@@ -101,6 +102,7 @@ export const CreateCPMMPoolDialog = ({
     );
 
     if (!poolData) {
+       
       setLpTokenMint("");
       return;
     }

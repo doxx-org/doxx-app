@@ -105,9 +105,9 @@ export const DepositCPMMButton = ({
       !poolId ||
       !tokenA ||
       !tokenB ||
-      !tokenAAmount ||
-      !tokenBAmount ||
-      !doxxAmmProgram
+      !amount0.gt(new BN(0)) ||
+      !amount1.gt(new BN(0)) ||
+      !lpAmount.gt(new BN(0))
     ) {
       toast.error("Please enter amounts for both tokens");
       return;
@@ -137,35 +137,35 @@ export const DepositCPMMButton = ({
       // const lpAmount = parseAmountBN(lpTokenAmount, 9); // LP tokens typically use 9 decimals
 
       // Use higher slippage tolerance (10%) for safety
-      const slippageTolerance = 0.1;
-      const maxAmount0 = amount0
-        .muln(Math.floor(100 * (1 + slippageTolerance)))
-        .divn(100);
-      const maxAmount1 = amount1
-        .muln(Math.floor(100 * (1 + slippageTolerance)))
-        .divn(100);
+      // const slippageTolerance = 0.1;
+      // const maxAmount0 = amount0
+      //   .muln(Math.floor(100 * (1 + slippageTolerance)))
+      //   .divn(100);
+      // const maxAmount1 = amount1
+      //   .muln(Math.floor(100 * (1 + slippageTolerance)))
+      //   .divn(100);
 
-      console.log("Depositing to pool:", {
-        poolId,
-        uiTokenA: tokenA.symbol,
-        uiTokenB: tokenB.symbol,
-        uiAmountA: tokenAAmount,
-        uiAmountB: tokenBAmount,
-        poolToken0: poolState.token0Mint.toBase58(),
-        poolToken1: poolState.token1Mint.toBase58(),
-        // isTokenAToken0,
-        actualAmount0: amount0,
-        actualAmount1: amount1,
-        lpAmount: lpAmount.toString(),
-        // maxAmount0: maxAmount0.toString(),
-        // maxAmount1: maxAmount1.toString(),
-        slippage: `${slippageTolerance * 100}%`,
-      });
+      // console.log("Depositing to pool:", {
+      //   poolId,
+      //   uiTokenA: tokenA.symbol,
+      //   uiTokenB: tokenB.symbol,
+      //   uiAmountA: tokenAAmount,
+      //   uiAmountB: tokenBAmount,
+      //   poolToken0: poolState.token0Mint.toBase58(),
+      //   poolToken1: poolState.token1Mint.toBase58(),
+      //   // isTokenAToken0,
+      //   actualAmount0: amount0,
+      //   actualAmount1: amount1,
+      //   lpAmount: lpAmount.toString(),
+      //   // maxAmount0: maxAmount0.toString(),
+      //   // maxAmount1: maxAmount1.toString(),
+      //   slippage: `${slippageTolerance * 100}%`,
+      // });
 
       await deposit({
         poolState: new PublicKey(poolId),
-        token0Mint: poolState.token0Mint,
-        token1Mint: poolState.token1Mint,
+        token0Mint: new PublicKey(tokenA.address),
+        token1Mint: new PublicKey(tokenB.address),
         lpMint: poolState.lpMint,
         token0Vault: poolState.token0Vault,
         token1Vault: poolState.token1Vault,
@@ -179,7 +179,7 @@ export const DepositCPMMButton = ({
       console.error("Deposit error:", error);
       // Error is already handled by handleError callback
     }
-  }, [amount0, amount1, lpAmount]);
+  }, [amount0, amount1, lpAmount, poolState, poolId, tokenA, tokenB, deposit]);
 
   const [label, disabled, handleDepositButton] = useMemo(() => {
     if (isDepositing) {
@@ -187,13 +187,12 @@ export const DepositCPMMButton = ({
     }
 
     const tokenABalance = walletBalances?.[tokenA.address]?.rawAmount;
-    console.log("🚀 ~ tokenABalance:", tokenABalance);
     const tokenBBalance = walletBalances?.[tokenB.address]?.rawAmount;
-    console.log("🚀 ~ tokenBBalance:", tokenBBalance);
+    // console.log("🚀 ~ tokenABalance:", tokenABalance);
+    // console.log("🚀 ~ tokenBBalance:", tokenBBalance);
+    // console.log("🚀 ~ amount0:", amount0.toString());
+    // console.log("🚀 ~ amount1:", amount1.toString());
 
-    console.log("🚀 ~ amount0:", amount0.toString());
-
-    console.log("🚀 ~ amount1:", amount1.toString());
     if (
       tokenABalance === undefined ||
       tokenBBalance === undefined ||
@@ -209,7 +208,15 @@ export const DepositCPMMButton = ({
     }
 
     return ["Deposit", false, handleDeposit];
-  }, [amount0, amount1, lpAmount, isDepositing, handleDeposit, walletBalances]);
+  }, [
+    amount0,
+    amount1,
+    isDepositing,
+    handleDeposit,
+    walletBalances,
+    tokenA,
+    tokenB,
+  ]);
 
   return (
     <Button

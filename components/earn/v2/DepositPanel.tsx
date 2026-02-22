@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { TokenProfile } from "@/lib/config/tokens";
 import { BalanceMapByMint, PriceMap } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";

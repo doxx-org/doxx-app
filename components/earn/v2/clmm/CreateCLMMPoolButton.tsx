@@ -9,11 +9,10 @@ import { useCreateClmmPoolAndPosition } from "@/lib/hooks/chain/useCreateClmmPoo
 import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
-import { getAmmConfigAddress, simplifyErrorMessage } from "@/lib/utils";
+import { simplifyErrorMessage } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
 import { Button } from "../../../ui/button";
 import { ConnectButtonWrapper } from "../../../wallet/ConnectButtonWrapper";
-import { FEE_TIERS } from "../../FeeTierSelection";
 import { PriceMode } from "../types";
 
 interface CreateCLMMPoolButtonProps {
@@ -112,70 +111,27 @@ export const CreateCLMMPoolButton = ({
     !isCreatingPool;
 
   const handleCreatePool = useCallback(async () => {
-    if (
-      !tokenA ||
-      !tokenB ||
-      !initialPrice ||
-      !amountA ||
-      !amountB ||
-      !doxxClmmProgram
-    ) {
+    if (!tokenA || !tokenB || !initialPrice || !amountA || !amountB) {
       toast.error(
         "Please select both tokens and enter price + deposit amounts",
       );
       return;
     }
 
-    try {
-      const [ammConfig] = getAmmConfigAddress(
-        selectedFeeIndex,
-        doxxClmmProgram.programId,
-      );
-
-      console.log(
-        "Using AMM config index:",
-        selectedFeeIndex,
-        "Address:",
-        ammConfig.toBase58(),
-      );
-
-      // Verify AMM config exists
-      try {
-        const configAccount =
-          await doxxClmmProgram.account.ammConfig.fetch(ammConfig);
-        console.log("AMM Config found:", {
-          index: configAccount.index,
-          tradeFeeRate: configAccount.tradeFeeRate.toString(),
-          tickSpacing: configAccount.tickSpacing,
-        });
-
-        // Create pool + initial position (liquidity) in one tx
-        await createPoolAndPosition({
-          ammConfig,
-          tickSpacing: configAccount.tickSpacing,
-          tokenAMint: new PublicKey(tokenA.address),
-          tokenBMint: new PublicKey(tokenB.address),
-          tokenADecimals: tokenA.decimals,
-          tokenBDecimals: tokenB.decimals,
-          initialPriceAperB: initialPrice,
-          amountA,
-          amountB,
-          priceMode,
-          minPriceAperB: minPrice,
-          maxPriceAperB: maxPrice,
-        });
-        return;
-      } catch (configError) {
-        console.error("AMM Config fetch error:", configError);
-        toast.error(
-          `AMM Config for fee tier ${FEE_TIERS[selectedFeeIndex].fee}% does not exist on-chain. Please select a different fee tier.`,
-        );
-        return;
-      }
-    } catch (error) {
-      console.log("Pool creation error:", error);
-      // Error is already handled by handleError callback
-    }
+    // Create pool + initial position (liquidity) in one tx
+    await createPoolAndPosition({
+      selectedFeeIndex,
+      tokenAMint: new PublicKey(tokenA.address),
+      tokenBMint: new PublicKey(tokenB.address),
+      tokenADecimals: tokenA.decimals,
+      tokenBDecimals: tokenB.decimals,
+      initialPriceAperB: initialPrice,
+      amountA,
+      amountB,
+      priceMode,
+      minPriceAperB: minPrice,
+      maxPriceAperB: maxPrice,
+    });
   }, [
     tokenA,
     tokenB,
@@ -185,7 +141,6 @@ export const CreateCLMMPoolButton = ({
     priceMode,
     minPrice,
     maxPrice,
-    doxxClmmProgram,
     selectedFeeIndex,
     createPoolAndPosition,
   ]);
@@ -194,7 +149,6 @@ export const CreateCLMMPoolButton = ({
     if (
       tokenA === null ||
       tokenB === null ||
-      initialPrice === "" ||
       amountA === "" ||
       amountB === "" ||
       !hasValidRange ||
@@ -211,46 +165,16 @@ export const CreateCLMMPoolButton = ({
       return ["Creating...", true, undefined];
     }
 
-    // const poolData = poolsData.find((c) => {
-    //   console.log(
-    //     "🚀 ~ c.ammConfig.tradeFeeRate:",
-    //     c.ammConfig.tradeFeeRate.toString(),
-    //   );
-    //   return (
-    //     ((c.poolState.token0Mint.toString() === tokenA.address &&
-    //       c.poolState.token1Mint.toString() === tokenB.address) ||
-    //       (c.poolState.token1Mint.toString() === tokenA.address &&
-    //         c.poolState.token0Mint.toString() === tokenB.address)) &&
-    //     c.ammConfig.tradeFeeRate.eq(
-    //       new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
-    //     )
-    //   );
-    // });
-
-    // if (poolData) {
-    //   return ["Pool already exists", true, undefined];
-    // }
-
-    // if (createPoolError) {
-    //   return ["Error creating Pool", true, undefined];
-    // }
-
     return ["Create", false, handleCreatePool];
   }, [
     tokenA,
     tokenB,
-    initialPrice,
     amountA,
     amountB,
-    priceMode,
-    minPrice,
-    maxPrice,
     hasValidRange,
     isPoolExists,
     handleCreatePool,
     isCreatingPool,
-    selectedFeeIndex,
-    // createPoolError,
   ]);
 
   return (

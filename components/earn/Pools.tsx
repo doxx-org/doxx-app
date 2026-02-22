@@ -17,7 +17,7 @@ export function Pools() {
   const {
     data: allPools,
     isLoading: isLoadingAllPools,
-    refetch: refetchAllPools,
+    // refetch: refetchAllPools,
   } = useGetAllPools();
 
   const filteredPools = useMemo(() => {

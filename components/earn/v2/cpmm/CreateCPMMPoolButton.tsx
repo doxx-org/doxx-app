@@ -184,40 +184,15 @@ export const CreatePoolButton = ({
       return ["Creating...", true, undefined];
     }
 
-    // const poolData = poolsData.find((c) => {
-    //   console.log(
-    //     "🚀 ~ c.ammConfig.tradeFeeRate:",
-    //     c.ammConfig.tradeFeeRate.toString(),
-    //   );
-    //   return (
-    //     ((c.poolState.token0Mint.toString() === tokenA.address &&
-    //       c.poolState.token1Mint.toString() === tokenB.address) ||
-    //       (c.poolState.token1Mint.toString() === tokenA.address &&
-    //         c.poolState.token0Mint.toString() === tokenB.address)) &&
-    //     c.ammConfig.tradeFeeRate.eq(
-    //       new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
-    //     )
-    //   );
-    // });
-
-    // if (poolData) {
-    //   return ["Pool already exists", true, undefined];
-    // }
-
-    // if (createPoolError) {
-    //   return ["Error creating Pool", true, undefined];
-    // }
-
     return ["Create", false, handleCreatePool];
   }, [
+    isPoolExists,
     tokenA,
     tokenB,
     amountA,
     amountB,
     handleCreatePool,
     isCreatingPool,
-    selectedFeeIndex,
-    // createPoolError,
   ]);
 
   return (

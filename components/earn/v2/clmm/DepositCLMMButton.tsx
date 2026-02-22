@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { ReturnTypeGetLiquidityAmountOut } from "@raydium-io/raydium-sdk-v2";
 import { AnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { toast } from "sonner";
 import { DepositPoolSuccessToast } from "@/components/toast/DepositPool";
@@ -111,8 +110,7 @@ export const DepositCLMMButton = ({
     if (
       !poolState ||
       !poolId ||
-      !tokenA ||
-      !tokenB ||
+      !prepareOpenCLMMPositionData ||
       !tokenAAmount ||
       !tokenBAmount
     ) {
@@ -121,28 +119,22 @@ export const DepositCLMMButton = ({
     }
 
     try {
-      console.log("Depositing to pool:", {
-        poolId,
-        uiTokenA: tokenA.symbol,
-        uiTokenB: tokenB.symbol,
-        uiAmountA: tokenAAmount,
-        uiAmountB: tokenBAmount,
-        poolToken0: poolState?.tokenMint0.toBase58(),
-        poolToken1: poolState?.tokenMint1.toBase58(),
-        actualAmount0: amount0,
-        actualAmount1: amount1,
-      });
+      // console.log("Depositing to pool:", {
+      //   poolId,
+      //   uiTokenA: tokenA.symbol,
+      //   uiTokenB: tokenB.symbol,
+      //   uiAmountA: tokenAAmount,
+      //   uiAmountB: tokenBAmount,
+      //   poolToken0: poolState?.tokenMint0.toBase58(),
+      //   poolToken1: poolState?.tokenMint1.toBase58(),
+      //   actualAmount0: amount0,
+      //   actualAmount1: amount1,
+      // });
 
       await createPosition({
         poolId,
         prepareOpenCLMMPositionData,
-        // poolState: poolState,
-        // ammConfig: poolState.ammConfig,
         tickSpacing: poolState.tickSpacing,
-        // tokenAMint: new PublicKey(tokenA.address),
-        // tokenBMint: new PublicKey(tokenB.address),
-        // tokenADecimals: tokenA.decimals,
-        // tokenBDecimals: tokenB.decimals,
         baseIn,
         amountA: tokenAAmount,
         amountB: tokenBAmount,
@@ -155,14 +147,18 @@ export const DepositCLMMButton = ({
       // Error is already handled by handleError callback
     }
   }, [
-    amount0,
-    amount1,
+    // amount0,
+    // amount1,
     priceMode,
     minPriceAperB,
     maxPriceAperB,
+    tokenAAmount,
+    tokenBAmount,
     prepareOpenCLMMPositionData,
     baseIn,
     poolState,
+    poolId,
+    createPosition,
   ]);
 
   const [label, disabled, handleDepositButton] = useMemo(() => {

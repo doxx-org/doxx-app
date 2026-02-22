@@ -34,8 +34,8 @@ export default function Home() {
   // Fetch all pools
   const {
     data: allPools,
-    isLoading: isLoadingAllPools,
-    refetch,
+    // isLoading: isLoadingAllPools,
+    // refetch,
     cpmmPoolsData,
     clmmPoolsData,
   } = useGetAllPools();

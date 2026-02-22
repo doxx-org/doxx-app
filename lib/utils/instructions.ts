@@ -193,7 +193,7 @@ export async function diagnoseSwapIssues(params: {
     outputMint,
     amountIn,
     poolKeys,
-    poolInfo,
+    // poolInfo,
     programId,
   } = params;
 
@@ -249,7 +249,7 @@ export async function diagnoseSwapIssues(params: {
         `Insufficient input token. Have: ${inputBalance}, Need: ${amountIn}`,
       );
     }
-  } catch (error) {
+  } catch {
     issues.push("Input token account doesn't exist");
   }
 
@@ -272,7 +272,7 @@ export async function diagnoseSwapIssues(params: {
     if (vault0Info.value.uiAmount === 0 || vault1Info.value.uiAmount === 0) {
       issues.push("Pool has no liquidity in one or both vaults");
     }
-  } catch (error) {
+  } catch {
     issues.push("Could not fetch pool vault balances");
   }
 
@@ -293,7 +293,7 @@ export async function diagnoseSwapIssues(params: {
     } else {
       console.log("✅ Output token account exists");
     }
-  } catch (error) {
+  } catch {
     // Not critical - will be created
   }
 

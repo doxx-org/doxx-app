@@ -297,7 +297,7 @@ export function LiquidityRangeChart({
   const maxPct = toPct(parsedMax ?? currentPrice * 1.05);
   const leftPct = Math.min(minPct, maxPct);
   const rightPct = Math.max(minPct, maxPct);
-  const rangeWidthPct = clamp(rightPct - leftPct, 0, 1);
+  // const rangeWidthPct = clamp(rightPct - leftPct, 0, 1);
 
   const minDiffPct =
     ((parsedMin ?? currentPrice * 0.95) / currentPrice - 1) * 100;

@@ -264,7 +264,7 @@ export async function getBestQuoteSingleHopExactIn(
         .div(newAmountOut);
 
       // TODO: handle this
-      const priceImpact = newAmountOut
+      const _priceImpact = newAmountOut
         .sub(minAmountOut)
         .mul(ONE_E9)
         .div(newAmountOut);
@@ -406,7 +406,7 @@ export async function getBestQuoteSingleHopExactOut(
         .div(amountOutTokenDecimals);
 
       // TODO: handle this
-      const priceImpact = newAmountIn
+      const _priceImpact = newAmountIn
         .sub(maxAmountIn)
         .mul(ONE_E9)
         .div(newAmountIn);

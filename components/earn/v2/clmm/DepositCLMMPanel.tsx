@@ -1,5 +1,5 @@
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, PriceMap } from "@/lib/hooks/chain/types";
+import { BalanceMapByMint } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { DepositCLMMLPPanel } from "./DepositCLMMLPPanel";

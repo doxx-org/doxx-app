@@ -38,6 +38,7 @@ import {
 } from "@/lib/utils";
 import { parseAmountBN } from "@/lib/utils";
 import {
+  getAmmConfigAddress,
   getClmmTickArrayAddress,
   getClmmTickArrayBitmapExtensionAddress,
   getOrcleAccountAddress,
@@ -52,8 +53,9 @@ const CLMM_TICK_ARRAY_SIZE = 60;
 const LEGACY_TX_MAX_BYTES = 1232; // common wallet-adapter legacy tx cap
 
 type CreateClmmPoolAndPositionParams = {
-  ammConfig: PublicKey;
-  tickSpacing: number;
+  // ammConfig: PublicKey;
+  selectedFeeIndex: number;
+  // tickSpacing: number;
 
   tokenAMint: PublicKey;
   tokenBMint: PublicKey;
@@ -344,8 +346,7 @@ export function useCreateClmmPoolAndPosition(
 
       try {
         const {
-          ammConfig,
-          tickSpacing,
+          selectedFeeIndex,
           tokenAMint,
           tokenBMint,
           tokenADecimals,
@@ -362,6 +363,14 @@ export function useCreateClmmPoolAndPosition(
         if (!amountA && !amountB) {
           throw new Error("Enter token amounts to supply liquidity");
         }
+
+        const [ammConfig] = getAmmConfigAddress(
+          selectedFeeIndex,
+          program.programId,
+        );
+
+        const configAccount = await program.account.ammConfig.fetch(ammConfig);
+        const tickSpacing = configAccount.tickSpacing;
 
         // Ensure tokenMint0 < tokenMint1 (required by CLMM program)
         const shouldSwap =
@@ -1076,8 +1085,7 @@ export function useCreateClmmPoolAndPosition(
 
       try {
         const {
-          ammConfig,
-          tickSpacing,
+          selectedFeeIndex,
           tokenAMint,
           tokenBMint,
           tokenADecimals,
@@ -1099,6 +1107,14 @@ export function useCreateClmmPoolAndPosition(
           Buffer.compare(tokenAMint.toBuffer(), tokenBMint.toBuffer()) >= 0;
         const tokenMint0 = shouldSwap ? tokenBMint : tokenAMint;
         const tokenMint1 = shouldSwap ? tokenAMint : tokenBMint;
+
+        const [ammConfig] = getAmmConfigAddress(
+          selectedFeeIndex,
+          program.programId,
+        );
+
+        const configAccount = await program.account.ammConfig.fetch(ammConfig);
+        const tickSpacing = configAccount.tickSpacing;
 
         // Step 1: Calculate what the current tick WILL BE after pool creation
         const futureCurrentTick = tickFromPriceAperB({

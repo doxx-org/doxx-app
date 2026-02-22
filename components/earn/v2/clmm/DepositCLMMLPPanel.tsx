@@ -41,7 +41,7 @@ export const DepositCLMMLPPanel = ({
   tokenBInput,
   tokenBLoading,
   walletBalances,
-  formatter,
+  // formatter,
   onAmountAChange,
   onAmountBChange,
   onTokenASelect,

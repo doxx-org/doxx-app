@@ -59,11 +59,6 @@ interface IFindBestClmmSwapParams {
 
 interface IFindBestClmmSwapBaseInParams extends IFindBestClmmSwapParams {
   amountIn: BN;
-  // raydium: Raydium;
-  // clmmPools: CLMMPoolStateWithConfig[] | undefined;
-  // inputMint: PublicKey;
-  // outputMint: PublicKey;
-  // epochInfo: EpochInfo;
 }
 
 interface IComputeClmmSwapBaseIn
@@ -81,12 +76,7 @@ interface IComputeClmmSwapBaseIn
 }
 
 interface IFindBestClmmSwapBaseOutParams extends IFindBestClmmSwapParams {
-  // raydium: Raydium;
-  // clmmPools: CLMMPoolStateWithConfig[] | undefined;
   amountOut: BN;
-  // inputMint: PublicKey;
-  // outputMint: PublicKey;
-  // epochInfo: EpochInfo;
 }
 
 interface IComputeClmmSwapBaseOut
@@ -119,30 +109,12 @@ interface IBuildSwapParams {
 
 interface IBuildSwapBaseInExecute
   extends Omit<IBuildSwapParams, "amountOut" | "baseIn"> {
-  // raydium: Raydium;
-  // program: Program<DoxxClmmIdl>;
-  // wallet: AnchorWallet;
-  // amountIn: BN;
   amountOutMin: BN;
-  // inputMint: PublicKey;
-  // outputMint: PublicKey;
-  // poolInfo: ApiV3PoolInfoConcentratedItem;
-  // poolKeys: ClmmKeys;
-  // remainingAccounts: PublicKey[];
 }
 
 interface IBuildSwapBaseOutExecute
   extends Omit<IBuildSwapParams, "amountIn" | "baseIn"> {
-  // raydium: Raydium;
-  // program: Program<DoxxClmmIdl>;
-  // wallet: AnchorWallet;
   amountInMax: BN;
-  // amountOut: BN;
-  // inputMint: PublicKey;
-  // outputMint: PublicKey;
-  // poolInfo: ApiV3PoolInfoConcentratedItem;
-  // poolKeys: ClmmKeys;
-  // remainingAccounts: PublicKey[];
 }
 
 export interface ISwapStateV2 {
@@ -190,12 +162,12 @@ type GetBestQuoteSwapStateBase = Omit<
 >;
 
 function computeClmmSwapBaseIn({
-  raydium,
+  // raydium,
   amountIn,
   inputMint,
   outputMint,
   poolInfo,
-  poolKeys,
+  // poolKeys,
   computePoolInfo,
   tickData,
   epochInfo,
@@ -294,7 +266,7 @@ export async function findBestClmmSwapBaseIn({
     const {
       minAmountOut,
       remainingAccounts,
-      currentPrice,
+      // currentPrice,
       amountOut,
       priceImpact,
     } = computeClmmSwapBaseIn({
@@ -377,12 +349,12 @@ export async function findBestClmmSwapBaseIn({
 }
 
 function computeClmmSwapBaseOut({
-  raydium,
+  // raydium,
   amountOut,
   inputMint,
   outputMint,
   poolInfo,
-  poolKeys,
+  // poolKeys,
   computePoolInfo,
   tickData,
   epochInfo,
@@ -476,9 +448,9 @@ export async function findBestClmmSwapBaseOut({
     const {
       maxAmountIn,
       amountIn,
-      currentPrice,
+      // currentPrice,
       priceImpact,
-      fee,
+      // fee,
       remainingAccounts,
     } = computeClmmSwapBaseOut({
       raydium,
@@ -864,7 +836,7 @@ export async function buildV0Transaction({
 /**
  * Legacy swap without memo program requirement
  */
-async function buildLegacySwap({
+async function _buildLegacySwap({
   raydium,
   program,
   amountIn,
