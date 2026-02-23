@@ -142,6 +142,8 @@ export interface NumberFormatter {
     prefix?: string;
   };
   decimals?: number;
+  minimumDecimals?: number;
+  maximumDecimals?: number;
   maximumNumber?: number;
   prefix?: string;
   suffix?: string;
@@ -162,6 +164,7 @@ export function formatNumber(
   const {
     abbreviate = { apply: false, prefix: "" },
     decimals = 2,
+    minimumDecimals = 0,
     maximumNumber = MAXIMUM_100_MILLION,
     prefix = "",
     suffix = "",
@@ -174,7 +177,7 @@ export function formatNumber(
         prefix +
         maximumNumber.toLocaleString(undefined, {
           maximumFractionDigits: decimals,
-          minimumFractionDigits: 0,
+          minimumFractionDigits: minimumDecimals,
         }) +
         suffix
       );
@@ -184,7 +187,7 @@ export function formatNumber(
       prefix +
       number.toLocaleString(undefined, {
         maximumFractionDigits: decimals,
-        minimumFractionDigits: 0,
+        minimumFractionDigits: minimumDecimals,
       }) +
       suffix
     );

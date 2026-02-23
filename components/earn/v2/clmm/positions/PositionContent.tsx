@@ -8,9 +8,9 @@ import {
 } from "@/lib/hooks/chain/types";
 import { Pool } from "../../types";
 import { PositionAction } from "./CLMMPositionsTab";
-import { DecreasePosition } from "./DecreasePosition";
 import { IncreasePosition } from "./IncreasePosition";
 import { PositionItem } from "./PositionItem";
+import { DecreasePosition } from "./decrease-position/DecreasePosition";
 
 const dummyPositions: IPositionWithValue[] = Array.from(
   { length: 2 },

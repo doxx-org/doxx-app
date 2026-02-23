@@ -1,116 +1,14 @@
-import { CopyIcon, MinusIcon, PlusIcon } from "lucide-react";
-import { Link } from "@/components/Link";
+import { MinusIcon, PlusIcon } from "lucide-react";
+import { TokenAmountTooltip } from "@/components/TokenAmount";
 import { TokenPriceDisplay } from "@/components/TokenPriceDisplay";
-import {
-  Avatar,
-  AvatarImage,
-  AvatarUnknownFallback,
-} from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { TokenProfile } from "@/lib/config/tokens";
 import { IPositionWithValue } from "@/lib/hooks/chain/types";
-import { copyToClipboard, text } from "@/lib/text";
-import { cn, ellipseAddress, formatNumber } from "@/lib/utils";
-import { getTokenExplorerUrl } from "@/lib/utils/network";
+import { text } from "@/lib/text";
+import { cn } from "@/lib/utils";
 import { Pool } from "../../types";
 import { PositionAction } from "./CLMMPositionsTab";
 import { PositionAmount } from "./PositionAmount";
 import { PositionRangeLabel } from "./PositionRangeLabel";
-
-const RewardToken = ({
-  token,
-  rewardAmount,
-  isLoading,
-}: {
-  token: TokenProfile | undefined;
-  rewardAmount: number;
-  isLoading: boolean;
-}) => {
-  if (isLoading) {
-    return <Skeleton className="h-4 w-10" />;
-  }
-
-  return (
-    <div
-      className={cn(
-        text.sb3(),
-        "flex items-center gap-1 rounded-full bg-gray-900 px-3 py-1.5 text-gray-200",
-      )}
-    >
-      <Avatar className="size-3.5 bg-gray-700">
-        <AvatarImage src={token?.image} alt={token?.symbol} />
-        <AvatarUnknownFallback className="border-none bg-gray-700" />
-      </Avatar>
-      <p>{formatNumber(rewardAmount)}</p>
-    </div>
-  );
-};
-
-const RewardInfo = ({
-  rewardAmount,
-  rewardValue,
-  token,
-  isLoading,
-}: {
-  rewardAmount: number;
-  rewardValue: number | undefined;
-  token: TokenProfile | undefined;
-  isLoading: boolean;
-}) => {
-  if (!token)
-    return (
-      <RewardToken
-        token={token}
-        rewardAmount={rewardAmount}
-        isLoading={isLoading}
-      />
-    );
-
-  return (
-    <Tooltip>
-      <TooltipTrigger>
-        <RewardToken
-          token={token}
-          rewardAmount={rewardAmount}
-          isLoading={isLoading}
-        />
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className={cn(text.sb3(), "flex flex-col gap-1")}>
-          <div className="flex items-center gap-1">
-            <p>Symbol:</p>
-            <p className={"text-gray-400"}>{token.symbol}</p>
-          </div>
-          <div className="flex items-center gap-1">
-            <p>Value ($):</p>
-            <p className={"text-gray-400"}>
-              ${rewardValue !== undefined ? formatNumber(rewardValue) : "-"}
-            </p>
-          </div>
-          <div className="flex items-center gap-1">
-            <p>Address:</p>
-            <Link
-              className={"hover:text-green text-gray-400 hover:cursor-pointer"}
-              href={getTokenExplorerUrl(token.address.toString())}
-            >
-              {ellipseAddress(token.address.toString())}
-            </Link>
-            <CopyIcon
-              className="h-2.5 w-2.5 cursor-pointer"
-              onClick={() => copyToClipboard(token.address.toString())}
-            />
-          </div>
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
 
 interface PositionItemProps {
   position: IPositionWithValue;
@@ -170,28 +68,43 @@ export const PositionItem = ({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <p className={cn(text.sb3(), "text-gray-400")}>Pending Rewards:</p>
-          <RewardInfo
+          <TokenAmountTooltip
             key={`${selectedPool.poolId}-${positionIndex}-fee-token-0-${position.fees.token0.mint.toBase58()}`}
-            rewardAmount={position.fees.token0.amount}
-            rewardValue={position.fees.token0.valueUsd}
+            amount={position.fees.token0.amount}
+            value={position.fees.token0.valueUsd}
             token={position.fees.token0.tokenProfile}
             isLoading={isLoading}
+            formatter={{
+              decimals: position.fees.token0.tokenProfile?.displayDecimals ?? 6,
+              minimumDecimals:
+                position.fees.token0.tokenProfile?.displayDecimals ?? 6,
+            }}
           />
-          <RewardInfo
+          <TokenAmountTooltip
             key={`${selectedPool.poolId}-${positionIndex}-fee-token-1-${position.fees.token1.mint.toBase58()}`}
-            rewardAmount={position.fees.token1.amount}
-            rewardValue={position.fees.token1.valueUsd}
+            amount={position.fees.token1.amount}
+            value={position.fees.token1.valueUsd}
             token={position.fees.token1.tokenProfile}
             isLoading={isLoading}
+            formatter={{
+              decimals: position.fees.token1.tokenProfile?.displayDecimals ?? 6,
+              minimumDecimals:
+                position.fees.token1.tokenProfile?.displayDecimals ?? 6,
+            }}
           />
           {position.rewardInfos.map((rewardInfo) => {
             return (
-              <RewardInfo
+              <TokenAmountTooltip
                 key={`${selectedPool.poolId}-${positionIndex}-${rewardInfo.rewardMint.toBase58()}`}
-                rewardAmount={rewardInfo.pendingAmount}
-                rewardValue={rewardInfo.pendingValueUsd}
+                amount={rewardInfo.pendingAmount}
+                value={rewardInfo.pendingValueUsd}
                 token={rewardInfo.rewardTokenProfile}
                 isLoading={isLoading}
+                formatter={{
+                  decimals: rewardInfo.rewardTokenProfile?.displayDecimals ?? 6,
+                  minimumDecimals:
+                    rewardInfo.rewardTokenProfile?.displayDecimals ?? 6,
+                }}
               />
             );
           })}

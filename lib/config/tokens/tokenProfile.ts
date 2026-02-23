@@ -45,7 +45,7 @@ export const usdc: TokenProfile = {
   symbol: TokenSymbol.USDC,
   address: addressConfig.tokens.usdc,
   decimals: 9,
-  displayDecimals: 4,
+  displayDecimals: 3,
   image:
     "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
   priceSource: PriceSource.ORACLE,
