@@ -279,16 +279,16 @@ export function getTickRangeFromPriceMode(
 
   if (priceMode === PriceMode.FULL) {
     // ============ FULL RANGE MODE ============
-    console.log("Using Full Range mode");
+    // console.log("Using Full Range mode");
 
     // Round to tick spacing
     lowerTick = clampTick(CLMM_MIN_TICK, tickSpacing);
     upperTick = clampTick(CLMM_MAX_TICK, tickSpacing);
 
-    console.log("Full range ticks:", { lowerTick, upperTick });
+    // console.log("Full range ticks:", { lowerTick, upperTick });
   } else {
     // ============ CUSTOM RANGE MODE ============
-    console.log("Using Custom Range mode");
+    // console.log("Using Custom Range mode");
 
     if (!minPriceAperB || !maxPriceAperB) {
       throw new Error(
@@ -299,10 +299,10 @@ export function getTickRangeFromPriceMode(
     const startPrice = new Decimal(minPriceAperB);
     const endPrice = new Decimal(maxPriceAperB);
 
-    console.log("Custom price range:", {
-      minPrice: startPrice.toString(),
-      maxPrice: endPrice.toString(),
-    });
+    // console.log("Custom price range:", {
+    //   minPrice: startPrice.toString(),
+    //   maxPrice: endPrice.toString(),
+    // });
 
     // Get ticks from prices using SDK
     const { tick: lowerTickRaw } = TickUtils.getPriceAndTick({
@@ -323,12 +323,12 @@ export function getTickRangeFromPriceMode(
     lowerTick = clampTick(lowerTickRaw, tickSpacing);
     upperTick = clampTick(upperTickRaw, tickSpacing);
 
-    console.log("Custom range ticks:", {
-      lowerTick,
-      upperTick,
-      lowerTickRaw,
-      upperTickRaw,
-    });
+    // console.log("Custom range ticks:", {
+    //   lowerTick,
+    //   upperTick,
+    //   lowerTickRaw,
+    //   upperTickRaw,
+    // });
   }
 
   return [lowerTick, upperTick];

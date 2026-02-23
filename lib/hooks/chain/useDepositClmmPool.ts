@@ -103,7 +103,6 @@ export function useDepositClmmPool(
       }
 
       try {
-        console.log("🚀 ~ params:", params);
         const {
           poolId,
           tickSpacing,
@@ -153,16 +152,16 @@ export function useDepositClmmPool(
         const baseRawAmount = baseIn ? amountA : amountB;
         const baseAmount = parseAmountBN(baseRawAmount, baseTokenDecimals);
 
-        console.log("Liquidity calculation:", {
-          liquidity: prepareOpenCLMMPositionData.liquidity.toString(),
-          amountSlippageA:
-            prepareOpenCLMMPositionData.amountSlippageA.amount.toString(),
-          amountSlippageB:
-            prepareOpenCLMMPositionData.amountSlippageB.amount.toString(),
-        });
+        // console.log("Liquidity calculation:", {
+        //   liquidity: prepareOpenCLMMPositionData.liquidity.toString(),
+        //   amountSlippageA:
+        //     prepareOpenCLMMPositionData.amountSlippageA.amount.toString(),
+        //   amountSlippageB:
+        //     prepareOpenCLMMPositionData.amountSlippageB.amount.toString(),
+        // });
 
         // Open position using SDK
-        const { execute, extInfo } = await raydium.clmm.openPositionFromBase({
+        const { execute } = await raydium.clmm.openPositionFromBase({
           poolInfo,
           poolKeys,
           tickUpper: Math.max(lowerTick, upperTick),
@@ -183,17 +182,17 @@ export function useDepositClmmPool(
           },
         });
 
-        console.log("Position info:", {
-          personalPosition: extInfo.personalPosition.toString(),
-          positionNftAccount: extInfo.positionNftAccount.toString(),
-          nftMint: extInfo.nftMint.toString(),
-          tickLower: lowerTick,
-          tickUpper: upperTick,
-        });
+        // console.log("Position info:", {
+        //   personalPosition: extInfo.personalPosition.toString(),
+        //   positionNftAccount: extInfo.positionNftAccount.toString(),
+        //   nftMint: extInfo.nftMint.toString(),
+        //   tickLower: lowerTick,
+        //   tickUpper: upperTick,
+        // });
 
         // Execute transaction
         const { txId } = await execute({ sendAndConfirm: true });
-        console.log("Transaction sent:", txId);
+        // console.log("Transaction sent:", txId);
 
         // Poll for confirmation
         const status = await pollSignatureStatus({
@@ -210,7 +209,7 @@ export function useDepositClmmPool(
           return undefined;
         }
 
-        console.log("✅ Position created successfully:", txId);
+        // console.log("✅ Position created successfully:", txId);
         onSuccess(txId);
         setIsDepositing(false);
         return txId;
