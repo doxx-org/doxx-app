@@ -183,7 +183,7 @@ export const CLMMDepositTab = ({
             </div>
           </div>
           <DepositCLMMButton
-            poolId={selectedPool.poolId}
+            raydium={raydium}
             tokenA={selectedPool.lpToken.token1}
             tokenB={selectedPool.lpToken.token2}
             tokenAAmount={tokenAAmount}

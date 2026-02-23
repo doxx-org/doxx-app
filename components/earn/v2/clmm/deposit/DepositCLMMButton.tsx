@@ -1,21 +1,23 @@
 import { useCallback, useMemo } from "react";
-import { ReturnTypeGetLiquidityAmountOut } from "@raydium-io/raydium-sdk-v2";
-import { AnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { Raydium } from "@raydium-io/raydium-sdk-v2";
+import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { BN } from "bn.js";
 import { toast } from "sonner";
 import { DepositPoolSuccessToast } from "@/components/toast/DepositPool";
 import { Button } from "@/components/ui/button";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, CLMMPoolState } from "@/lib/hooks/chain/types";
+import {
+  BalanceMapByMint,
+  CLMMPoolState,
+  PrepareOpenCLMMPositionData,
+} from "@/lib/hooks/chain/types";
 import { useDepositClmmPool } from "@/lib/hooks/chain/useDepositClmmPool";
-import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
-import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
 import { PriceMode } from "../../types";
 
 interface IDepositCLMMButtonProps {
-  poolId: string;
+  raydium: Raydium | undefined;
   tokenA: TokenProfile;
   tokenB: TokenProfile;
   tokenAAmount: string;
@@ -24,7 +26,7 @@ interface IDepositCLMMButtonProps {
   minPriceAperB: string | undefined;
   maxPriceAperB: string | undefined;
   baseIn: boolean;
-  prepareOpenCLMMPositionData: ReturnTypeGetLiquidityAmountOut | undefined;
+  prepareOpenCLMMPositionData: PrepareOpenCLMMPositionData | undefined;
   poolState: CLMMPoolState | undefined;
   wallet: AnchorWallet | undefined;
   walletBalances: BalanceMapByMint | undefined;
@@ -33,7 +35,7 @@ interface IDepositCLMMButtonProps {
 }
 
 export const DepositCLMMButton = ({
-  poolId,
+  raydium,
   tokenA,
   tokenB,
   tokenAAmount,
@@ -49,10 +51,6 @@ export const DepositCLMMButton = ({
   onSuccess,
   onError,
 }: IDepositCLMMButtonProps) => {
-  const { connection } = useConnection();
-  const provider = useProvider({ connection, wallet });
-  const doxxClmmProgram = useDoxxClmmProgram({ provider });
-
   const [amount0, amount1] = useMemo(() => {
     if (!poolState) {
       return [new BN(0), new BN(0), new BN(0)];
@@ -99,8 +97,7 @@ export const DepositCLMMButton = ({
   );
 
   const { createPosition, isDepositing } = useDepositClmmPool(
-    connection,
-    doxxClmmProgram,
+    raydium,
     wallet,
     handleSuccess,
     handleError,
@@ -109,7 +106,6 @@ export const DepositCLMMButton = ({
   const handleDeposit = useCallback(async () => {
     if (
       !poolState ||
-      !poolId ||
       !prepareOpenCLMMPositionData ||
       !tokenAAmount ||
       !tokenBAmount
@@ -132,7 +128,6 @@ export const DepositCLMMButton = ({
       // });
 
       await createPosition({
-        poolId,
         prepareOpenCLMMPositionData,
         tickSpacing: poolState.tickSpacing,
         baseIn,
@@ -157,7 +152,6 @@ export const DepositCLMMButton = ({
     prepareOpenCLMMPositionData,
     baseIn,
     poolState,
-    poolId,
     createPosition,
   ]);
 

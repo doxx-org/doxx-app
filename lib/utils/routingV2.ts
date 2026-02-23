@@ -978,9 +978,8 @@ async function buildLegacySwapWithSOLWrapping({
   remainingAccounts,
   baseIn,
 }: IBuildSwapParams) {
-  const SOL_MINT = new PublicKey("So11111111111111111111111111111111111111112");
-  const isInputSOL = inputMint.equals(SOL_MINT);
-  const isOutputSOL = outputMint.equals(SOL_MINT);
+  const isInputSOL = inputMint.equals(new PublicKey(NATIVE_SOL_MINT));
+  const isOutputSOL = outputMint.equals(new PublicKey(NATIVE_SOL_MINT));
 
   const instructions: TransactionInstruction[] = [];
 

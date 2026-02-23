@@ -1,15 +1,12 @@
 import { useMemo } from "react";
-import {
-  PoolUtils,
-  Raydium,
-  ReturnTypeGetLiquidityAmountOut,
-} from "@raydium-io/raydium-sdk-v2";
+import { PoolUtils, Raydium } from "@raydium-io/raydium-sdk-v2";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
 import { PriceMode } from "@/components/earn/v2/types";
 import { TokenProfile } from "@/lib/config/tokens";
 import { DEFAULT_CREATE_CLMM_SLIPPAGE } from "@/lib/constants";
 import { parseAmountBN } from "@/lib/utils";
 import { getTickRangeFromPriceMode } from "@/lib/utils/decode";
+import { PrepareOpenCLMMPositionData } from "../types";
 
 interface UsePrepareOpenCLMMPositionParams {
   poolId: string;
@@ -32,7 +29,7 @@ export const usePrepareOpenCLMMPosition = ({
   maxPriceAperB,
   raydium,
 }: UsePrepareOpenCLMMPositionParams): UseQueryResult<
-  ReturnTypeGetLiquidityAmountOut | undefined,
+  PrepareOpenCLMMPositionData | undefined,
   Error
 > => {
   const isEnabled = useMemo(() => {
@@ -95,7 +92,7 @@ export const usePrepareOpenCLMMPosition = ({
         epochInfo,
       });
 
-      return liquidityCalc;
+      return { ...liquidityCalc, ...poolInfo };
     },
     enabled: isEnabled,
     staleTime: 1000 * 60 * 1, // 1 minute
