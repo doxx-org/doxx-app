@@ -7,8 +7,8 @@ interface IncreasePositionProps {
 }
 
 export const IncreasePosition = ({
-  position,
-  selectedPool,
+  position: _position,
+  selectedPool: _selectedPool,
 }: IncreasePositionProps) => {
   return <div>IncreasePosition</div>;
 };
