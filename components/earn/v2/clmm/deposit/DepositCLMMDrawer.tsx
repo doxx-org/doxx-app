@@ -92,7 +92,7 @@ export const DepositCLMMDrawer = ({
         enableOverlay={false}
         className="bg-black-900 !top-14 !bottom-12.25 !max-w-135.75 overflow-hidden !border-l-2 border-gray-800"
       >
-        <DrawerHeader className="shrink-0 p-0 pl-4">
+        <DrawerHeader className="shrink-0 border-b border-gray-800 p-0 pl-4">
           <DrawerTitle>
             <Tabs defaultValue={Tab.DEPOSIT}>
               <TabsList>
@@ -110,8 +110,9 @@ export const DepositCLMMDrawer = ({
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
+        {/* <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <PoolInfo {...selectedPool} raydium={raydium} /> */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <PoolInfo {...selectedPool} raydium={raydium} />
           <PoolTabs
             activeTab={activeTab}
             selectedPool={selectedPool}

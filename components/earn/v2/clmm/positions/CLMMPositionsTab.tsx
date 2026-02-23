@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
@@ -8,7 +8,9 @@ import {
   IPositionWithValue,
   UserPositionWithNFT,
 } from "@/lib/hooks/chain/types";
+import { PoolInfo } from "../../PoolInfo";
 import { Pool } from "../../types";
+import { OpenPosition } from "./OpenPosition";
 import { PositionItem } from "./PositionItem";
 
 const dummyPositions: IPositionWithValue[] = Array.from(
@@ -61,6 +63,11 @@ const dummyPositions: IPositionWithValue[] = Array.from(
     }) as IPositionWithValue,
 );
 
+export enum PositionAction {
+  DECREASE,
+  INCREASE,
+}
+
 interface CLMMPositionsTabProps {
   selectedPool: Pool;
   raydium: Raydium | undefined;
@@ -69,13 +76,40 @@ interface CLMMPositionsTabProps {
   allPools: Pool[] | undefined;
 }
 
+const PositionTabHeader = ({
+  selectedPosition,
+  selectedPool,
+  raydium,
+  onBack,
+}: Pick<CLMMPositionsTabProps, "selectedPool" | "raydium"> & {
+  selectedPosition: IPositionWithValue | undefined;
+  onBack: () => void;
+}) => {
+  if (selectedPosition) {
+    return (
+      <OpenPosition
+        position={selectedPosition}
+        selectedPool={selectedPool}
+        onBack={onBack}
+      />
+    );
+  }
+
+  return <PoolInfo {...selectedPool} raydium={raydium} />;
+};
+
 export const CLMMPositionsTab = ({
   selectedPool,
-  // raydium,
+  raydium,
   positions: rawPositions,
   isLoadingPositions,
   allPools,
 }: CLMMPositionsTabProps) => {
+  const [selectedPosition, setSelectedPosition] = useState<{
+    position: IPositionWithValue;
+    action: PositionAction;
+  } | null>(null);
+
   const poolPrices: Record<string, number> | undefined = useMemo(() => {
     return allPools?.reduce(
       (acc, p) => {
@@ -124,8 +158,21 @@ export const CLMMPositionsTab = ({
     return positions;
   }, [isLoadingPositions, positions]);
 
+  const handleSelectPosition = (
+    position: IPositionWithValue,
+    action: PositionAction,
+  ) => {
+    setSelectedPosition({ position, action });
+  };
+
   return (
     <div className="flex flex-col">
+      <PositionTabHeader
+        selectedPosition={selectedPosition?.position}
+        selectedPool={selectedPool}
+        raydium={raydium}
+        onBack={() => setSelectedPosition(null)}
+      />
       {isLoadingPositions ? (
         <>
           <PositionItem
@@ -133,12 +180,14 @@ export const CLMMPositionsTab = ({
             selectedPool={selectedPool}
             positionIndex={0}
             isLoading={isLoadingPositions}
+            onSelectPosition={() => {}}
           />
           <PositionItem
             position={dummyPositions[1]}
             selectedPool={selectedPool}
             positionIndex={1}
             isLoading={isLoadingPositions}
+            onSelectPosition={() => {}}
           />
         </>
       ) : (
@@ -150,6 +199,7 @@ export const CLMMPositionsTab = ({
               selectedPool={selectedPool}
               positionIndex={positionIndex}
               isLoading={isLoadingPositions}
+              onSelectPosition={handleSelectPosition}
             />
           );
         })

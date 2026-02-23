@@ -1,5 +1,4 @@
-import { useMemo } from "react";
-import { CopyIcon } from "lucide-react";
+import { CopyIcon, MinusIcon, PlusIcon } from "lucide-react";
 import { Link } from "@/components/Link";
 import { TokenPriceDisplay } from "@/components/TokenPriceDisplay";
 import {
@@ -7,6 +6,7 @@ import {
   AvatarImage,
   AvatarUnknownFallback,
 } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Tooltip,
@@ -19,64 +19,9 @@ import { copyToClipboard, text } from "@/lib/text";
 import { cn, ellipseAddress, formatNumber } from "@/lib/utils";
 import { getTokenExplorerUrl } from "@/lib/utils/network";
 import { Pool } from "../../types";
-
-const PositionInRange = ({
-  position,
-  currentTick,
-  tickLower,
-  tickUpper,
-  isLoading,
-}: {
-  position: IPositionWithValue;
-  currentTick: number;
-  tickLower: number;
-  tickUpper: number;
-  isLoading: boolean;
-}) => {
-  const isInRange = useMemo(() => {
-    return tickLower <= currentTick && currentTick < tickUpper;
-  }, [currentTick, tickLower, tickUpper]);
-
-  if (isLoading) {
-    return <Skeleton className="h-4 w-20" />;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger>
-        <div
-          className={cn(
-            text.sb4(),
-            "bg-green/10 hover:bg-green/20 flex items-center gap-2 rounded-sm px-2 py-1.5",
-          )}
-        >
-          <div
-            className={cn(
-              "size-1.25 rounded-full",
-              isInRange ? "bg-green" : "bg-orange",
-            )}
-          />
-          {isInRange ? "In Range" : "Out of Range"}
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>
-        <div className={cn(text.sb3(), "flex items-center gap-1")}>
-          <p>Position:</p>
-          <Link
-            className={"hover:text-green text-gray-400 hover:cursor-pointer"}
-            href={getTokenExplorerUrl(position.publicKey.toString())}
-          >
-            {ellipseAddress(position.publicKey.toString())}
-          </Link>
-          <CopyIcon
-            className="h-2.5 w-2.5 cursor-pointer"
-            onClick={() => copyToClipboard(position.publicKey.toString())}
-          />
-        </div>
-      </TooltipContent>
-    </Tooltip>
-  );
-};
+import { PositionAction } from "./CLMMPositionsTab";
+import { PositionAmount } from "./PositionAmount";
+import { PositionRangeLabel } from "./PositionRangeLabel";
 
 const RewardToken = ({
   token,
@@ -167,22 +112,29 @@ const RewardInfo = ({
   );
 };
 
+interface PositionItemProps {
+  position: IPositionWithValue;
+  selectedPool: Pool;
+  positionIndex: number;
+  isLoading: boolean;
+  onSelectPosition: (
+    position: IPositionWithValue,
+    action: PositionAction,
+  ) => void;
+}
+
 export const PositionItem = ({
   position,
   selectedPool,
   positionIndex,
   isLoading,
-}: {
-  position: IPositionWithValue;
-  selectedPool: Pool;
-  positionIndex: number;
-  isLoading: boolean;
-}) => {
+  onSelectPosition,
+}: PositionItemProps) => {
   return (
     <div className="flex flex-col gap-5 border-b border-gray-800 px-4 py-6">
       {/* Position In Range */}
       <div className="flex items-center justify-between">
-        <PositionInRange
+        <PositionRangeLabel
           position={position}
           currentTick={position.pool.tickCurrent}
           tickLower={position.account.tickLowerIndex}
@@ -207,37 +159,12 @@ export const PositionItem = ({
         </div>
       </div>
 
-      {/* Potision Price */}
-      <div className="bg-black-700 flex items-center justify-between rounded-lg p-4">
-        <div className={cn(text.hsb2(), "flex gap-1")}>
-          {isLoading ? (
-            <Skeleton className="h-4 w-24" />
-          ) : (
-            <>
-              <p className="text-gray-200">
-                {position.amount0}
-                {"-"}
-                {position.amount1}
-              </p>
-              <p className="text-gray-400">
-                {selectedPool.lpToken.token1.symbol}
-                {"/"}
-                {selectedPool.lpToken.token2.symbol}
-              </p>
-            </>
-          )}
-        </div>
-        <div className="flex items-center gap-1">
-          <p className={cn(text.sb3(), "text-gray-400")}>Position:</p>
-          {isLoading ? (
-            <Skeleton className="h-4 w-16" />
-          ) : (
-            <p className={cn(text.sb3(), "text-green font-medium")}>
-              ${formatNumber(position.positionValue)}
-            </p>
-          )}
-        </div>
-      </div>
+      {/* Position Amount */}
+      <PositionAmount
+        position={position}
+        selectedPool={selectedPool}
+        isLoading={isLoading}
+      />
 
       {/* Pending Rewards */}
       <div className="flex items-center justify-between">
@@ -268,6 +195,20 @@ export const PositionItem = ({
               />
             );
           })}
+        </div>
+        <div className="flex gap-1">
+          <Button
+            className="bg-green/15 hover:bg-black-700 hover:border-green/70 border-green text-green min-h-8 min-w-10 rounded-xl border"
+            onClick={() => onSelectPosition(position, PositionAction.DECREASE)}
+          >
+            <MinusIcon className="h-2 w-2" />
+          </Button>
+          <Button
+            className="bg-green text-black-900 border-green hover:bg-green/80 hover:border-green/70 min-h-8 min-w-10 rounded-xl border"
+            onClick={() => onSelectPosition(position, PositionAction.INCREASE)}
+          >
+            <PlusIcon className="h-2 w-2" />
+          </Button>
         </div>
       </div>
     </div>

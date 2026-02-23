@@ -7,6 +7,7 @@ import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
+import { PoolInfo } from "../../PoolInfo";
 import { Pool, PriceMode } from "../../types";
 import { DepositCLMMPanel } from "../DepositCLMMPanel";
 import { DepositCLMMButton } from "./DepositCLMMButton";
@@ -132,69 +133,73 @@ export const CLMMDepositTab = ({
   ]);
 
   return (
-    <div className="flex min-h-full flex-col">
-      <DepositRange
-        priceMode={priceMode}
-        setPriceMode={setPriceMode}
-        currentPrice={selectedPool.priceBperA}
-        minPrice={minPrice}
-        maxPrice={maxPrice}
-        handleMinPriceChange={setMinPrice}
-        handleMaxPriceChange={setMaxPrice}
-      />
-      <div className="flex flex-col py-5">
-        <DepositCLMMPanel
-          tokenA={selectedPool.lpToken.token1}
-          tokenB={selectedPool.lpToken.token2}
-          walletBalances={splBalances}
-          tokenAPriceUsd={allPrices?.[selectedPool.lpToken.token1.address]}
-          tokenBPriceUsd={allPrices?.[selectedPool.lpToken.token2.address]}
-          tokenAInput={tokenAAmount}
-          tokenBInput={tokenBAmount}
-          tokenALoading={tokenALoading}
-          tokenBLoading={tokenBLoading}
-          onAmountAChange={handleAmountAChange}
-          onAmountBChange={handleAmountBChange}
-        />
-      </div>
-      <div className="flex flex-col gap-5 border-t border-dashed border-gray-800 px-4 py-5">
-        <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
-          <div className="flex justify-between">
-            <p className="text-gray-500">Total Value</p>
-            <p className="text-gray-200">${depositingInfo.totalValue}</p>
-          </div>
-          <div className="flex justify-between">
-            <div className="flex items-center gap-2">
-              <p className="text-gray-600">Estimated Yields</p>
-              <span
-                className={cn(
-                  text.sb4(),
-                  "text-green rounded-full bg-gray-900 px-3 py-1.5",
-                )}
-              >
-                1Y
-              </span>
-            </div>
-            <p className="text-gray-200">${depositingInfo.estimatedYields}</p>
-          </div>
-        </div>
-        <DepositCLMMButton
-          poolId={selectedPool.poolId}
-          tokenA={selectedPool.lpToken.token1}
-          tokenB={selectedPool.lpToken.token2}
-          tokenAAmount={tokenAAmount}
-          tokenBAmount={tokenBAmount}
-          prepareOpenCLMMPositionData={prepareOpenCLMMPositionData}
-          baseIn={baseIn}
+    // <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+    <>
+      <PoolInfo {...selectedPool} raydium={raydium} />
+      <div className="flex min-h-full flex-col">
+        <DepositRange
           priceMode={priceMode}
-          minPriceAperB={minPrice}
-          maxPriceAperB={maxPrice}
-          poolState={selectedPool.clmmPoolState}
-          wallet={wallet}
-          walletBalances={splBalances}
-          onSuccess={handleDepositSuccess}
+          setPriceMode={setPriceMode}
+          currentPrice={selectedPool.priceBperA}
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          handleMinPriceChange={setMinPrice}
+          handleMaxPriceChange={setMaxPrice}
         />
+        <div className="flex flex-col py-5">
+          <DepositCLMMPanel
+            tokenA={selectedPool.lpToken.token1}
+            tokenB={selectedPool.lpToken.token2}
+            walletBalances={splBalances}
+            tokenAPriceUsd={allPrices?.[selectedPool.lpToken.token1.address]}
+            tokenBPriceUsd={allPrices?.[selectedPool.lpToken.token2.address]}
+            tokenAInput={tokenAAmount}
+            tokenBInput={tokenBAmount}
+            tokenALoading={tokenALoading}
+            tokenBLoading={tokenBLoading}
+            onAmountAChange={handleAmountAChange}
+            onAmountBChange={handleAmountBChange}
+          />
+        </div>
+        <div className="flex flex-col gap-5 border-t border-dashed border-gray-800 px-4 py-5">
+          <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
+            <div className="flex justify-between">
+              <p className="text-gray-500">Total Value</p>
+              <p className="text-gray-200">${depositingInfo.totalValue}</p>
+            </div>
+            <div className="flex justify-between">
+              <div className="flex items-center gap-2">
+                <p className="text-gray-600">Estimated Yields</p>
+                <span
+                  className={cn(
+                    text.sb4(),
+                    "text-green rounded-full bg-gray-900 px-3 py-1.5",
+                  )}
+                >
+                  1Y
+                </span>
+              </div>
+              <p className="text-gray-200">${depositingInfo.estimatedYields}</p>
+            </div>
+          </div>
+          <DepositCLMMButton
+            poolId={selectedPool.poolId}
+            tokenA={selectedPool.lpToken.token1}
+            tokenB={selectedPool.lpToken.token2}
+            tokenAAmount={tokenAAmount}
+            tokenBAmount={tokenBAmount}
+            prepareOpenCLMMPositionData={prepareOpenCLMMPositionData}
+            baseIn={baseIn}
+            priceMode={priceMode}
+            minPriceAperB={minPrice}
+            maxPriceAperB={maxPrice}
+            poolState={selectedPool.clmmPoolState}
+            wallet={wallet}
+            walletBalances={splBalances}
+            onSuccess={handleDepositSuccess}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
