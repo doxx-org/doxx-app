@@ -12,7 +12,7 @@ import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
-import { PriceMode } from "../types";
+import { PriceMode } from "../../types";
 
 interface IDepositCLMMButtonProps {
   poolId: string;

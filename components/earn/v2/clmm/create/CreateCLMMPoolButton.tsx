@@ -11,9 +11,9 @@ import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { text } from "@/lib/text";
 import { simplifyErrorMessage } from "@/lib/utils";
 import { cn } from "@/lib/utils/style";
-import { Button } from "../../../ui/button";
-import { ConnectButtonWrapper } from "../../../wallet/ConnectButtonWrapper";
-import { PriceMode } from "../types";
+import { Button } from "../../../../ui/button";
+import { ConnectButtonWrapper } from "../../../../wallet/ConnectButtonWrapper";
+import { PriceMode } from "../../types";
 
 interface CreateCLMMPoolButtonProps {
   tokenA: TokenProfile | null;

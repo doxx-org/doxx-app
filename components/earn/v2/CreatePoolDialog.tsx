@@ -4,7 +4,7 @@ import {
   CPMMPoolStateWithConfig,
   SplBalance,
 } from "@/lib/hooks/chain/types";
-import { CreateCLMMPoolDialog } from "./clmm/CreateCLMMPoolDialog";
+import { CreateCLMMPoolDialog } from "./clmm/create/CreateCLMMPoolDialog";
 import { CreateCPMMPoolDialog } from "./cpmm/CreateCPMMPoolDialog";
 import { PoolType } from "./types";
 

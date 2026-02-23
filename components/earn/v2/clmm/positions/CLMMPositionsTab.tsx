@@ -25,7 +25,7 @@ import { UserPositionWithNFT } from "@/lib/hooks/chain/useGetUserClmmPositions";
 import { copyToClipboard, text } from "@/lib/text";
 import { cn, ellipseAddress, formatNumber } from "@/lib/utils";
 import { getTokenExplorerUrl } from "@/lib/utils/network";
-import { Pool } from "../types";
+import { Pool } from "../../types";
 
 const dummyPositions: Position[] = Array.from(
   { length: 2 },

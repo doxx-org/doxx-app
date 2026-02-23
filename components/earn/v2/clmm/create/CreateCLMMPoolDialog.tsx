@@ -12,20 +12,20 @@ import {
 import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { text } from "@/lib/text";
 import { cn, parseDecimalsInput } from "@/lib/utils";
-import { TokenLabel } from "../../../TokenLabel";
-import { TokenSelectorDialog } from "../../../swap/TokenSelectorDialog";
+import { TokenLabel } from "../../../../TokenLabel";
+import { TokenSelectorDialog } from "../../../../swap/TokenSelectorDialog";
 import {
   Dialog,
   DialogBody,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../../ui/dialog";
-import { FEE_TIERS, FeeTierSelection } from "../../FeeTierSelection";
-import { PriceMode } from "../types";
-import { CLMMPriceRange } from "./CLMMPriceRange";
+} from "../../../../ui/dialog";
+import { FEE_TIERS, FeeTierSelection } from "../../../FeeTierSelection";
+import { PriceMode } from "../../types";
+import { CLMMPriceRange } from "../CLMMPriceRange";
+import { DepositCLMMPanel } from "../DepositCLMMPanel";
 import { CreateCLMMPoolButton } from "./CreateCLMMPoolButton";
-import { DepositCLMMPanel } from "./DepositCLMMPanel";
 
 interface CreateCLMMPoolDialogProps {
   isOpen: boolean;

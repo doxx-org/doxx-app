@@ -7,9 +7,9 @@ import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
-import { Pool, PriceMode } from "../types";
+import { Pool, PriceMode } from "../../types";
+import { DepositCLMMPanel } from "../DepositCLMMPanel";
 import { DepositCLMMButton } from "./DepositCLMMButton";
-import { DepositCLMMPanel } from "./DepositCLMMPanel";
 import { DepositRange } from "./DepositRange";
 
 export const CLMMDepositTab = ({
@@ -97,15 +97,13 @@ export const CLMMDepositTab = ({
         // eslint-disable-next-line react-hooks/set-state-in-effect
         setTokenBLoading(true);
       } else {
-         
         setTokenALoading(true);
       }
       return;
     }
 
-     
     setTokenBLoading(false);
-     
+
     setTokenALoading(false);
 
     if (prepareOpenCLMMPositionData && !isLoadingPrepareOpenCLMMPosition) {

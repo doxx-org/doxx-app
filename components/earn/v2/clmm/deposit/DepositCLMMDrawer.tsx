@@ -15,10 +15,10 @@ import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { PoolInfo } from "../PoolInfo";
-import { Pool } from "../types";
+import { PoolInfo } from "../../PoolInfo";
+import { Pool } from "../../types";
+import { CLMMPositionsTab } from "../positions/CLMMPositionsTab";
 import { CLMMDepositTab } from "./CLMMDepositTab";
-import { CLMMPositionsTab } from "./CLMMPositionsTab";
 
 enum Tab {
   DEPOSIT = "Deposit",

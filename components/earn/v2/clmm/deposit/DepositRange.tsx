@@ -2,8 +2,8 @@ import { useEffect } from "react";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { PriceMode } from "../types";
-import { CLMMPriceRange } from "./CLMMPriceRange";
+import { PriceMode } from "../../types";
+import { CLMMPriceRange } from "../CLMMPriceRange";
 import { LiquidityRangeChart } from "./LiquidityRangeChart";
 
 interface DepositRangeProps {
