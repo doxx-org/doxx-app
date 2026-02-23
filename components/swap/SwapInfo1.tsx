@@ -3,7 +3,7 @@ import { ArrowLeftRight, RefreshCw } from "lucide-react";
 import ArrowRight from "@/assets/icons/arrow-right.svg";
 import Info from "@/assets/icons/info.svg";
 import { TokenProfile } from "@/lib/config/tokens";
-import { IUseBestRouteV2Response } from "@/lib/hooks/chain/prepare/useBestRouteV2";
+import { IUseBestRouteV2Response } from "@/lib/hooks/chain/v2/useBestRouteV2";
 import { cn, normalizeBN } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";

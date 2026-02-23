@@ -23,7 +23,6 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
-import { useBestRouteV2 } from "@/lib/hooks/chain/prepare/useBestRouteV2";
 import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
@@ -33,6 +32,7 @@ import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
+import { useBestRouteV2 } from "@/lib/hooks/chain/v2/useBestRouteV2";
 import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { useDebounce } from "@/lib/hooks/useDebounce";
 import { useDialogState } from "@/lib/hooks/useOpenDialog";
