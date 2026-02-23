@@ -15,7 +15,6 @@ import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { PoolInfo } from "../../PoolInfo";
 import { Pool } from "../../types";
 import { CLMMPositionsTab } from "../positions/CLMMPositionsTab";
 import { CLMMDepositTab } from "./CLMMDepositTab";
@@ -110,8 +109,6 @@ export const DepositCLMMDrawer = ({
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
-        {/* <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <PoolInfo {...selectedPool} raydium={raydium} /> */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <PoolTabs
             activeTab={activeTab}

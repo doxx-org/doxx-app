@@ -1,12 +1,14 @@
 import { IPositionWithValue } from "@/lib/hooks/chain/types";
 import { Pool } from "../../types";
 
-interface DecreasePoisitionProps {
+interface DecreasePositionProps {
   position: IPositionWithValue;
   selectedPool: Pool;
 }
 
-export const DecreasePoisiton = ({
+export const DecreasePosition = ({
   position,
   selectedPool,
-}: DecreasePoisitionProps) => {};
+}: DecreasePositionProps) => {
+  return <div>DecreasePosition</div>;
+};

@@ -1,67 +1,13 @@
 import { useMemo, useState } from "react";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
-import { PublicKey } from "@solana/web3.js";
-import { BN } from "bn.js";
 import {
-  CLMMPersonalPositionState,
-  CLMMPoolState,
   IPositionWithValue,
   UserPositionWithNFT,
 } from "@/lib/hooks/chain/types";
 import { PoolInfo } from "../../PoolInfo";
 import { Pool } from "../../types";
 import { OpenPosition } from "./OpenPosition";
-import { PositionItem } from "./PositionItem";
-
-const dummyPositions: IPositionWithValue[] = Array.from(
-  { length: 2 },
-  () =>
-    ({
-      publicKey: new PublicKey(0),
-      poolId: new PublicKey(0),
-      pool: {
-        tokenMint0: new PublicKey(0),
-        tokenMint1: new PublicKey(0),
-        mintDecimals0: 0,
-        mintDecimals1: 0,
-        tickCurrent: 0,
-      } as CLMMPoolState,
-      account: {
-        nftMint: new PublicKey(0),
-        poolId: new PublicKey(0),
-        tickLowerIndex: 0,
-        tickUpperIndex: 0,
-        liquidity: new BN(0),
-        feeGrowthInside0LastX64: new BN(0),
-        feeGrowthInside1LastX64: new BN(0),
-        tokenFeesOwed0: new BN(0),
-        tokenFeesOwed1: new BN(0),
-      } as CLMMPersonalPositionState,
-      nftTokenAccount: new PublicKey(0),
-      amount0: 0,
-      amount1: 0,
-      fees: {
-        token0: {
-          amount: 0,
-          valueUsd: 0,
-          amountRaw: new BN(0),
-          mint: new PublicKey(0),
-          decimals: 0,
-          tokenProfile: undefined,
-        },
-        token1: {
-          amount: 0,
-          valueUsd: 0,
-          amountRaw: new BN(0),
-          mint: new PublicKey(0),
-          decimals: 0,
-          tokenProfile: undefined,
-        },
-      },
-      rewardInfos: [],
-      positionValue: 0,
-    }) as IPositionWithValue,
-);
+import { PositionContent } from "./PositionContent";
 
 export enum PositionAction {
   DECREASE,
@@ -105,10 +51,13 @@ export const CLMMPositionsTab = ({
   isLoadingPositions,
   allPools,
 }: CLMMPositionsTabProps) => {
-  const [selectedPosition, setSelectedPosition] = useState<{
-    position: IPositionWithValue;
-    action: PositionAction;
-  } | null>(null);
+  const [selectedPosition, setSelectedPosition] = useState<
+    | {
+        position: IPositionWithValue;
+        action: PositionAction;
+      }
+    | undefined
+  >(undefined);
 
   const poolPrices: Record<string, number> | undefined = useMemo(() => {
     return allPools?.reduce(
@@ -152,12 +101,6 @@ export const CLMMPositionsTab = ({
     });
   }, [rawPositions, selectedPool, poolPrices]);
 
-  const positionsToDisplay = useMemo(() => {
-    if (isLoadingPositions) return dummyPositions;
-    if (!positions) return [];
-    return positions;
-  }, [isLoadingPositions, positions]);
-
   const handleSelectPosition = (
     position: IPositionWithValue,
     action: PositionAction,
@@ -171,39 +114,15 @@ export const CLMMPositionsTab = ({
         selectedPosition={selectedPosition?.position}
         selectedPool={selectedPool}
         raydium={raydium}
-        onBack={() => setSelectedPosition(null)}
+        onBack={() => setSelectedPosition(undefined)}
       />
-      {isLoadingPositions ? (
-        <>
-          <PositionItem
-            position={dummyPositions[0]}
-            selectedPool={selectedPool}
-            positionIndex={0}
-            isLoading={isLoadingPositions}
-            onSelectPosition={() => {}}
-          />
-          <PositionItem
-            position={dummyPositions[1]}
-            selectedPool={selectedPool}
-            positionIndex={1}
-            isLoading={isLoadingPositions}
-            onSelectPosition={() => {}}
-          />
-        </>
-      ) : (
-        positionsToDisplay.map((position, positionIndex) => {
-          return (
-            <PositionItem
-              key={`position-${position.publicKey.toBase58()}`}
-              position={position}
-              selectedPool={selectedPool}
-              positionIndex={positionIndex}
-              isLoading={isLoadingPositions}
-              onSelectPosition={handleSelectPosition}
-            />
-          );
-        })
-      )}
+      <PositionContent
+        isLoadingPositions={isLoadingPositions}
+        positions={positions}
+        selectedPool={selectedPool}
+        handleSelectPosition={handleSelectPosition}
+        selectedPosition={selectedPosition}
+      />
     </div>
   );
 };
