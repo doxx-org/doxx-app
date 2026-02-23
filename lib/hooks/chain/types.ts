@@ -1,4 +1,4 @@
-import { IdlAccounts } from "@coral-xyz/anchor";
+import { BN, IdlAccounts } from "@coral-xyz/anchor";
 // import {
 //   ApiV3PoolInfoConcentratedItem,
 //   ClmmKeys,
@@ -6,6 +6,7 @@ import { IdlAccounts } from "@coral-xyz/anchor";
 //   ReturnTypeFetchMultiplePoolTickArrays,
 // } from "@raydium-io/raydium-sdk-v2";
 import { PublicKey } from "@solana/web3.js";
+import { TokenProfile } from "@/lib/config/tokens";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 
 export type CPMMAmmConfig = IdlAccounts<DoxxCpmmIdl>["ammConfig"];
@@ -59,3 +60,45 @@ export interface PoolToken {
 export type BalanceMapByMint = Partial<Record<string, SplBalance>>; // token address -> SplBalance
 
 export type PriceMap = Partial<Record<string, number>>; // token address -> price
+
+export interface PersonalPositionState {
+  publicKey: PublicKey;
+  account: CLMMPersonalPositionState;
+}
+
+export interface PositionRewardInfo {
+  rewardTokenProfile: TokenProfile | undefined;
+  rewardMint: PublicKey;
+  rewardDecimals: number;
+  pendingAmount: number;
+  pendingAmountRaw: BN;
+  pendingValueUsd: number | undefined;
+}
+
+interface PositionFee {
+  amount: number;
+  valueUsd: number;
+  amountRaw: BN;
+  mint: PublicKey;
+  decimals: number;
+  tokenProfile: TokenProfile | undefined;
+}
+
+export interface PositionFees {
+  token0: PositionFee;
+  token1: PositionFee;
+}
+
+export interface UserPositionWithNFT extends PersonalPositionState {
+  nftTokenAccount: PublicKey;
+  poolId: PublicKey;
+  pool: CLMMPoolState; // Pool state
+  amount0: number;
+  amount1: number;
+  fees: PositionFees;
+  rewardInfos: PositionRewardInfo[];
+}
+
+export interface IPositionWithValue extends UserPositionWithNFT {
+  positionValue: number;
+}

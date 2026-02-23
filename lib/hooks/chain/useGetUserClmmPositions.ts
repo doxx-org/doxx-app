@@ -1,4 +1,4 @@
-import { BN, Program } from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
 import { Pool, PoolType } from "@/components/earn/v2/types";
@@ -10,45 +10,7 @@ import {
   mapTokenBalanceFromRawAccounts,
 } from "@/lib/utils/balance";
 import { getTokenAmountsFromLiquidity } from "@/lib/utils/calculation";
-import { CLMMPersonalPositionState, CLMMPoolState } from "./types";
-
-export interface PersonalPositionState {
-  publicKey: PublicKey;
-  account: CLMMPersonalPositionState;
-}
-
-export interface PositionRewardInfo {
-  rewardTokenProfile: TokenProfile | undefined;
-  rewardMint: PublicKey;
-  rewardDecimals: number;
-  pendingAmount: number;
-  pendingAmountRaw: BN;
-  pendingValueUsd: number | undefined;
-}
-
-interface PositionFee {
-  amount: number;
-  valueUsd: number;
-  amountRaw: BN;
-  mint: PublicKey;
-  decimals: number;
-  tokenProfile: TokenProfile | undefined;
-}
-
-export interface PositionFees {
-  token0: PositionFee;
-  token1: PositionFee;
-}
-
-export interface UserPositionWithNFT extends PersonalPositionState {
-  nftTokenAccount: PublicKey;
-  poolId: PublicKey;
-  pool: CLMMPoolState; // Pool state
-  amount0: number;
-  amount1: number;
-  fees: PositionFees;
-  rewardInfos: PositionRewardInfo[];
-}
+import { PositionFees, PositionRewardInfo, UserPositionWithNFT } from "./types";
 
 export function useGetUserClmmPositions(
   program: Program<DoxxClmmIdl> | undefined,
