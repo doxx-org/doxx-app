@@ -23,17 +23,37 @@ export function Pools() {
   const filteredPools = useMemo(() => {
     if (!searchValue || searchValue.trim() === "") return allPools;
 
-    return allPools?.filter((pool) => {
-      return [
-        pool.lpToken.token1.name.toLowerCase(),
-        pool.lpToken.token1.symbol.toLowerCase(),
-        pool.lpToken.token1.address.toLowerCase(),
-        pool.lpToken.token2.name.toLowerCase(),
-        pool.lpToken.token2.symbol.toLowerCase(),
-        pool.lpToken.token2.address.toLowerCase(),
-        pool.poolId.toLowerCase(),
-      ].some((field) => field.includes(searchValue.toLowerCase()));
-    });
+    const query = searchValue.toLowerCase().trim();
+
+    return allPools
+      ?.filter((pool) => {
+        return [
+          pool.lpToken.token1.name.toLowerCase(),
+          pool.lpToken.token1.symbol.toLowerCase(),
+          pool.lpToken.token1.address.toLowerCase(),
+          pool.lpToken.token2.name.toLowerCase(),
+          pool.lpToken.token2.symbol.toLowerCase(),
+          pool.lpToken.token2.address.toLowerCase(),
+          pool.poolId.toLowerCase(),
+        ].some((field) => field.includes(query));
+      })
+      .sort((a, b) => {
+        const score = (pool: Pool) => {
+          const t1Symbol = pool.lpToken.token1.symbol.toLowerCase();
+          const t2Symbol = pool.lpToken.token2.symbol.toLowerCase();
+          const t1Name = pool.lpToken.token1.name.toLowerCase();
+          const t2Name = pool.lpToken.token2.name.toLowerCase();
+
+          if (t1Symbol === query || t2Symbol === query) return 4; // exact symbol match
+          if (t1Symbol.startsWith(query) || t2Symbol.startsWith(query))
+            return 3; // symbol starts with
+          if (t1Symbol.includes(query) || t2Symbol.includes(query))
+            return 2; // symbol contains
+          if (t1Name.includes(query) || t2Name.includes(query)) return 1; // name match
+          return 0; // address/poolId match
+        };
+        return score(b) - score(a); // higher score first
+      });
   }, [allPools, searchValue]);
 
   const handleOpenDeposit = (pool: Pool) => {

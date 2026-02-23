@@ -27,12 +27,27 @@ export const TokenSelectorDialog = ({
 
   const filteredTokenProfiles: TokenProfile[] | undefined = useMemo(
     () =>
-      tokenProfiles.filter(
-        (token: TokenProfile) =>
-          token.symbol?.toLowerCase().includes(search.toLowerCase()) ||
-          token.name?.toLowerCase().includes(search.toLowerCase()) ||
-          token.address.toLowerCase().includes(search.toLowerCase()),
-      ),
+      tokenProfiles
+        .filter(
+          (token: TokenProfile) =>
+            token.symbol?.toLowerCase().includes(search.toLowerCase()) ||
+            token.name?.toLowerCase().includes(search.toLowerCase()) ||
+            token.address.toLowerCase().includes(search.toLowerCase()),
+        )
+        .sort((a, b) => {
+          const score = (tokenProfile: TokenProfile) => {
+            const tSymbol = tokenProfile.symbol.toLowerCase();
+            const tName = tokenProfile.name.toLowerCase();
+
+            if (tSymbol === search) return 4; // exact symbol match
+            if (tSymbol.startsWith(search)) return 3; // symbol starts with
+            if (tSymbol.includes(search)) return 2; // symbol contains
+            if (tName.includes(search)) return 1; // name match
+            return 0; // address/poolId match
+          };
+
+          return score(b) - score(a); // higher score first
+        }),
     [tokenProfiles, search],
   );
 
