@@ -382,16 +382,16 @@ export function useCreateClmmPoolAndPosition(
         const tokenProgram1 = await resolveTokenProgramId(tokenMint1);
 
         // Step 1: Calculate what the current tick WILL BE after pool creation
-        const futureCurrentTick = tickFromPriceAperB({
-          priceAperB: Number(initialPriceAperB),
-          tokenAMint,
-          tokenBMint,
-          tokenADecimals,
-          tokenBDecimals,
-          tokenMint0,
-          tokenMint1,
-        });
-        console.log("🚀 ~ futureCurrentTick:", futureCurrentTick);
+        // const futureCurrentTick = tickFromPriceAperB({
+        //   priceAperB: Number(initialPriceAperB),
+        //   tokenAMint,
+        //   tokenBMint,
+        //   tokenADecimals,
+        //   tokenBDecimals,
+        //   tokenMint0,
+        //   tokenMint1,
+        // });
+        // console.log("🚀 ~ futureCurrentTick:", futureCurrentTick);
 
         const sqrtPriceX64 = computeSqrtPriceX64({
           tokenAMint,
@@ -508,14 +508,14 @@ export function useCreateClmmPoolAndPosition(
         }
 
         // Step 4: Check if bootstrap needed
-        const needsBootstrap = shouldBootstrap({
-          priceMode,
-          tickLower: tickLowerIndex,
-          tickUpper: tickUpperIndex,
-          currentTick: futureCurrentTick, // ← What pool WILL have after creation
-          tickSpacing,
-        });
-        console.log("🚀 ~ needsBootstrap:", needsBootstrap);
+        // const needsBootstrap = shouldBootstrap({
+        //   priceMode,
+        //   tickLower: tickLowerIndex,
+        //   tickUpper: tickUpperIndex,
+        //   currentTick: futureCurrentTick, // ← What pool WILL have after creation
+        //   tickSpacing,
+        // });
+        // console.log("🚀 ~ needsBootstrap:", needsBootstrap);
 
         // For "Full range" positions, the program will only initialize the lower/upper tick arrays.
         // That often leaves the *current* tick array (used by swap) uninitialized, making the pool "not swappable".
@@ -533,17 +533,17 @@ export function useCreateClmmPoolAndPosition(
           Math.floor(currentTickIndexRaw / tickSpacing) * tickSpacing,
           tickSpacing,
         );
-        console.log("🚀 ~ currentTickIndex:", currentTickIndex);
+        // console.log("🚀 ~ currentTickIndex:", currentTickIndex);
         const tickArrayLowerStartIndex = tickArrayStartIndex(
           tickLowerIndex,
           tickSpacing,
         );
-        console.log("🚀 ~ tickArrayLowerStartIndex:", tickArrayLowerStartIndex);
+        // console.log("🚀 ~ tickArrayLowerStartIndex:", tickArrayLowerStartIndex);
         const tickArrayUpperStartIndex = tickArrayStartIndex(
           tickUpperIndex,
           tickSpacing,
         );
-        console.log("🚀 ~ tickArrayUpperStartIndex:", tickArrayUpperStartIndex);
+        // console.log("🚀 ~ tickArrayUpperStartIndex:", tickArrayUpperStartIndex);
 
         const [tickArrayLower] = getClmmTickArrayAddress({
           pool: poolState,
@@ -666,7 +666,7 @@ export function useCreateClmmPoolAndPosition(
           currentTickIndex,
           tickSpacing,
         );
-        console.log("🚀 ~ currentTickArrayStart:", currentTickArrayStart);
+        // console.log("🚀 ~ currentTickArrayStart:", currentTickArrayStart);
         const maxTickInCurrentArray =
           currentTickArrayStart + tickArraySpan - tickSpacing;
         const candidateUpper = clampTick(
@@ -682,9 +682,9 @@ export function useCreateClmmPoolAndPosition(
             : currentTickIndex - tickSpacing,
           tickSpacing,
         );
-        console.log("🚀 ~ bootstrapTickLowerIndex:", bootstrapTickLowerIndex);
+        // console.log("🚀 ~ bootstrapTickLowerIndex:", bootstrapTickLowerIndex);
         const bootstrapTickUpperIndex = candidateUpper;
-        console.log("🚀 ~ bootstrapTickUpperIndex:", bootstrapTickUpperIndex);
+        // console.log("🚀 ~ bootstrapTickUpperIndex:", bootstrapTickUpperIndex);
         if (
           shouldBootstrapTickArrays &&
           bootstrapTickUpperIndex <= bootstrapTickLowerIndex
@@ -750,8 +750,8 @@ export function useCreateClmmPoolAndPosition(
           positionNftMint.publicKey,
         );
 
-        console.log("🚀 ~ amount0MaxAllowed:", amount0MaxAllowed.toString());
-        console.log("🚀 ~ amount1MaxAllowed:", amount1MaxAllowed.toString());
+        // console.log("🚀 ~ amount0MaxAllowed:", amount0MaxAllowed.toString());
+        // console.log("🚀 ~ amount1MaxAllowed:", amount1MaxAllowed.toString());
         const openPosIx = await program.methods
           .openPositionWithToken22Nft(
             tickLowerIndex,
@@ -783,14 +783,14 @@ export function useCreateClmmPoolAndPosition(
           })
           .instruction();
 
-        console.log(
-          "🚀 ~ bootstrapAmount0MaxAllowed:",
-          bootstrapAmount0MaxAllowed.toString(),
-        );
-        console.log(
-          "🚀 ~ bootstrapAmount1MaxAllowed:",
-          bootstrapAmount1MaxAllowed.toString(),
-        );
+        // console.log(
+        //   "🚀 ~ bootstrapAmount0MaxAllowed:",
+        //   bootstrapAmount0MaxAllowed.toString(),
+        // );
+        // console.log(
+        //   "🚀 ~ bootstrapAmount1MaxAllowed:",
+        //   bootstrapAmount1MaxAllowed.toString(),
+        // );
         const bootstrapOpenPosIx = shouldBootstrapTickArrays
           ? await program.methods
               .openPositionWithToken22Nft(
@@ -1127,10 +1127,10 @@ export function useCreateClmmPoolAndPosition(
           tokenMint1,
         });
 
-        console.log(
-          "Pool will be created with current tick:",
-          futureCurrentTick,
-        );
+        // console.log(
+        //   "Pool will be created with current tick:",
+        //   futureCurrentTick,
+        // );
 
         // Step 2: Calculate sqrtPriceX64 (this SETS the current tick)
         const sqrtPriceX64 = computeSqrtPriceX64({
@@ -1171,10 +1171,10 @@ export function useCreateClmmPoolAndPosition(
           sqrtPriceX64,
         );
         const bootstrapNftMint = Keypair.generate();
-        console.log(
-          "🚀 ~ bootstrapNftMint:",
-          bootstrapNftMint.publicKey.toBase58(),
-        );
+        // console.log(
+        //   "🚀 ~ bootstrapNftMint:",
+        //   bootstrapNftMint.publicKey.toBase58(),
+        // );
 
         // Step 3: Get main position range
         // Step 3: Get tick range based on price mode
@@ -1214,7 +1214,7 @@ export function useCreateClmmPoolAndPosition(
           currentTick: futureCurrentTick, // ← What pool WILL have after creation
           tickSpacing,
         });
-        console.log("Bootstrap needed:", needsBootstrap);
+        // console.log("Bootstrap needed:", needsBootstrap);
 
         // Derive pool PDAs
         const [poolState] = getPoolAddress(
@@ -1424,14 +1424,14 @@ export function useCreateClmmPoolAndPosition(
             })
             .signers([bootstrapNftMint])
             .rpc();
-          console.log("🚀 ~ bootstrapOpenPositionTx:", bootstrapOpenPositionTx);
+          // console.log("🚀 ~ bootstrapOpenPositionTx:", bootstrapOpenPositionTx);
 
           const status = await pollSignatureStatus({
             connection,
             signature: bootstrapOpenPositionTx,
             timeoutMs: 120000,
           });
-          console.log("🚀 ~ status:", status);
+          // console.log("🚀 ~ status:", status);
           if (!status) {
             onError(
               new Error("TransactionNotFoundOnChain"),
@@ -1445,7 +1445,7 @@ export function useCreateClmmPoolAndPosition(
           tickLowerIndex,
           tickSpacing,
         );
-        console.log("🚀 ~ tickArrayLowerStartIndex:", tickArrayLowerStartIndex);
+        // console.log("🚀 ~ tickArrayLowerStartIndex:", tickArrayLowerStartIndex);
         const tickArrayUpperStartIndex = tickArrayStartIndex(
           tickUpperIndex,
           tickSpacing,
@@ -1471,10 +1471,10 @@ export function useCreateClmmPoolAndPosition(
           positionNftMint.publicKey,
         );
 
-        console.log(
-          "🚀 ~ positionNftMint:",
-          positionNftMint.publicKey.toBase58(),
-        );
+        // console.log(
+        //   "🚀 ~ positionNftMint:",
+        //   positionNftMint.publicKey.toBase58(),
+        // );
         // // Step 7: Main position
         const openPositionTx = await program.methods
           .openPositionWithToken22Nft(
@@ -1514,7 +1514,7 @@ export function useCreateClmmPoolAndPosition(
           })
           .signers([positionNftMint])
           .rpc();
-        console.log("🚀 ~ openPositionTx:", openPositionTx);
+        // console.log("🚀 ~ openPositionTx:", openPositionTx);
 
         const status = await pollSignatureStatus({
           connection,

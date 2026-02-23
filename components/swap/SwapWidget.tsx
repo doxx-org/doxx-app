@@ -192,7 +192,6 @@ export function SwapWidget() {
     allTokenProfiles,
     true,
   );
-  console.log("🚀 ~ isLoadingSplBalances:", isLoadingSplBalances);
 
   // Initialize Raydium SDK
   const { data: raydium } = useRaydium({ connection, wallet });
@@ -240,14 +239,10 @@ export function SwapWidget() {
     token1BalanceBN,
   ] = useMemo(() => {
     const sellTokenBalance = splBalances?.[sellToken.address]?.amount;
-    console.log("🚀 ~ sellTokenBalance:", sellTokenBalance);
     const buyTokenBalance = splBalances?.[buyToken.address]?.amount;
-    console.log("🚀 ~ buyTokenBalance:", buyTokenBalance);
 
     const rawToken0Balance = splBalances?.[sellToken.address]?.rawAmount;
-    console.log("🚀 ~ rawToken0Balance:", rawToken0Balance);
     const rawToken1Balance = splBalances?.[buyToken.address]?.rawAmount;
-    console.log("🚀 ~ rawToken1Balance:", rawToken1Balance);
 
     const token0BalanceBN =
       rawToken0Balance !== undefined ? new BN(rawToken0Balance) : undefined;

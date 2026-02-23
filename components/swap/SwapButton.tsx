@@ -40,7 +40,7 @@ export function SwapButton({
   bestRoute,
   wallet,
   token0Balance,
-  token1Balance,
+  // token1Balance,
   errors: { errorBestRoute, errorAllTokenProfiles },
   isActionable,
   onSuccess,
@@ -81,7 +81,6 @@ export function SwapButton({
       bestRoute.swapState.token0Amount.eq(ZERO) ||
       bestRoute.swapState.token1Amount.eq(ZERO) ||
       !token0Balance ||
-      !token1Balance ||
       (bestRoute.swapState.isBaseExactIn
         ? bestRoute.swapState.token0Amount.gt(token0Balance)
         : bestRoute.swapState.minMaxAmount.gt(token0Balance))
@@ -148,7 +147,7 @@ export function SwapButton({
       // });
       // }
     }
-  }, [bestRoute, token0Balance, token1Balance, swapBaseIn, swapBaseOut]);
+  }, [bestRoute, token0Balance, swapBaseIn, swapBaseOut]);
 
   const highPriceImpact = useMemo(() => {
     if (!bestRoute) return undefined;
@@ -183,8 +182,6 @@ export function SwapButton({
     // validate best route
     if (
       !bestRoute ||
-      !token0Balance ||
-      !token1Balance ||
       (highPriceImpact?.isHighPriceImpact && !isHighPriceImpactAccepted)
     )
       return ["Swap", true];
@@ -193,7 +190,7 @@ export function SwapButton({
     const requiredIn = bestRoute.swapState.isBaseExactIn
       ? bestRoute.swapState.token0Amount
       : bestRoute.swapState.minMaxAmount;
-    if (requiredIn.gt(token0Balance)) {
+    if (!token0Balance || requiredIn.gt(token0Balance)) {
       return ["Insufficient balance", true];
     }
 
@@ -205,7 +202,6 @@ export function SwapButton({
     isSwapping,
     isQuotingRoute,
     bestRoute,
-    token1Balance,
     token0Balance,
     errorAllTokenProfiles,
     isActionable,
