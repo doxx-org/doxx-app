@@ -90,8 +90,25 @@ export const OpenPosition = ({
 
         {/* Position summary card */}
         <div className={cn(text.sb3(), "flex flex-col gap-2")}>
+          {/* Current Price */}
+          <div className="flex items-center justify-between">
+            <p className="text-gray-500">Current Price: </p>
+            <div className="flex items-center gap-1">
+              <TokenPriceDisplay
+                price={1}
+                token={selectedPool.lpToken.token1}
+                isLoading={false}
+              />
+              {"="}
+              <TokenPriceDisplay
+                price={selectedPool.priceBperA}
+                token={selectedPool.lpToken.token2}
+                isLoading={false}
+              />
+            </div>
+          </div>
+
           {/* Pending Rewards */}
-          {/* <div className="flex w-full items-center justify-between"> */}
           <div className="flex w-full items-center justify-between gap-2">
             <p className={cn(text.sb3(), "text-gray-500")}>Pending Rewards:</p>
             <div className="flex items-center gap-2">
@@ -134,28 +151,6 @@ export const OpenPosition = ({
                   }}
                 />
               ))}
-            </div>
-          </div>
-          {/* </div> */}
-          {/* <div className="flex items-center justify-between">
-            <p className="text-gray-500">Staked LP:</p>
-            <p className="font-medium text-gray-50">{formatNumber(stakedLp)}</p>
-          </div> */}
-
-          <div className="flex items-center justify-between">
-            <p className="text-gray-500">Current Price: </p>
-            <div className="flex items-center gap-1">
-              <TokenPriceDisplay
-                price={1}
-                token={selectedPool.lpToken.token1}
-                isLoading={false}
-              />
-              {"="}
-              <TokenPriceDisplay
-                price={selectedPool.priceBperA}
-                token={selectedPool.lpToken.token2}
-                isLoading={false}
-              />
             </div>
           </div>
         </div>
