@@ -36,7 +36,7 @@ const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
   const doxxClmmProgram = useDoxxClmmProgram({ provider });
-  const { data: allPools } = useGetAllPools();
+  const { data: allPools, refetch: refetchAllPools } = useGetAllPools();
 
   const {
     data: allPositions,
@@ -49,16 +49,17 @@ const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
     allPools,
   );
 
-  const handleRefetchPositions = useCallback(() => {
+  const handleCTAPositionSuccess = useCallback(() => {
+    refetchAllPools();
     refetchAllPositions();
-  }, [refetchAllPositions]);
+  }, [refetchAllPools, refetchAllPositions]);
 
   if (activeTab === Tab.DEPOSIT) {
     return (
       <CLMMDepositTab
         selectedPool={selectedPool}
         raydium={raydium}
-        onDepositSuccess={handleRefetchPositions}
+        onDepositSuccess={handleCTAPositionSuccess}
       />
     );
   }
@@ -70,7 +71,7 @@ const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
       positions={allPositions}
       isLoadingPositions={isLoadingAllPositions}
       allPools={allPools}
-      onPositionCTASuccess={handleRefetchPositions}
+      onPositionCTASuccess={handleCTAPositionSuccess}
     />
   );
 };

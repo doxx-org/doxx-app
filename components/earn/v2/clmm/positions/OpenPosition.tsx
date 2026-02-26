@@ -1,10 +1,10 @@
-import { useMemo } from "react";
 import { ArrowLeftIcon } from "lucide-react";
+import { TokenAmountTooltip } from "@/components/TokenAmount";
 import { TokenPriceDisplay } from "@/components/TokenPriceDisplay";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { IPositionWithValue } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";
-import { cn, formatNumber, normalizeBPSString } from "@/lib/utils";
+import { cn, normalizeBPSString } from "@/lib/utils";
 import { Pool } from "../../types";
 import { PositionAmount } from "./PositionAmount";
 import { PositionRangeLabel } from "./PositionRangeLabel";
@@ -24,10 +24,6 @@ export const OpenPosition = ({
     lpToken: { token1, token2 },
     fee,
   } = selectedPool;
-
-  const stakedLp = useMemo(() => {
-    return position.amount0 + position.amount1;
-  }, [position.amount0, position.amount1]);
 
   return (
     <div className="flex flex-col gap-5 border-b border-gray-800 px-4 py-5">
@@ -94,10 +90,57 @@ export const OpenPosition = ({
 
         {/* Position summary card */}
         <div className={cn(text.sb3(), "flex flex-col gap-2")}>
-          <div className="flex items-center justify-between">
+          {/* Pending Rewards */}
+          {/* <div className="flex w-full items-center justify-between"> */}
+          <div className="flex w-full items-center justify-between gap-2">
+            <p className={cn(text.sb3(), "text-gray-500")}>Pending Rewards:</p>
+            <div className="flex items-center gap-2">
+              <TokenAmountTooltip
+                amount={position.fees.token0.amount}
+                value={position.fees.token0.valueUsd}
+                token={position.fees.token0.tokenProfile}
+                isLoading={false}
+                formatter={{
+                  decimals:
+                    position.fees.token0.tokenProfile?.displayDecimals ?? 6,
+                  minimumDecimals:
+                    position.fees.token0.tokenProfile?.displayDecimals ?? 6,
+                }}
+              />
+              <TokenAmountTooltip
+                amount={position.fees.token1.amount}
+                value={position.fees.token1.valueUsd}
+                token={position.fees.token1.tokenProfile}
+                isLoading={false}
+                formatter={{
+                  decimals:
+                    position.fees.token1.tokenProfile?.displayDecimals ?? 6,
+                  minimumDecimals:
+                    position.fees.token1.tokenProfile?.displayDecimals ?? 6,
+                }}
+              />
+              {position.rewardInfos.map((rewardInfo) => (
+                <TokenAmountTooltip
+                  key={`${selectedPool.poolId}-${rewardInfo.rewardMint.toBase58()}`}
+                  amount={rewardInfo.pendingAmount}
+                  value={rewardInfo.pendingValueUsd}
+                  token={rewardInfo.rewardTokenProfile}
+                  isLoading={false}
+                  formatter={{
+                    decimals:
+                      rewardInfo.rewardTokenProfile?.displayDecimals ?? 6,
+                    minimumDecimals:
+                      rewardInfo.rewardTokenProfile?.displayDecimals ?? 6,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+          {/* </div> */}
+          {/* <div className="flex items-center justify-between">
             <p className="text-gray-500">Staked LP:</p>
             <p className="font-medium text-gray-50">{formatNumber(stakedLp)}</p>
-          </div>
+          </div> */}
 
           <div className="flex items-center justify-between">
             <p className="text-gray-500">Current Price: </p>

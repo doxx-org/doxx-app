@@ -119,6 +119,10 @@ export const CLMMPositionsTab = ({
   const handlePositionCTASuccess = useCallback(() => {
     onPositionCTASuccess();
     refetchPoolInfo();
+
+    setTimeout(() => {
+      setSelectedPosition(undefined);
+    }, 1000); // 1 second delay to avoid flashing state
   }, [refetchPoolInfo, onPositionCTASuccess]);
 
   return (

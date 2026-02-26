@@ -1,4 +1,4 @@
-import { MinusIcon, PlusIcon } from "lucide-react";
+import { MinusIcon } from "lucide-react";
 import { TokenAmountTooltip } from "@/components/TokenAmount";
 import { TokenPriceDisplay } from "@/components/TokenPriceDisplay";
 import { Button } from "@/components/ui/button";
@@ -116,12 +116,12 @@ export const PositionItem = ({
           >
             <MinusIcon className="h-2 w-2" />
           </Button>
-          <Button
+          {/* <Button
             className="bg-green text-black-900 border-green hover:bg-green/80 hover:border-green/80 !h-8 max-h-8 min-h-8 !w-10 max-w-10 min-w-10 rounded-[12px] border p-0"
             onClick={() => onSelectPosition(position, PositionAction.INCREASE)}
           >
             <PlusIcon className="h-2 w-2" />
-          </Button>
+          </Button> */}
         </div>
       </div>
     </div>
