@@ -1,5 +1,6 @@
 // TODO: change to DoxxCpmmMainnetJson
 // TODO: change to DoxxCpmmMainnetType
+import { PublicKey } from "@solana/web3.js";
 import type { DoxxCpmmDevnet as DoxxCpmmMainnetType } from "../devnet/cpmmDevnetIdl";
 import doxxCpmmIdlMainnetJson from "../devnet/cpmm_devnet_idl.json";
 // TODO: change to DoxxCpmmMainnetNewType
@@ -15,3 +16,7 @@ export type DoxxClmmMainnet = DoxxClmmMainnetType;
 export const doxxCpmmIdlMainnet = doxxCpmmIdlMainnetJson;
 // export const doxxCpmmIdlMainnet = doxxCpmmIdlNewMainnetJson;
 export const doxxClmmIdlMainnet = doxxClmmIdlMainnetJson;
+
+export const DOXX_CLMM_PROGRAM_ID_MAINNET = new PublicKey(
+  "8pQAnGbHE3y7WoBYPY8tCoNoosTNV1LPUr5YtwSMDiXg",
+);

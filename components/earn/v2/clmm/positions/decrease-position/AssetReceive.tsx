@@ -1,4 +1,4 @@
-import { TokenAmount, TokenAmountTooltip } from "@/components/TokenAmount";
+import { TokenAmountTooltip } from "@/components/TokenAmount";
 import { TokenProfile } from "@/lib/config/tokens";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -21,7 +21,7 @@ export const AssetReceive = ({
   token2Value,
 }: AssetReceiveProps) => {
   return (
-    <div className="flex flex-col gap-4 px-4 pt-6">
+    <div className="flex flex-col gap-4">
       <p className={cn(text.b4(), "text-white")}>You will receive</p>
       <div className="flex w-full items-center justify-between">
         <p className={cn(text.sb3(), "text-gray-500")}>Pooled Assets</p>

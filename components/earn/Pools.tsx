@@ -47,8 +47,7 @@ export function Pools() {
           if (t1Symbol === query || t2Symbol === query) return 4; // exact symbol match
           if (t1Symbol.startsWith(query) || t2Symbol.startsWith(query))
             return 3; // symbol starts with
-          if (t1Symbol.includes(query) || t2Symbol.includes(query))
-            return 2; // symbol contains
+          if (t1Symbol.includes(query) || t2Symbol.includes(query)) return 2; // symbol contains
           if (t1Name.includes(query) || t2Name.includes(query)) return 1; // name match
           return 0; // address/poolId match
         };

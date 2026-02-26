@@ -58,13 +58,17 @@ export const PositionRangeLabel = ({
           <p>Position:</p>
           <Link
             className={"hover:text-green text-gray-400 hover:cursor-pointer"}
-            href={getTokenExplorerUrl(position.publicKey.toString())}
+            href={getTokenExplorerUrl(
+              position.positionLayout.nftMint.toString(),
+            )}
           >
-            {ellipseAddress(position.publicKey.toString())}
+            {ellipseAddress(position.positionLayout.nftMint.toString())}
           </Link>
           <CopyIcon
             className="h-2.5 w-2.5 cursor-pointer"
-            onClick={() => copyToClipboard(position.publicKey.toString())}
+            onClick={() =>
+              copyToClipboard(position.positionLayout.nftMint.toString())
+            }
           />
         </div>
       </TooltipContent>

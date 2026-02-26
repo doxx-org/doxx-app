@@ -79,8 +79,8 @@ export const OpenPosition = ({
           <PositionRangeLabel
             position={position}
             currentTick={position.pool.tickCurrent}
-            tickLower={position.account.tickLowerIndex}
-            tickUpper={position.account.tickUpperIndex}
+            tickLower={position.positionLayout.tickLower}
+            tickUpper={position.positionLayout.tickUpper}
             isLoading={false}
           />
         </div>

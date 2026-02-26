@@ -2,7 +2,9 @@ import { BN, IdlAccounts } from "@coral-xyz/anchor";
 import {
   ApiV3PoolInfoConcentratedItem,
   ClmmKeys,
+  ClmmPositionLayout,
   ComputeClmmPoolInfo,
+  PositionInfoLayout,
   ReturnTypeFetchMultiplePoolTickArrays,
   ReturnTypeGetLiquidityAmountOut,
 } from "@raydium-io/raydium-sdk-v2";
@@ -27,7 +29,7 @@ export type CLMMObservationState = IdlAccounts<DoxxClmmIdl>["observationState"];
 export type CLMMPersonalPositionState =
   IdlAccounts<DoxxClmmIdl>["personalPositionState"];
 
-interface RawPoolInfo {
+export interface RawPoolInfo {
   poolInfo: ApiV3PoolInfoConcentratedItem;
   poolKeys: ClmmKeys;
   computePoolInfo: ComputeClmmPoolInfo;
@@ -62,10 +64,10 @@ export type BalanceMapByMint = Partial<Record<string, SplBalance>>; // token add
 
 export type PriceMap = Partial<Record<string, number>>; // token address -> price
 
-export interface PersonalPositionState {
-  publicKey: PublicKey;
-  account: CLMMPersonalPositionState;
-}
+// export interface PersonalPositionState {
+//   publicKey: PublicKey;
+//   account: CLMMPersonalPositionState;
+// }
 
 export interface PositionRewardInfo {
   rewardTokenProfile: TokenProfile | undefined;
@@ -90,7 +92,8 @@ export interface PositionFees {
   token1: PositionFee;
 }
 
-export interface UserPositionWithNFT extends PersonalPositionState {
+export interface UserPositionWithNFT {
+  positionLayout: ClmmPositionLayout;
   nftTokenAccount: PublicKey;
   poolId: PublicKey;
   pool: CLMMPoolState; // Pool state
@@ -106,3 +109,5 @@ export interface IPositionWithValue extends UserPositionWithNFT {
 
 export type PrepareOpenCLMMPositionData = ReturnTypeGetLiquidityAmountOut &
   RawPoolInfo;
+
+export type PositionInfoLayout = ReturnType<typeof PositionInfoLayout.decode>;

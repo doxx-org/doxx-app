@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import {
   IPositionWithValue,
   UserPositionWithNFT,
 } from "@/lib/hooks/chain/types";
+import { useGetPoolInfo } from "@/lib/hooks/chain/v2/useGetPoolInfo";
 import { PoolInfo } from "../../PoolInfo";
 import { Pool } from "../../types";
 import { OpenPosition } from "./OpenPosition";
@@ -20,6 +21,7 @@ interface CLMMPositionsTabProps {
   positions: UserPositionWithNFT[] | undefined;
   isLoadingPositions: boolean;
   allPools: Pool[] | undefined;
+  onPositionCTASuccess: () => void;
 }
 
 const PositionTabHeader = ({
@@ -50,6 +52,7 @@ export const CLMMPositionsTab = ({
   positions: rawPositions,
   isLoadingPositions,
   allPools,
+  onPositionCTASuccess,
 }: CLMMPositionsTabProps) => {
   const [selectedPosition, setSelectedPosition] = useState<
     | {
@@ -58,6 +61,11 @@ export const CLMMPositionsTab = ({
       }
     | undefined
   >(undefined);
+
+  const { data: poolInfo, refetch: refetchPoolInfo } = useGetPoolInfo(
+    raydium,
+    selectedPool.poolId,
+  );
 
   const poolPrices: Record<string, number> | undefined = useMemo(() => {
     return allPools?.reduce(
@@ -108,6 +116,11 @@ export const CLMMPositionsTab = ({
     setSelectedPosition({ position, action });
   };
 
+  const handlePositionCTASuccess = useCallback(() => {
+    onPositionCTASuccess();
+    refetchPoolInfo();
+  }, [refetchPoolInfo, onPositionCTASuccess]);
+
   return (
     <div className="flex flex-col">
       <PositionTabHeader
@@ -120,8 +133,11 @@ export const CLMMPositionsTab = ({
         isLoadingPositions={isLoadingPositions}
         positions={positions}
         selectedPool={selectedPool}
-        handleSelectPosition={handleSelectPosition}
+        onSelectPosition={handleSelectPosition}
         selectedPosition={selectedPosition}
+        poolInfo={poolInfo}
+        raydium={raydium}
+        onPositionCTASuccess={handlePositionCTASuccess}
       />
     </div>
   );

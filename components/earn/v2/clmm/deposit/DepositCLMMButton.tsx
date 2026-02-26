@@ -104,12 +104,7 @@ export const DepositCLMMButton = ({
   );
 
   const handleDeposit = useCallback(async () => {
-    if (
-      !poolState ||
-      !prepareOpenCLMMPositionData ||
-      !tokenAAmount ||
-      !tokenBAmount
-    ) {
+    if (!poolState || !prepareOpenCLMMPositionData) {
       toast.error("Please enter amounts for both tokens");
       return;
     }
@@ -142,8 +137,6 @@ export const DepositCLMMButton = ({
       // Error is already handled by handleError callback
     }
   }, [
-    // amount0,
-    // amount1,
     priceMode,
     minPriceAperB,
     maxPriceAperB,
@@ -166,8 +159,8 @@ export const DepositCLMMButton = ({
     if (
       tokenABalance === undefined ||
       tokenBBalance === undefined ||
-      amount0.lte(new BN(0)) ||
-      amount1.lte(new BN(0)) ||
+      amount0.lt(new BN(0)) ||
+      amount1.lt(new BN(0)) ||
       !walletBalances
     ) {
       return ["Deposit", true, undefined];

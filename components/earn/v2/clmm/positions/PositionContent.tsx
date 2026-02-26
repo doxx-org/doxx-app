@@ -1,10 +1,11 @@
 import { useMemo } from "react";
+import { ClmmPositionLayout, Raydium } from "@raydium-io/raydium-sdk-v2";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import {
-  CLMMPersonalPositionState,
   CLMMPoolState,
   IPositionWithValue,
+  RawPoolInfo,
 } from "@/lib/hooks/chain/types";
 import { Pool } from "../../types";
 import { PositionAction } from "./CLMMPositionsTab";
@@ -25,17 +26,17 @@ const dummyPositions: IPositionWithValue[] = Array.from(
         mintDecimals1: 0,
         tickCurrent: 0,
       } as CLMMPoolState,
-      account: {
-        nftMint: new PublicKey(0),
+      positionLayout: {
+        bump: 0,
         poolId: new PublicKey(0),
-        tickLowerIndex: 0,
-        tickUpperIndex: 0,
+        tickLower: 0,
+        tickUpper: 0,
         liquidity: new BN(0),
-        feeGrowthInside0LastX64: new BN(0),
-        feeGrowthInside1LastX64: new BN(0),
-        tokenFeesOwed0: new BN(0),
-        tokenFeesOwed1: new BN(0),
-      } as CLMMPersonalPositionState,
+        feeGrowthInsideLastX64A: new BN(0),
+        feeGrowthInsideLastX64B: new BN(0),
+        tokenFeesOwedA: new BN(0),
+        tokenFeesOwedB: new BN(0),
+      } as ClmmPositionLayout,
       nftTokenAccount: new PublicKey(0),
       amount0: 0,
       amount1: 0,
@@ -63,6 +64,7 @@ const dummyPositions: IPositionWithValue[] = Array.from(
 );
 
 interface PositionContentProps {
+  raydium: Raydium | undefined;
   isLoadingPositions: boolean;
   positions: IPositionWithValue[];
   selectedPool: Pool;
@@ -72,18 +74,23 @@ interface PositionContentProps {
         action: PositionAction;
       }
     | undefined;
-  handleSelectPosition: (
+  onSelectPosition: (
     position: IPositionWithValue,
     action: PositionAction,
   ) => void;
+  poolInfo: RawPoolInfo | undefined;
+  onPositionCTASuccess: () => void;
 }
 
 export const PositionContent = ({
+  raydium,
   isLoadingPositions,
   positions,
   selectedPool,
   selectedPosition,
-  handleSelectPosition,
+  poolInfo,
+  onSelectPosition,
+  onPositionCTASuccess,
 }: PositionContentProps) => {
   const positionsToDisplay = useMemo(() => {
     if (isLoadingPositions) return dummyPositions;
@@ -97,6 +104,9 @@ export const PositionContent = ({
         <DecreasePosition
           position={selectedPosition.position}
           selectedPool={selectedPool}
+          raydium={raydium}
+          poolInfo={poolInfo}
+          onPositionCTASuccess={onPositionCTASuccess}
         />
       );
     } else {
@@ -104,6 +114,9 @@ export const PositionContent = ({
         <IncreasePosition
           position={selectedPosition.position}
           selectedPool={selectedPool}
+          raydium={raydium}
+          poolInfo={poolInfo}
+          onPositionCTASuccess={onPositionCTASuccess}
         />
       );
     }
@@ -130,12 +143,12 @@ export const PositionContent = ({
     positionsToDisplay.map((position, positionIndex) => {
       return (
         <PositionItem
-          key={`position-${position.publicKey.toBase58()}`}
+          key={`position-${position.positionLayout.nftMint.toBase58()}`}
           position={position}
           selectedPool={selectedPool}
           positionIndex={positionIndex}
           isLoading={isLoadingPositions}
-          onSelectPosition={handleSelectPosition}
+          onSelectPosition={onSelectPosition}
         />
       );
     })

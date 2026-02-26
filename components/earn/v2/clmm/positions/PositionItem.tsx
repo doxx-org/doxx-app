@@ -35,8 +35,8 @@ export const PositionItem = ({
         <PositionRangeLabel
           position={position}
           currentTick={position.pool.tickCurrent}
-          tickLower={position.account.tickLowerIndex}
-          tickUpper={position.account.tickUpperIndex}
+          tickLower={position.positionLayout.tickLower}
+          tickUpper={position.positionLayout.tickUpper}
           isLoading={isLoading}
         />
         <div className={cn(text.sb3(), "flex items-center gap-4")}>
@@ -111,13 +111,13 @@ export const PositionItem = ({
         </div>
         <div className="flex gap-1">
           <Button
-            className="bg-green/15 hover:bg-black-700 hover:border-green/70 border-green text-green min-h-8 min-w-10 rounded-xl border"
+            className="bg-green/15 hover:bg-black-700 hover:border-green/70 border-green text-green !h-8 max-h-8 min-h-8 !w-10 max-w-10 min-w-10 rounded-[12px] border p-0"
             onClick={() => onSelectPosition(position, PositionAction.DECREASE)}
           >
             <MinusIcon className="h-2 w-2" />
           </Button>
           <Button
-            className="bg-green text-black-900 border-green hover:bg-green/80 hover:border-green/70 min-h-8 min-w-10 rounded-xl border"
+            className="bg-green text-black-900 border-green hover:bg-green/80 hover:border-green/80 !h-8 max-h-8 min-h-8 !w-10 max-w-10 min-w-10 rounded-[12px] border p-0"
             onClick={() => onSelectPosition(position, PositionAction.INCREASE)}
           >
             <PlusIcon className="h-2 w-2" />

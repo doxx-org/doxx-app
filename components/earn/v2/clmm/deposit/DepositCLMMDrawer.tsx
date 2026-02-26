@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import {
@@ -24,15 +24,13 @@ enum Tab {
   POSITIONS = "Positions",
 }
 
-const PoolTabs = ({
-  activeTab,
-  selectedPool,
-  raydium,
-}: {
+interface PoolTabsProps {
   activeTab: Tab;
   selectedPool: Pool;
   raydium: Raydium | undefined;
-}) => {
+}
+
+const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
   // Hooks
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -44,14 +42,23 @@ const PoolTabs = ({
     data: allPositions,
     isLoading: isLoadingAllPositions,
     refetch: refetchAllPositions,
-  } = useGetUserClmmPositions(doxxClmmProgram, wallet?.publicKey, allPools);
+  } = useGetUserClmmPositions(
+    raydium,
+    doxxClmmProgram,
+    wallet?.publicKey,
+    allPools,
+  );
+
+  const handleRefetchPositions = useCallback(() => {
+    refetchAllPositions();
+  }, [refetchAllPositions]);
 
   if (activeTab === Tab.DEPOSIT) {
     return (
       <CLMMDepositTab
         selectedPool={selectedPool}
         raydium={raydium}
-        onDepositSuccess={() => refetchAllPositions()}
+        onDepositSuccess={handleRefetchPositions}
       />
     );
   }
@@ -63,6 +70,7 @@ const PoolTabs = ({
       positions={allPositions}
       isLoadingPositions={isLoadingAllPositions}
       allPools={allPools}
+      onPositionCTASuccess={handleRefetchPositions}
     />
   );
 };
