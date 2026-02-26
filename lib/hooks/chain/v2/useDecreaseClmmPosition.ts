@@ -8,7 +8,6 @@ import { DOXX_CLMM_PROGRAM_ID } from "@/lib/idl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   compareTokenAddressesString,
-  parseAmountBN,
 } from "@/lib/utils";
 import { pollSignatureStatus } from "@/lib/utils/solanaTxFallback";
 import { IPositionWithValue, RawPoolInfo } from "../types";
