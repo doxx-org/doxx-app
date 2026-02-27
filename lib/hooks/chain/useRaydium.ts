@@ -1,5 +1,6 @@
+import { Raydium } from "@doxxorg/cpmm-sdk";
 import {
-  Raydium,
+  // Raydium,
   TokenAccount,
   TokenAccountRaw,
 } from "@raydium-io/raydium-sdk-v2";
@@ -12,7 +13,6 @@ import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
 import BN from "bn.js";
-import { clientEnvConfig } from "@/lib/config/envConfig";
 import { getTokenAccountsByOwnerAllTokenProgramsRaw } from "@/lib/utils/balance";
 
 export function useRaydium({
@@ -103,9 +103,11 @@ export function useRaydium({
 
       const raydium = await Raydium.load({
         connection: connection,
-        urlConfigs: {
-          RPCS: clientEnvConfig.NEXT_PUBLIC_RPC_URL,
-        },
+
+        // urlConfigs: {
+        //   RPCS: clientEnvConfig.NEXT_PUBLIC_RPC_URL,
+        // },
+        cluster: "solayer-devnet",
         owner: wallet?.publicKey,
         signAllTransactions: wallet?.signAllTransactions,
         tokenAccounts,

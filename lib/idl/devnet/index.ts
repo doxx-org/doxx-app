@@ -3,8 +3,10 @@ import { PublicKey } from "@solana/web3.js";
 import type { DoxxClmmDevnet as DoxxClmmDevnetType } from "./clmmDevnetIdl";
 // import doxxCpmmIdlNewDevnetJson from "./cpmm_devnet_idl_new.json";
 import doxxClmmIdlDevnetJson from "./clmm_devnet_idl.json";
-import type { DoxxCpmmDevnet as DoxxCpmmDevnetType } from "./cpmmDevnetIdl";
-import doxxCpmmIdlDevnetJson from "./cpmm_devnet_idl.json";
+// import type { DoxxCpmmDevnet as DoxxCpmmDevnetType } from "./cpmmDevnetIdl";
+import type { DoxxCpmmDevnet as DoxxCpmmDevnetType } from "./cpmmDevnetIdl_new_new";
+// import doxxCpmmIdlDevnetJson from "./cpmm_devnet_idl.json";
+import doxxCpmmIdlDevnetJson from "./cpmm_devnet_idl_new_new.json";
 
 export type DoxxCpmmDevnet = DoxxCpmmDevnetType;
 // export type DoxxCpmmDevnet = DoxxCpmmDevnetNewType;

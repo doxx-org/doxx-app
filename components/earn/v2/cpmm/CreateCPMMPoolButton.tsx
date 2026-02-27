@@ -7,6 +7,7 @@ import { TokenProfile } from "@/lib/config/tokens";
 import { useCreateCPMMPool } from "@/lib/hooks/chain/useCreateCPMMPool";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
+import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { text } from "@/lib/text";
 import {
   getAmmConfigAddress,
@@ -16,7 +17,9 @@ import {
 import { cn } from "@/lib/utils/style";
 import { Button } from "../../../ui/button";
 import { ConnectButtonWrapper } from "../../../wallet/ConnectButtonWrapper";
-import { FEE_TIERS } from "../../FeeTierSelection";
+import { getFeeTiers } from "../../FeeTierSelection";
+
+const feeTiers = getFeeTiers("cpmm");
 
 interface CreatePoolButtonProps {
   tokenA: TokenProfile | null;
@@ -69,11 +72,19 @@ export const CreatePoolButton = ({
     toast.error(simplifyErrorMessage(error, "Pool creation failed"));
   };
 
+  const { data: raydium } = useRaydium({ connection, wallet });
+
   const {
     createPool,
     isCreating: isCreatingPool,
     // createError: createPoolError,
-  } = useCreateCPMMPool(doxxAmmProgram, wallet, handleSuccess, handleError);
+  } = useCreateCPMMPool(
+    raydium,
+    doxxAmmProgram,
+    wallet,
+    handleSuccess,
+    handleError,
+  );
 
   const isCreatePoolEnabled =
     tokenA &&
@@ -103,31 +114,6 @@ export const CreatePoolButton = ({
         ammConfig.toBase58(),
       );
 
-      // Verify AMM config exists
-      try {
-        const configAccount =
-          await doxxAmmProgram.account.ammConfig.fetch(ammConfig);
-        console.log("AMM Config found:", {
-          index: configAccount.index,
-          tradeFeeRate: configAccount.tradeFeeRate.toString(),
-          disableCreatePool: configAccount.disableCreatePool,
-        });
-
-        if (configAccount.disableCreatePool) {
-          toast.error("Pool creation is disabled for this fee tier");
-          return;
-        }
-      } catch (configError) {
-        console.error("AMM Config fetch error:", configError);
-        toast.error(
-          `AMM Config for fee tier ${FEE_TIERS[selectedFeeIndex].fee}% does not exist on-chain. Please select a different fee tier.`,
-        );
-        return;
-      }
-
-      // Note: Fee account may not exist until first pool is created - this is normal
-      // console.log("Using fee account:", addressConfig.contracts.createPoolFee);
-
       // Convert amounts to BN with proper decimals
       const initAmount0 = parseAmountBN(amountA, tokenA.decimals);
       const initAmount1 = parseAmountBN(amountB, tokenB.decimals);
@@ -138,14 +124,14 @@ export const CreatePoolButton = ({
         amountA,
         amountB,
         feeIndex: selectedFeeIndex,
-        feeTier: FEE_TIERS[selectedFeeIndex].fee + "%",
+        feeTier: feeTiers[selectedFeeIndex].fee + "%",
         ammConfig: ammConfig.toBase58(),
         initAmount0: initAmount0.toString(),
         initAmount1: initAmount1.toString(),
       });
 
       await createPool({
-        ammConfig: ammConfig,
+        ammConfig,
         token0Mint: new PublicKey(tokenA.address),
         token1Mint: new PublicKey(tokenB.address),
         initAmount0,

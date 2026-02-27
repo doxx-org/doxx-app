@@ -21,7 +21,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../../ui/dialog";
-import { FEE_TIERS, FeeTierSelection } from "../../../FeeTierSelection";
+import { FeeTierSelection, getFeeTiers } from "../../../FeeTierSelection";
 import { PriceMode } from "../../types";
 import { CLMMPriceRange } from "../CLMMPriceRange";
 import { DepositCLMMPanel } from "../DepositCLMMPanel";
@@ -41,6 +41,7 @@ interface CreateCLMMPoolDialogProps {
 // }
 
 const tokenA = solana;
+const feeTiers = getFeeTiers("clmm");
 
 export const CreateCLMMPoolDialog = ({
   isOpen,
@@ -115,7 +116,7 @@ export const CreateCLMMPoolDialog = ({
           (c.poolState.tokenMint1.toString() === tokenA.address &&
             c.poolState.tokenMint0.toString() === tokenB.address)) &&
         new BN(c.ammConfig.tradeFeeRate.toString()).eq(
-          new BN(FEE_TIERS[selectedFeeIndex].fee * BPS),
+          new BN(feeTiers[selectedFeeIndex].fee * BPS),
         )
       );
     });
@@ -236,6 +237,7 @@ export const CreateCLMMPoolDialog = ({
                 <FeeTierSelection
                   selectedFeeIndex={selectedFeeIndex}
                   onSelectFeeIndex={setSelectedFeeIndex}
+                  poolType="clmm"
                 />
                 {/* Full / Custom price range selection */}
                 <div className="flex flex-col gap-7">

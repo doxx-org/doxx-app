@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BN } from "bn.js";
-import { TokenProfile } from "@/lib/config/tokens";
+import { TokenProfile, solana } from "@/lib/config/tokens";
 import {
   BalanceMapByMint,
   CPMMPoolStateWithConfig,
@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../ui/dialog";
-import { FEE_TIERS, FeeTierSelection } from "../../FeeTierSelection";
+import { FeeTierSelection, getFeeTiers } from "../../FeeTierSelection";
 import { DepositLPPanel } from "../DepositLPPanel";
 import { CreatePoolButton } from "./CreateCPMMPoolButton";
 
@@ -35,6 +35,9 @@ enum SelectTokenType {
   TOKEN_B,
 }
 
+const feeTiers = getFeeTiers("cpmm");
+const tokenA = solana;
+
 export const CreateCPMMPoolDialog = ({
   isOpen,
   splBalances,
@@ -42,12 +45,12 @@ export const CreateCPMMPoolDialog = ({
   poolsData,
   onOpenChange,
 }: CreateCPMMPoolDialogProps) => {
-  const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
+  // const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
   const [lpTokenMint, setLpTokenMint] = useState<string | null>(null);
   const [amountA, setAmountA] = useState("");
   const [amountB, setAmountB] = useState("");
-  const [selectedTokenType, setSelectedTokenType] = useState<SelectTokenType>(
+  const [_selectedTokenType, setSelectedTokenType] = useState<SelectTokenType>(
     SelectTokenType.TOKEN_A,
   );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
@@ -56,21 +59,22 @@ export const CreateCPMMPoolDialog = ({
   const { data: prices } = useOraclePrices();
 
   const handleSelectToken = (token: TokenProfile) => {
-    if (selectedTokenType === SelectTokenType.TOKEN_A) {
-      // If token B is the same as the new token A, clear it
-      if (tokenB?.address.toLowerCase() === token.address.toLowerCase()) {
-        setTokenB(null);
-        setAmountB("");
-      }
-      setTokenA(token);
-    } else if (selectedTokenType === SelectTokenType.TOKEN_B) {
-      // If token A is the same as the new token B, clear it
-      if (tokenA?.address.toLowerCase() === token.address.toLowerCase()) {
-        setTokenA(null);
-        setAmountA("");
-      }
-      setTokenB(token);
-    }
+    // if (selectedTokenType === SelectTokenType.TOKEN_A) {
+    //   // If token B is the same as the new token A, clear it
+    //   if (tokenB?.address.toLowerCase() === token.address.toLowerCase()) {
+    //     setTokenB(null);
+    //     setAmountB("");
+    //   }
+    //   setTokenA(token);
+    // } else if (selectedTokenType === SelectTokenType.TOKEN_B) {
+    //   // If token A is the same as the new token B, clear it
+    //   if (tokenA?.address.toLowerCase() === token.address.toLowerCase()) {
+    //     setTokenA(null);
+    //     setAmountA("");
+    //   }
+    //   setTokenB(token);
+    // }
+    setTokenB(token);
     setIsTokenSelectorOpen(false);
   };
 
@@ -102,13 +106,12 @@ export const CreateCPMMPoolDialog = ({
     );
 
     if (!poolData) {
-       
       setLpTokenMint("");
       return;
     }
 
     setLpTokenMint(poolData.poolState.lpMint.toString());
-  }, [poolsData, tokenA, tokenB]);
+  }, [poolsData, tokenB]);
 
   const isPoolExists = useMemo(() => {
     if (!tokenA || !tokenB || !poolsData) {
@@ -122,10 +125,10 @@ export const CreateCPMMPoolDialog = ({
           (c.poolState.token1Mint.toString() === tokenA.address &&
             c.poolState.token0Mint.toString() === tokenB.address)) &&
         c.ammConfig.tradeFeeRate.eq(
-          new BN(FEE_TIERS[selectedFeeIndex].fee * 100),
+          new BN(feeTiers[selectedFeeIndex].fee * 100),
         ),
     );
-  }, [poolsData, tokenA, tokenB, selectedFeeIndex]);
+  }, [poolsData, tokenB, selectedFeeIndex]);
 
   return (
     <>
@@ -212,9 +215,20 @@ export const CreateCPMMPoolDialog = ({
                     },
                   }}
                 />
+                {isPoolExists && (
+                  <div
+                    className={cn(
+                      text.sb4(),
+                      "text-orange bg-orange/10 flex w-full items-center justify-center rounded-xl py-4",
+                    )}
+                  >
+                    The Pool Already Exist
+                  </div>
+                )}
                 <FeeTierSelection
                   selectedFeeIndex={selectedFeeIndex}
                   onSelectFeeIndex={setSelectedFeeIndex}
+                  poolType="cpmm"
                 />
               </div>
             </div>
@@ -225,7 +239,8 @@ export const CreateCPMMPoolDialog = ({
                 tokenB={tokenB}
                 amountA={amountA}
                 amountB={amountB}
-                onSelectTokenA={setTokenA}
+                onSelectTokenA={() => {}}
+                // onSelectTokenA={setTokenA}
                 onSelectTokenB={setTokenB}
                 onAmountChangeA={setAmountA}
                 onAmountChangeB={setAmountB}

@@ -4,7 +4,7 @@ import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 // Fee tier configuration matching the AMM program's config indexes
-export const FEE_TIERS = [
+export const CLMM_FEE_TIERS = [
   // {
   //   index: 0,
   //   fee: 0.25,
@@ -38,19 +38,98 @@ export const FEE_TIERS = [
   // },
 ];
 
+export const CPMM_FEE_TIERS = [
+  {
+    index: 0,
+    fee: 0.25,
+    label: (
+      <div className="flex flex-row items-center gap-1">
+        <span>0.25% fee</span>
+        <span className={cn(text.sb3(), "text-green")}>(default)</span>
+      </div>
+    ),
+    description: "For testing purposes",
+  },
+  {
+    index: 1,
+    fee: 0.3,
+    label: "0.3% fee",
+    description: "Best for very stable pairs",
+  },
+  {
+    index: 2,
+    fee: 0.35,
+    label: "0.35% fee",
+    description: "Best for stable pairs",
+    enabled: false,
+  },
+  // { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
+  // {
+  //   index: 4,
+  //   fee: 1.0,
+  //   label: "1.0% fee",
+  //   description: "Best for exotic pairs",
+  // },
+];
+
+export const getFeeTiers = (feeType: "clmm" | "cpmm") => {
+  if (feeType === "clmm") {
+    return CLMM_FEE_TIERS;
+  }
+  return CPMM_FEE_TIERS;
+};
+
+// export const FEE_TIERS = [
+// {
+//   index: 0,
+//   fee: 0.25,
+//   label: (
+//     <div className="flex flex-row items-center gap-1">
+//       <span>0.25% fee</span>
+//       <span className={cn(text.sb3(), "text-green")}>(default)</span>
+//     </div>
+//   ),
+//   description: "For testing purposes",
+// },
+// {
+//   index: 1,
+//   fee: 0.3,
+//   label: "0.3% fee",
+//   description: "Best for very stable pairs",
+// },
+// {
+//   index: 2,
+//   fee: 0.35,
+//   label: "0.35% fee",
+//   description: "Best for stable pairs",
+//   enabled: false,
+// },
+// { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
+// {
+//   index: 4,
+//   fee: 1.0,
+//   label: "1.0% fee",
+//   description: "Best for exotic pairs",
+// },
+// ];
+
 interface IFeeTierSelectionProps {
   selectedFeeIndex: number;
   onSelectFeeIndex: (feeIndex: number) => void;
+  poolType: "clmm" | "cpmm";
 }
 
 export const FeeTierSelection = ({
   selectedFeeIndex,
   onSelectFeeIndex,
+  poolType,
 }: IFeeTierSelectionProps) => {
   const handleSelectFeeIndex = (feeIndex: number) => {
     onSelectFeeIndex(feeIndex);
     setIsFeeSelectionOpen(false);
   };
+
+  const feeTiers = getFeeTiers(poolType);
 
   const [isFeeSelectionOpen, setIsFeeSelectionOpen] = useState(false);
   return (
@@ -75,7 +154,10 @@ export const FeeTierSelection = ({
         <div className={cn(text.b3(), "flex items-center gap-1 text-gray-300")}>
           <span>Select a fee tier </span>
           <span className={cn(text.sb3(), "text-green")}>
-            ({FEE_TIERS[selectedFeeIndex].fee}%)
+            (
+            {feeTiers.find((tier) => tier.index === selectedFeeIndex)?.fee ??
+              "--"}
+            %)
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -93,7 +175,7 @@ export const FeeTierSelection = ({
       {/* Fee Tier Options */}
       {isFeeSelectionOpen && (
         <div className="grid grid-cols-2 gap-3">
-          {FEE_TIERS.map((tier) => (
+          {feeTiers.map((tier) => (
             <button
               key={`fee-tier-${tier.index}`}
               onClick={() => {
@@ -104,7 +186,7 @@ export const FeeTierSelection = ({
                 selectedFeeIndex === tier.index
                   ? "border-green bg-green/10"
                   : "border-gray-700 bg-gray-800/30 hover:border-gray-600 hover:bg-gray-700/30",
-                !tier.enabled && "cursor-not-allowed opacity-50",
+                !tier.enabled && "opacity-50 hover:cursor-not-allowed",
               )}
               disabled={!tier.enabled}
             >
