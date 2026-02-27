@@ -174,9 +174,10 @@ export const CreateCLMMPoolDialog = ({
                         label="Select Token B"
                         address={tokenB?.address}
                         disableTokenSelect={false}
-                        // onTokenSelect={() =>
-                        //   handleOpenTokenSelector(SelectTokenType.TOKEN_B)
-                        // }
+                        onTokenSelect={() =>
+                          // handleOpenTokenSelector(SelectTokenType.TOKEN_B)
+                          setIsTokenSelectorOpen(true)
+                        }
                         className="w-full justify-between p-5"
                         tokenClassName="gap-4.5"
                       />
