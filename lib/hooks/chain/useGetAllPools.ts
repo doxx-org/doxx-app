@@ -187,23 +187,6 @@ export function useGetAllPools() {
         const bestPrice1Usd = oraclePriceToken2Usd ?? priceToken1Usd;
         const tvl =
           reserve0Human * bestPrice0Usd + reserve1Human * bestPrice1Usd;
-        console.log("🚀 ~ tvl:", tvl);
-        console.log(
-          "🚀 ~ token0Profile:",
-          token0Profile.address,
-          token0Profile.symbol,
-        );
-        console.log("🚀 ~ bestPrice0Usd:", bestPrice0Usd);
-        console.log(
-          "🚀 ~ token1Profile:",
-          token1Profile.address,
-          token1Profile.symbol,
-        );
-        console.log("🚀 ~ bestPrice1Usd:", bestPrice1Usd);
-        console.log("🚀 ~ priceToken0Usd:", priceToken0Usd);
-        console.log("🚀 ~ oraclePriceToken1Usd:", oraclePriceToken1Usd);
-        console.log("🚀 ~ priceToken1Usd:", priceToken1Usd);
-        console.log("🚀 ~ oraclePriceToken2Usd:", oraclePriceToken2Usd);
 
         pools.push({
           poolId: poolData.poolId.toString(),
@@ -279,23 +262,6 @@ export function useGetAllPools() {
         } catch {
           // leave tvl at 0 on vault fetch error
         }
-        console.log("🚀 ~ tvl:", tvl);
-        console.log(
-          "🚀 ~ token0Profile:",
-          token0Profile.address,
-          token0Profile.symbol,
-        );
-        console.log("🚀 ~ bestPrice0Usd:", bestPrice0Usd);
-        console.log(
-          "🚀 ~ token1Profile:",
-          token1Profile.address,
-          token1Profile.symbol,
-        );
-        console.log("🚀 ~ bestPrice1Usd:", bestPrice1Usd);
-        console.log("🚀 ~ priceToken0Usd:", priceToken0Usd);
-        console.log("🚀 ~ oraclePriceToken1Usd:", oraclePriceToken1Usd);
-        console.log("🚀 ~ priceToken1Usd:", priceToken1Usd);
-        console.log("🚀 ~ oraclePriceToken2Usd:", oraclePriceToken2Usd);
 
         pools.push({
           poolId: poolData.poolId.toString(),
