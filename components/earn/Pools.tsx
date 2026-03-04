@@ -21,11 +21,15 @@ export function Pools() {
   } = useGetAllPools();
 
   const filteredPools = useMemo(() => {
-    if (!searchValue || searchValue.trim() === "") return allPools;
+    const allPoolsSortedByVolume = allPools?.sort(
+      (a, b) => b.dailyVol - a.dailyVol,
+    );
+    if (!searchValue || searchValue.trim() === "")
+      return allPoolsSortedByVolume;
 
     const query = searchValue.toLowerCase().trim();
 
-    return allPools
+    return allPoolsSortedByVolume
       ?.filter((pool) => {
         return [
           pool.lpToken.token1.name.toLowerCase(),

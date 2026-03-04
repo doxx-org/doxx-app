@@ -180,11 +180,11 @@ export function useGetAllPools() {
           poolId: poolData.poolId.toString(),
           fee: ammConfig.tradeFeeRate,
           lpToken: { token1: token0Profile, token2: token1Profile },
-          apr: 10,
+          apr: 0,
           tvl: 0,
           dailyVol: 0,
           dailyVolperTvl: 0,
-          reward24h: 0.001,
+          reward24h: 0,
           cpmmPoolState: poolState,
           oraclePriceToken1Usd,
           oraclePriceToken2Usd,
@@ -229,11 +229,11 @@ export function useGetAllPools() {
           poolId: poolData.poolId.toString(),
           fee: new BN(ammConfig.tradeFeeRate.toString()),
           lpToken: { token1: token0Profile, token2: token1Profile },
-          apr: 10,
+          apr: 0,
           tvl: 0,
           dailyVol: 0,
           dailyVolperTvl: 0,
-          reward24h: 0.001,
+          reward24h: 0,
           clmmPoolState: poolState,
           oraclePriceToken1Usd,
           oraclePriceToken2Usd,
@@ -243,6 +243,42 @@ export function useGetAllPools() {
           priceToken2Usd: priceToken1Usd,
           poolType: PoolType.CLMM,
         });
+      }
+
+      // Fetch volume from backend (only uncached pools are requested by the API)
+      try {
+        const volumeRes = await fetch("/api/indexer/volume", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            pools: pools.map((p) => ({
+              poolId: p.poolId,
+              mint0: p.lpToken.token1.address,
+              mint1: p.lpToken.token2.address,
+            })),
+          }),
+        });
+        if (volumeRes.ok) {
+          const { volumes } = (await volumeRes.json()) as {
+            volumes: Record<
+              string,
+              { volumeBase: number; volumeQuote: number }
+            >;
+          };
+          for (const pool of pools) {
+            const vol = volumes[pool.poolId];
+            if (vol) {
+              const priceToken1 = pool.priceToken1Usd ?? 0;
+              const priceToken2 = pool.priceToken2Usd ?? 0;
+              pool.dailyVol =
+                vol.volumeBase * priceToken1 + vol.volumeQuote * priceToken2;
+              pool.dailyVolperTvl =
+                pool.tvl > 0 ? (pool.dailyVol / pool.tvl) * 100 : 0;
+            }
+          }
+        }
+      } catch {
+        // leave dailyVol/dailyVolperTvl at 0 on volume fetch error
       }
 
       return pools;
