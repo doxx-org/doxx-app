@@ -17,7 +17,9 @@ interface DepositLPPanelProps {
   tokenB: TokenProfile | null;
   lpTokenMint: string | null;
   tokenAInput: string;
+  tokenALoading?: boolean;
   tokenBInput: string;
+  tokenBLoading?: boolean;
   walletBalances: BalanceMapByMint | undefined;
   priceMap: PriceMap | undefined;
   formatter?: {
@@ -37,7 +39,9 @@ export const DepositLPPanel = ({
   tokenB,
   lpTokenMint,
   tokenAInput,
+  tokenALoading,
   tokenBInput,
+  tokenBLoading,
   walletBalances,
   priceMap,
   formatter,
@@ -161,6 +165,8 @@ export const DepositLPPanel = ({
             onTokenSelect={
               onTokenASelect !== undefined ? onTokenASelect : () => {}
             }
+            isLoading={tokenALoading}
+            disabled={tokenALoading}
             onAmountChange={onAmountAChange}
             balance={tokenAInfo.balance}
             usdValue={tokenAInfo.inputUsd}
@@ -177,6 +183,8 @@ export const DepositLPPanel = ({
             onTokenSelect={
               onTokenBSelect !== undefined ? onTokenBSelect : () => {}
             }
+            isLoading={tokenBLoading}
+            disabled={tokenBLoading}
             onAmountChange={onAmountBChange}
             balance={tokenBInfo.balance}
             usdValue={tokenBInfo.inputUsd}

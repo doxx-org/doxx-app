@@ -14,9 +14,7 @@ import {
   PROVIDER_UNAVAILABLE_ERROR,
 } from "@/lib/utils";
 import { getPoolAddress } from "@/lib/utils/instructions";
-import {
-  pollSignatureStatus,
-} from "@/lib/utils/solanaTxFallback";
+import { pollSignatureStatus } from "@/lib/utils/solanaTxFallback";
 
 type SwapBaseInputParams = {
   inputMint: PublicKey;

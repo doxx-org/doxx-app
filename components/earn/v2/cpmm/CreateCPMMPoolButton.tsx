@@ -6,8 +6,8 @@ import { CreatePoolSuccessToast } from "@/components/toast/CreatePool";
 import { TokenProfile } from "@/lib/config/tokens";
 import { useCreateCPMMPool } from "@/lib/hooks/chain/useCreateCPMMPool";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
+import { useDoxxSDK } from "@/lib/hooks/chain/useDoxxSDK";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
-import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { text } from "@/lib/text";
 import {
   getAmmConfigAddress,
@@ -72,7 +72,7 @@ export const CreatePoolButton = ({
     toast.error(simplifyErrorMessage(error, "Pool creation failed"));
   };
 
-  const { data: raydium } = useRaydium({ connection, wallet });
+  const { data: raydium } = useDoxxSDK({ connection, wallet });
 
   const {
     createPool,

@@ -1,7 +1,10 @@
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { useQuery } from "@tanstack/react-query";
 
-export function useGetPoolInfo(raydium: Raydium | undefined, poolId: string) {
+export function useGetCLMMPoolInfo(
+  raydium: Raydium | undefined,
+  poolId: string,
+) {
   return useQuery({
     queryKey: ["poolInfo", poolId],
     queryFn: async () => {

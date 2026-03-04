@@ -4,7 +4,7 @@ import {
   IPositionWithValue,
   UserPositionWithNFT,
 } from "@/lib/hooks/chain/types";
-import { useGetPoolInfo } from "@/lib/hooks/chain/v2/useGetPoolInfo";
+import { useGetCLMMPoolInfo } from "@/lib/hooks/chain/v2/useGetCLMMPoolInfo";
 import { PoolInfo } from "../../PoolInfo";
 import { Pool } from "../../types";
 import { OpenPosition } from "./OpenPosition";
@@ -62,7 +62,7 @@ export const CLMMPositionsTab = ({
     | undefined
   >(undefined);
 
-  const { data: poolInfo, refetch: refetchPoolInfo } = useGetPoolInfo(
+  const { data: poolInfo, refetch: refetchPoolInfo } = useGetCLMMPoolInfo(
     raydium,
     selectedPool.poolId,
   );

@@ -1,21 +1,32 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Raydium } from "@doxxorg/cpmm-sdk";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { knownTokenProfiles } from "@/lib/config/tokens";
 import { CPMMPoolState } from "@/lib/hooks/chain/types";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
+import { usePrepareOpenCPMMPosition } from "@/lib/hooks/chain/v2/usePrepareOpenCPMMPosition";
 import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
-import { cn, formatNumber, parseDecimalsInput } from "@/lib/utils";
+import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
 import { DepositPanel } from "../DepositPanel";
 import { Pool } from "../types";
 import { DepositCPMMButton } from "./DepositCPMMButton";
 
-export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
+export const CPMMDepositTab = ({
+  selectedPool,
+  raydium,
+}: {
+  selectedPool: Pool;
+  raydium: Raydium | undefined;
+}) => {
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
+  const [baseIn, setBaseIn] = useState(true);
   const [lpAmount, setLpAmount] = useState("");
+  const [tokenALoading, setTokenALoading] = useState(false);
+  const [tokenBLoading, setTokenBLoading] = useState(false);
 
   // Hooks
   const { connection } = useConnection();
@@ -37,6 +48,19 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
 
   const { data: prices } = useOraclePrices();
 
+  const {
+    data: prepareOpenCPMMPositionData,
+    isLoading: isLoadingPrepareOpenCPMMPosition,
+  } = usePrepareOpenCPMMPosition({
+    poolId: selectedPool.poolId,
+    baseIn: baseIn,
+    baseUiAmount: baseIn ? tokenAAmount : tokenBAmount,
+    baseToken: baseIn
+      ? selectedPool.lpToken.token1
+      : selectedPool.lpToken.token2,
+    raydium,
+  });
+
   const depositingInfo = useMemo(() => {
     const totalValue = selectedPool.tvl;
     const estimatedYields = selectedPool.reward24h;
@@ -49,10 +73,12 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
 
   const handleAmountAChange = useCallback((value: string) => {
     setTokenAAmount(parseDecimalsInput(value));
+    setBaseIn(true);
   }, []);
 
   const handleAmountBChange = useCallback((value: string) => {
     setTokenBAmount(parseDecimalsInput(value));
+    setBaseIn(false);
   }, []);
 
   const handleAmountLpChange = useCallback((value: string) => {
@@ -66,6 +92,46 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
     refetchAllSplBalances();
   }, [refetchAllSplBalances]);
 
+  useEffect(() => {
+    if (isLoadingPrepareOpenCPMMPosition) {
+      if (baseIn) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTokenBLoading(true);
+      } else {
+        setTokenALoading(true);
+      }
+      return;
+    }
+
+    setTokenBLoading(false);
+
+    setTokenALoading(false);
+
+    if (prepareOpenCPMMPositionData && !isLoadingPrepareOpenCPMMPosition) {
+      if (baseIn) {
+        setTokenBAmount(
+          normalizeBN(
+            prepareOpenCPMMPositionData.anotherAmount.amount,
+            selectedPool.lpToken.token2.decimals,
+          ),
+        );
+      } else {
+        setTokenAAmount(
+          normalizeBN(
+            prepareOpenCPMMPositionData.anotherAmount.amount,
+            selectedPool.lpToken.token1.decimals,
+          ),
+        );
+      }
+    }
+  }, [
+    prepareOpenCPMMPositionData,
+    isLoadingPrepareOpenCPMMPosition,
+    baseIn,
+    selectedPool.lpToken.token2.decimals,
+    selectedPool.lpToken.token1.decimals,
+  ]);
+
   return (
     <div className="flex h-full flex-col justify-between">
       <div className="flex flex-col py-5">
@@ -77,6 +143,8 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           priceMap={prices}
           tokenAInput={tokenAAmount}
           tokenBInput={tokenBAmount}
+          tokenALoading={tokenALoading}
+          tokenBLoading={tokenBLoading}
           onAmountAChange={handleAmountAChange}
           onAmountBChange={handleAmountBChange}
           onAmountLPChange={handleAmountLpChange}
@@ -104,6 +172,9 @@ export const CPMMDepositTab = ({ selectedPool }: { selectedPool: Pool }) => {
           </div>
         </div>
         <DepositCPMMButton
+          prepareOpenCPMMPositionData={prepareOpenCPMMPositionData}
+          raydium={raydium}
+          baseIn={baseIn}
           poolId={selectedPool.poolId}
           tokenA={selectedPool.lpToken.token1}
           tokenB={selectedPool.lpToken.token2}

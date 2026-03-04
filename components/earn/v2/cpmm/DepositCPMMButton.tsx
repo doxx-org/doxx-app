@@ -1,20 +1,26 @@
 import { useCallback, useMemo } from "react";
 import { Program } from "@coral-xyz/anchor";
+import { Raydium } from "@doxxorg/cpmm-sdk";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { toast } from "sonner";
 import { DepositPoolSuccessToast } from "@/components/toast/DepositPool";
 import { Button } from "@/components/ui/button";
 import { TokenProfile } from "@/lib/config/tokens";
-import { BalanceMapByMint, CPMMPoolState } from "@/lib/hooks/chain/types";
+import {
+  BalanceMapByMint,
+  CPMMPoolState,
+  PrepareOpenCPMMPositionData,
+} from "@/lib/hooks/chain/types";
 import { useDepositCPMM } from "@/lib/hooks/chain/useDepositCPMM";
 import { DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { cn, parseAmountBN, simplifyErrorMessage, toBN } from "@/lib/utils";
 
 interface IDepositCPMMButtonProps {
+  raydium: Raydium | undefined;
   poolId: string;
+  baseIn: boolean;
   tokenA: TokenProfile;
   tokenB: TokenProfile;
   tokenAAmount: string;
@@ -24,12 +30,14 @@ interface IDepositCPMMButtonProps {
   wallet: AnchorWallet | undefined;
   walletBalances: BalanceMapByMint | undefined;
   doxxAmmProgram: Program<DoxxCpmmIdl> | undefined;
+  prepareOpenCPMMPositionData: PrepareOpenCPMMPositionData | undefined;
   onSuccess?: () => void;
   onError?: () => void;
 }
 
 export const DepositCPMMButton = ({
-  poolId,
+  raydium,
+  baseIn,
   tokenA,
   tokenB,
   tokenAAmount,
@@ -39,10 +47,11 @@ export const DepositCPMMButton = ({
   walletBalances,
   poolState,
   doxxAmmProgram,
+  prepareOpenCPMMPositionData,
   onSuccess,
   onError,
 }: IDepositCPMMButtonProps) => {
-  const [amount0, amount1, lpAmount] = useMemo(() => {
+  const [amount0, amount1, _lpAmount] = useMemo(() => {
     // Check which UI token corresponds to which pool token
     const isTokenAToken0 = poolState.token0Mint.toBase58() === tokenA.address;
 
@@ -93,115 +102,47 @@ export const DepositCPMMButton = ({
   );
 
   const { deposit, isDepositing } = useDepositCPMM(
+    raydium,
     doxxAmmProgram,
     wallet,
+    baseIn,
     handleSuccess,
     handleError,
   );
 
   const handleDeposit = useCallback(async () => {
-    if (
-      !poolState ||
-      !poolId ||
-      !tokenA ||
-      !tokenB ||
-      !amount0.gt(new BN(0)) ||
-      !amount1.gt(new BN(0)) ||
-      !lpAmount.gt(new BN(0))
-    ) {
-      toast.error("Please enter amounts for both tokens");
+    if (!prepareOpenCPMMPositionData) {
+      toast.error("Cannot simulate deposit CPMM position");
       return;
     }
 
     try {
-      // IMPORTANT: tokenA/tokenB in UI might not match token0/token1 in pool
-      // poolState.token0Mint is always < token1Mint (sorted by public key)
-      // We need to map our UI amounts to the correct pool tokens
-
-      // // Check which UI token corresponds to which pool token
-      // const isTokenAToken0 = poolState.token0Mint.toBase58() === tokenA.address;
-
-      // // Map amounts correctly
-      // const actualAmount0 = isTokenAToken0 ? tokenAAmount : tokenBAmount;
-      // const actualAmount1 = isTokenAToken0 ? tokenBAmount : tokenAAmount;
-      // const actualToken0Decimal = isTokenAToken0
-      //   ? tokenA.decimals
-      //   : tokenB.decimals;
-      // const actualToken1Decimal = isTokenAToken0
-      //   ? tokenB.decimals
-      //   : tokenA.decimals;
-
-      // // Convert amounts to BN with proper decimals
-      // const amount0 = parseAmountBN(actualAmount0, actualToken0Decimal);
-      // const amount1 = parseAmountBN(actualAmount1, actualToken1Decimal);
-      // const lpAmount = parseAmountBN(lpTokenAmount, 9); // LP tokens typically use 9 decimals
-
-      // Use higher slippage tolerance (10%) for safety
-      // const slippageTolerance = 0.1;
-      // const maxAmount0 = amount0
-      //   .muln(Math.floor(100 * (1 + slippageTolerance)))
-      //   .divn(100);
-      // const maxAmount1 = amount1
-      //   .muln(Math.floor(100 * (1 + slippageTolerance)))
-      //   .divn(100);
-
-      // console.log("Depositing to pool:", {
-      //   poolId,
-      //   uiTokenA: tokenA.symbol,
-      //   uiTokenB: tokenB.symbol,
-      //   uiAmountA: tokenAAmount,
-      //   uiAmountB: tokenBAmount,
-      //   poolToken0: poolState.token0Mint.toBase58(),
-      //   poolToken1: poolState.token1Mint.toBase58(),
-      //   // isTokenAToken0,
-      //   actualAmount0: amount0,
-      //   actualAmount1: amount1,
-      //   lpAmount: lpAmount.toString(),
-      //   // maxAmount0: maxAmount0.toString(),
-      //   // maxAmount1: maxAmount1.toString(),
-      //   slippage: `${slippageTolerance * 100}%`,
-      // });
-
       await deposit({
-        poolState: new PublicKey(poolId),
-        token0Mint: new PublicKey(tokenA.address),
-        token1Mint: new PublicKey(tokenB.address),
-        lpMint: poolState.lpMint,
-        token0Vault: poolState.token0Vault,
-        token1Vault: poolState.token1Vault,
-        token0Program: poolState.token0Program,
-        token1Program: poolState.token1Program,
-        lpTokenAmount: lpAmount,
-        maximumToken0Amount: amount0,
-        maximumToken1Amount: amount1,
+        prepareOpenCPMMPositionData,
       });
     } catch (error) {
       console.error("Deposit error:", error);
       // Error is already handled by handleError callback
     }
-  }, [amount0, amount1, lpAmount, poolState, poolId, tokenA, tokenB, deposit]);
+  }, [deposit, prepareOpenCPMMPositionData]);
 
   const [label, disabled, handleDepositButton] = useMemo(() => {
     if (isDepositing) {
       return ["Depositing Pool...", true, undefined];
     }
 
-    const tokenABalance = walletBalances?.[tokenA.address]?.rawAmount;
-    const tokenBBalance = walletBalances?.[tokenB.address]?.rawAmount;
-    // console.log("🚀 ~ tokenABalance:", tokenABalance);
-    // console.log("🚀 ~ tokenBBalance:", tokenBBalance);
-    // console.log("🚀 ~ amount0:", amount0.toString());
-    // console.log("🚀 ~ amount1:", amount1.toString());
-
     if (
-      tokenABalance === undefined ||
-      tokenBBalance === undefined ||
+      // tokenABalance === 0n ||
+      // tokenBBalance === 0n ||
       amount0.lte(new BN(0)) ||
       amount1.lte(new BN(0)) ||
       !walletBalances
     ) {
       return ["Deposit", true, undefined];
     }
+
+    const tokenABalance = walletBalances?.[tokenA.address]?.rawAmount ?? 0n;
+    const tokenBBalance = walletBalances?.[tokenB.address]?.rawAmount ?? 0n;
 
     if (toBN(tokenABalance).lt(amount0) || toBN(tokenBBalance).lt(amount1)) {
       return ["Insufficient Balance", true, undefined];

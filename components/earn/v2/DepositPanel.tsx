@@ -11,7 +11,9 @@ interface DepositPanelProps {
   walletBalances: BalanceMapByMint | undefined;
   priceMap: PriceMap | undefined;
   tokenAInput: string;
+  tokenALoading: boolean;
   tokenBInput: string;
+  tokenBLoading: boolean;
   onAmountAChange: (value: string) => void;
   onAmountBChange: (value: string) => void;
   onAmountLPChange: (value: string) => void;
@@ -26,7 +28,9 @@ export const DepositPanel = ({
   walletBalances,
   priceMap,
   tokenAInput,
+  tokenALoading,
   tokenBInput,
+  tokenBLoading,
   onAmountAChange,
   onAmountBChange,
   onAmountLPChange,
@@ -41,6 +45,8 @@ export const DepositPanel = ({
         tokenA={tokenA}
         tokenB={tokenB}
         lpTokenMint={lpTokenMint}
+        tokenALoading={tokenALoading}
+        tokenBLoading={tokenBLoading}
         walletBalances={walletBalances}
         priceMap={priceMap}
         tokenAInput={tokenAInput}
