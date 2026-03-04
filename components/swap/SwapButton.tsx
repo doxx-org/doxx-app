@@ -1,11 +1,18 @@
 import { useCallback, useMemo, useState } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
+import {
+  ApiV3PoolInfoStandardItemCpmm,
+  CpmmKeys,
+  Raydium as CpmmRaydium,
+} from "@doxxorg/cpmm-sdk";
 import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { Connection } from "@solana/web3.js";
+import { PoolType } from "@/components/earn/v2/types";
 import { ZERO } from "@/lib/constants";
 import { IUseBestRouteV2Response } from "@/lib/hooks/chain/v2/useBestRouteV2";
 import { useDoxxClmmSwapV2 } from "@/lib/hooks/chain/v2/useDoxxClmmSwapV2";
+import { useDoxxCpmmSwapV2 } from "@/lib/hooks/chain/v2/useDoxxCpmmSwapV2";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 import { text } from "@/lib/text";
 import { simplifyGetAllTokenInfosErrorMsg } from "@/lib/utils/errors/get-all-token-error";
@@ -30,6 +37,7 @@ interface SwapButtonProps {
   onSuccess: (txSignature: string | undefined) => void;
   onError: (error: Error) => void;
   raydium: Raydium | undefined;
+  cpmmRaydium: CpmmRaydium | undefined;
 }
 
 export function SwapButton({
@@ -46,36 +54,38 @@ export function SwapButton({
   onSuccess,
   onError,
   raydium,
+  cpmmRaydium,
 }: SwapButtonProps) {
   const [isHighPriceImpactAccepted, setIsHighPriceImpactAccepted] =
     useState(false);
 
-  // inside a React component
-  // const cpmm = useDoxxCpmmSwap(cpmmProgram, wallet, onSuccess, onError);
-  // const clmm = useDoxxClmmSwap(
-  //   connection,
-  //   clmmProgram,
-  //   wallet,
-  //   raydium,
-  //   onSuccess,
-  //   onError,
-  // );
+  const isCpmm = bestRoute?.poolType === PoolType.CPMM;
 
-  const { swapBaseIn, swapBaseOut, isSwapping } = useDoxxClmmSwapV2({
+  const clmm = useDoxxClmmSwapV2({
     raydium,
     program: clmmProgram,
-    poolInfo: bestRoute?.poolInfo,
-    poolKeys: bestRoute?.poolKeys,
+    poolInfo: isCpmm ? undefined : bestRoute?.poolInfo,
+    poolKeys: isCpmm ? undefined : bestRoute?.poolKeys,
     remainingAccounts: bestRoute?.remainingAccounts,
     wallet,
     onSuccess,
     onError,
   });
 
-  // const isSwapping = cpmm.isSwapping || clmm.isSwapping;
+  const cpmm = useDoxxCpmmSwapV2({
+    cpmmRaydium,
+    poolInfo: isCpmm
+      ? (bestRoute?.poolInfo as ApiV3PoolInfoStandardItemCpmm)
+      : undefined,
+    poolKeys: isCpmm ? (bestRoute?.poolKeys as CpmmKeys) : undefined,
+    wallet,
+    onSuccess,
+    onError,
+  });
+
+  const isSwapping = clmm.isSwapping || cpmm.isSwapping;
 
   const handleSwap = useCallback(async () => {
-    // invalid inputs / balances
     if (
       !bestRoute ||
       bestRoute.swapState.token0Amount.eq(ZERO) ||
@@ -93,61 +103,22 @@ export function SwapButton({
 
     if (bestRoute.swapState.isBaseExactIn) {
       const minOut = bestRoute.swapState.minMaxAmount;
-      await swapBaseIn({
-        inputMint,
-        outputMint,
-        amountIn: bestRoute.swapState.token0Amount,
-        minOut,
-      });
-      // TODO: uncomment when cpmm is ready
-      // if (bestRoute.poolType === PoolType.CPMM) {
-      //   const pool = bestRoute.pool as CPMMPoolStateWithConfig;
-      //   await cpmm.swapBaseInput(pool.poolState, {
-      //     inputMint,
-      //     outputMint,
-      //     amountIn: bestRoute.swapState.token0Amount,
-      //     minOut,
-      //   });
-      // } else {
-      //   // await clmm.swapBaseInput(pool.poolState, {
-      //   await swapBaseIn({
-      //     inputMint,
-      //     outputMint,
-      //     amountIn: bestRoute.swapState.token0Amount,
-      //     minOut,
-      //   });
-      // }
+
+      if (isCpmm) {
+        await cpmm.swapBaseIn({ inputMint, amountIn: bestRoute.swapState.token0Amount, minAmountOut: minOut });
+      } else {
+        await clmm.swapBaseIn({ inputMint, outputMint, amountIn: bestRoute.swapState.token0Amount, minOut });
+      }
     } else {
       const maxAmountIn = bestRoute.swapState.minMaxAmount;
 
-      await swapBaseOut({
-        inputMint,
-        outputMint,
-        maxAmountIn,
-        amountOut: bestRoute.swapState.token1Amount,
-      });
-
-      // TODO: uncomment when cpmm is ready
-      // if (bestRoute.poolType === PoolType.CPMM) {
-      //   const pool = bestRoute.pool as CPMMPoolStateWithConfig;
-      //   await cpmm.swapBaseOutput(pool.poolState, {
-      //     inputMint,
-      //     outputMint,
-      //     maxAmountIn,
-      //     amountOut: bestRoute.swapState.token1Amount,
-      //   });
-      // } else {
-      // const pool = bestRoute.pool as CLMMPoolStateWithConfig;
-      // await clmm.swapBaseOutput(pool.poolState, {
-      // await swapBaseOut({
-      //   inputMint,
-      //   outputMint,
-      //   maxAmountIn,
-      //   amountOut: bestRoute.swapState.token1Amount,
-      // });
-      // }
+      if (isCpmm) {
+        await cpmm.swapBaseOut({ inputMint, amountOut: bestRoute.swapState.token1Amount, maxAmountIn });
+      } else {
+        await clmm.swapBaseOut({ inputMint, outputMint, maxAmountIn, amountOut: bestRoute.swapState.token1Amount });
+      }
     }
-  }, [bestRoute, token0Balance, swapBaseIn, swapBaseOut]);
+  }, [bestRoute, token0Balance, isCpmm, clmm, cpmm]);
 
   const highPriceImpact = useMemo(() => {
     if (!bestRoute) return undefined;

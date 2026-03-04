@@ -1,11 +1,11 @@
 import { UseQueryResult, useQuery } from "@tanstack/react-query";
 import axios from "axios";
-import { solana, solayer, solayerUSD, ssol, usdc } from "../config/tokens";
+import { solana, solayer, solayerUSD, ssol } from "../config/tokens";
 import { SOLANA_PRICE } from "../constants";
 import { PriceMap } from "./chain/types";
 
 const mockPrices: PriceMap = {
-  [usdc.address]: 1.0,
+  // [usdc.address]: 1.0,
   [solayer.address]: 0.1771,
   [solayerUSD.address]: 0.91,
   [ssol.address]: 138.38,

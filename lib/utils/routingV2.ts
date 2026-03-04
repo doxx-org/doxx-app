@@ -2,9 +2,10 @@ import { Program } from "@coral-xyz/anchor";
 import {
   ApiV3PoolInfoStandardItemCpmm,
   CpmmKeys,
-  Raydium as CpmmRaydium,
   CurveCalculator,
   FeeOn,
+  Raydium as CpmmRaydium,
+  TxVersion as CpmmTxVersion,
 } from "@doxxorg/cpmm-sdk";
 import {
   ApiV3PoolInfoConcentratedItem,
@@ -1529,4 +1530,103 @@ export async function findBestCpmmSwapBaseOut({
       minMaxAmount: bestMaxAmountIn,
     },
   };
+}
+
+interface IBuildCpmmSwapBaseIn {
+  cpmmRaydium: CpmmRaydium;
+  wallet: AnchorWallet;
+  amountIn: BN;
+  minAmountOut: BN;
+  inputMint: PublicKey;
+  poolInfo: ApiV3PoolInfoStandardItemCpmm;
+  poolKeys: CpmmKeys;
+}
+
+interface IBuildCpmmSwapBaseOut {
+  cpmmRaydium: CpmmRaydium;
+  wallet: AnchorWallet;
+  maxAmountIn: BN;
+  amountOut: BN;
+  inputMint: PublicKey;
+  poolInfo: ApiV3PoolInfoStandardItemCpmm;
+  poolKeys: CpmmKeys;
+}
+
+/**
+ * Build and return an `execute` closure for a CPMM base-in swap.
+ * The user provides an exact input; they receive at least `minAmountOut`.
+ */
+export async function buildCpmmSwapExecuteBaseIn({
+  cpmmRaydium,
+  wallet,
+  amountIn,
+  minAmountOut,
+  inputMint,
+  poolInfo,
+  poolKeys,
+}: IBuildCpmmSwapBaseIn) {
+  // baseIn = true when the input token is mintA of the pool
+  const baseIn =
+    inputMint.toBase58().toLowerCase() === poolInfo.mintA.address.toLowerCase();
+
+  const { execute } = await cpmmRaydium.cpmm.swap({
+    poolInfo,
+    poolKeys,
+    baseIn,
+    fixedOut: false,
+    inputAmount: amountIn,
+    // slippage already baked into minAmountOut — pass 0 to avoid double-applying
+    slippage: 0,
+    swapResult: {
+      inputAmount: amountIn,
+      outputAmount: minAmountOut,
+    },
+    txVersion: CpmmTxVersion.V0,
+    feePayer: wallet.publicKey,
+    computeBudgetConfig: {
+      units: 400_000,
+      microLamports: 100_000,
+    },
+  });
+
+  return { execute };
+}
+
+/**
+ * Build and return an `execute` closure for a CPMM base-out swap.
+ * The user receives an exact output; they pay at most `maxAmountIn`.
+ */
+export async function buildCpmmSwapExecuteBaseOut({
+  cpmmRaydium,
+  wallet,
+  maxAmountIn,
+  amountOut,
+  inputMint,
+  poolInfo,
+  poolKeys,
+}: IBuildCpmmSwapBaseOut) {
+  const baseIn =
+    inputMint.toBase58().toLowerCase() === poolInfo.mintA.address.toLowerCase();
+
+  const { execute } = await cpmmRaydium.cpmm.swap({
+    poolInfo,
+    poolKeys,
+    baseIn,
+    fixedOut: true,
+    inputAmount: maxAmountIn,
+    // slippage already baked into maxAmountIn — pass 0 to avoid double-applying
+    slippage: 0,
+    swapResult: {
+      inputAmount: maxAmountIn,
+      outputAmount: amountOut,
+    },
+    txVersion: CpmmTxVersion.V0,
+    feePayer: wallet.publicKey,
+    computeBudgetConfig: {
+      units: 400_000,
+      microLamports: 100_000,
+    },
+  });
+
+  return { execute };
 }

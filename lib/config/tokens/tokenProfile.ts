@@ -48,7 +48,7 @@ export const usdc: TokenProfile = {
   displayDecimals: 3,
   image:
     "https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png?1547042194",
-  priceSource: PriceSource.ORACLE,
+  priceSource: PriceSource.POOL,
 };
 
 export const ssol: TokenProfile = {
