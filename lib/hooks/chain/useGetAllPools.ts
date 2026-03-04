@@ -4,7 +4,7 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { BN } from "bn.js";
 import { Pool, PoolType } from "@/components/earn/v2/types";
-import { unknownToken } from "@/lib/config/tokens";
+import { solana, unknownToken } from "@/lib/config/tokens";
 import { NATIVE_SOL_MINT, SOLANA_PRICE, ZERO } from "@/lib/constants";
 import { calculateCLMMTokenPrices } from "@/lib/utils/calculation";
 import { useOraclePrices } from "../useOraclePrices";
@@ -98,14 +98,17 @@ export function useGetAllPools() {
         } = params;
         if (token0Mint === NATIVE_SOL_MINT) {
           return {
-            priceToken0Usd: SOLANA_PRICE,
-            priceToken1Usd: priceToken0PerToken1 * SOLANA_PRICE,
+            priceToken0Usd: prices?.[solana.address] ?? SOLANA_PRICE,
+            priceToken1Usd:
+              priceToken0PerToken1 * (prices?.[solana.address] ?? SOLANA_PRICE),
           };
         }
         if (token1Mint === NATIVE_SOL_MINT) {
           return {
-            priceToken0Usd: (1 / priceToken1PerToken0) * SOLANA_PRICE,
-            priceToken1Usd: SOLANA_PRICE,
+            priceToken0Usd:
+              (1 / priceToken1PerToken0) *
+              (prices?.[solana.address] ?? SOLANA_PRICE),
+            priceToken1Usd: prices?.[solana.address] ?? SOLANA_PRICE,
           };
         }
         return { priceToken0Usd: 0, priceToken1Usd: 0 };
@@ -184,19 +187,23 @@ export function useGetAllPools() {
         const bestPrice1Usd = oraclePriceToken2Usd ?? priceToken1Usd;
         const tvl =
           reserve0Human * bestPrice0Usd + reserve1Human * bestPrice1Usd;
-
-        if (
-          token0Profile.address ===
-            "So11111111111111111111111111111111111111112" &&
-          token1Profile.address ===
-            "FicCKgiPHLUv7bjsY9ydSF91RKGikD8xr4U5orobWUiK"
-        ) {
-          console.log("🚀 ~ tvl:", tvl);
-          console.log("🚀 ~ reserve0Human:", reserve0Human);
-          console.log("🚀 ~ reserve1Human:", reserve1Human);
-          console.log("🚀 ~ bestPrice0Usd:", bestPrice0Usd);
-          console.log("🚀 ~ bestPrice1Usd:", bestPrice1Usd);
-        }
+        console.log("🚀 ~ tvl:", tvl);
+        console.log(
+          "🚀 ~ token0Profile:",
+          token0Profile.address,
+          token0Profile.symbol,
+        );
+        console.log("🚀 ~ bestPrice0Usd:", bestPrice0Usd);
+        console.log(
+          "🚀 ~ token1Profile:",
+          token1Profile.address,
+          token1Profile.symbol,
+        );
+        console.log("🚀 ~ bestPrice1Usd:", bestPrice1Usd);
+        console.log("🚀 ~ priceToken0Usd:", priceToken0Usd);
+        console.log("🚀 ~ oraclePriceToken1Usd:", oraclePriceToken1Usd);
+        console.log("🚀 ~ priceToken1Usd:", priceToken1Usd);
+        console.log("🚀 ~ oraclePriceToken2Usd:", oraclePriceToken2Usd);
 
         pools.push({
           poolId: poolData.poolId.toString(),
@@ -272,6 +279,23 @@ export function useGetAllPools() {
         } catch {
           // leave tvl at 0 on vault fetch error
         }
+        console.log("🚀 ~ tvl:", tvl);
+        console.log(
+          "🚀 ~ token0Profile:",
+          token0Profile.address,
+          token0Profile.symbol,
+        );
+        console.log("🚀 ~ bestPrice0Usd:", bestPrice0Usd);
+        console.log(
+          "🚀 ~ token1Profile:",
+          token1Profile.address,
+          token1Profile.symbol,
+        );
+        console.log("🚀 ~ bestPrice1Usd:", bestPrice1Usd);
+        console.log("🚀 ~ priceToken0Usd:", priceToken0Usd);
+        console.log("🚀 ~ oraclePriceToken1Usd:", oraclePriceToken1Usd);
+        console.log("🚀 ~ priceToken1Usd:", priceToken1Usd);
+        console.log("🚀 ~ oraclePriceToken2Usd:", oraclePriceToken2Usd);
 
         pools.push({
           poolId: poolData.poolId.toString(),

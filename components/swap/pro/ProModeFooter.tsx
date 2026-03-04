@@ -3,13 +3,26 @@
 import Link from "next/link";
 import Discord from "@/assets/icons/socials/discord.svg";
 import X from "@/assets/icons/socials/x.svg";
+import { useProtocolStats } from "@/lib/hooks/useProtocolStats";
 import { text } from "@/lib/text";
+import { formatNumber } from "@/lib/utils/number";
 import { cn } from "@/lib/utils/style";
 
+function formatStat(value: number, isLoading: boolean): string {
+  if (isLoading) return "—";
+  return formatNumber(value, {
+    abbreviate: { apply: true },
+    prefix: "$",
+    decimals: 2,
+  });
+}
+
 export function ProModeFooter() {
-  const tvl = "$13,000,000";
-  const volume24h = "$0";
-  const fees24h = "$0";
+  const { tvl, volume24h, fees24h, isLoading } = useProtocolStats();
+
+  const tvlFormatted = formatStat(tvl, isLoading);
+  const volume24hFormatted = formatStat(volume24h, isLoading);
+  const fees24hFormatted = formatStat(fees24h, isLoading);
 
   return (
     <div className="bg-background fixed bottom-0 z-50 max-h-[3.0625rem] w-full">
@@ -35,7 +48,7 @@ export function ProModeFooter() {
               TVL:{" "}
             </span>
             <span className={cn(text.b3(), "leading-none text-gray-50")}>
-              {tvl}
+              {tvlFormatted}
             </span>
           </div>
           <div>
@@ -43,7 +56,7 @@ export function ProModeFooter() {
               24h Vol:{" "}
             </span>
             <span className={cn(text.b3(), "leading-none text-gray-50")}>
-              {volume24h}
+              {volume24hFormatted}
             </span>
           </div>
           <div>
@@ -51,7 +64,7 @@ export function ProModeFooter() {
               24h Fees:{" "}
             </span>
             <span className={cn(text.b3(), "leading-none text-gray-50")}>
-              {fees24h}
+              {fees24hFormatted}
             </span>
           </div>
         </div>
