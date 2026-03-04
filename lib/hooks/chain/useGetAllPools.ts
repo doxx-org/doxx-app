@@ -77,6 +77,9 @@ export function useGetAllPools() {
     queryKey: ["getAllPools"],
     queryFn: async (): Promise<Pool[] | undefined> => {
       const pools: Pool[] = [];
+      // Below this USD threshold the pool is effectively empty (dust reserves).
+      // Dividing volume by such a tiny TVL produces meaningless ratios.
+      const MIN_TVL_USD = 1;
 
       // TODO: complete price fetching
       // Helper: USD price for each token when one side is SOL (using SOLANA_PRICE).
@@ -133,6 +136,8 @@ export function useGetAllPools() {
         ) ?? { ...unknownToken, address: poolState.token1Mint.toBase58() };
 
         let priceToken1PerToken0 = 0;
+        let reserve0Human = 0;
+        let reserve1Human = 0;
         try {
           const [vault0Account, vault1Account] = await Promise.all([
             getAccount(connection, poolState.token0Vault),
@@ -153,10 +158,9 @@ export function useGetAllPools() {
           if (reserve0.gt(ZERO) && reserve1.gt(ZERO)) {
             const dec0 = poolState.mint0Decimals;
             const dec1 = poolState.mint1Decimals;
-            priceToken1PerToken0 =
-              reserve1.toNumber() /
-              10 ** dec1 /
-              (reserve0.toNumber() / 10 ** dec0);
+            reserve0Human = reserve0.toNumber() / 10 ** dec0;
+            reserve1Human = reserve1.toNumber() / 10 ** dec1;
+            priceToken1PerToken0 = reserve1Human / reserve0Human;
           }
         } catch {
           // leave 0 on vault fetch error
@@ -176,12 +180,30 @@ export function useGetAllPools() {
         const oraclePriceToken1Usd = prices?.[token0Profile.address];
         const oraclePriceToken2Usd = prices?.[token1Profile.address];
 
+        const bestPrice0Usd = oraclePriceToken1Usd ?? priceToken0Usd;
+        const bestPrice1Usd = oraclePriceToken2Usd ?? priceToken1Usd;
+        const tvl =
+          reserve0Human * bestPrice0Usd + reserve1Human * bestPrice1Usd;
+
+        if (
+          token0Profile.address ===
+            "So11111111111111111111111111111111111111112" &&
+          token1Profile.address ===
+            "FicCKgiPHLUv7bjsY9ydSF91RKGikD8xr4U5orobWUiK"
+        ) {
+          console.log("🚀 ~ tvl:", tvl);
+          console.log("🚀 ~ reserve0Human:", reserve0Human);
+          console.log("🚀 ~ reserve1Human:", reserve1Human);
+          console.log("🚀 ~ bestPrice0Usd:", bestPrice0Usd);
+          console.log("🚀 ~ bestPrice1Usd:", bestPrice1Usd);
+        }
+
         pools.push({
           poolId: poolData.poolId.toString(),
           fee: ammConfig.tradeFeeRate,
           lpToken: { token1: token0Profile, token2: token1Profile },
           apr: 0,
-          tvl: 0,
+          tvl,
           dailyVol: 0,
           dailyVolperTvl: 0,
           reward24h: 0,
@@ -225,12 +247,38 @@ export function useGetAllPools() {
         const oraclePriceToken1Usd = prices?.[token0Profile.address];
         const oraclePriceToken2Usd = prices?.[token1Profile.address];
 
+        const bestPrice0Usd = oraclePriceToken1Usd ?? priceToken0Usd;
+        const bestPrice1Usd = oraclePriceToken2Usd ?? priceToken1Usd;
+
+        let tvl = 0;
+        try {
+          const [vault0Account, vault1Account] = await Promise.all([
+            getAccount(connection, poolState.tokenVault0),
+            getAccount(connection, poolState.tokenVault1),
+          ]);
+          const reserve0 = new BN(vault0Account.amount.toString())
+            .sub(new BN(poolState.protocolFeesToken0.toString()))
+            .sub(new BN(poolState.fund_fees_token_0.toString()));
+          const reserve1 = new BN(vault1Account.amount.toString())
+            .sub(new BN(poolState.protocolFeesToken1.toString()))
+            .sub(new BN(poolState.fund_fees_token_1.toString()));
+          if (reserve0.gten(0) && reserve1.gten(0)) {
+            const reserve0Human =
+              reserve0.toNumber() / 10 ** poolState.mintDecimals0;
+            const reserve1Human =
+              reserve1.toNumber() / 10 ** poolState.mintDecimals1;
+            tvl = reserve0Human * bestPrice0Usd + reserve1Human * bestPrice1Usd;
+          }
+        } catch {
+          // leave tvl at 0 on vault fetch error
+        }
+
         pools.push({
           poolId: poolData.poolId.toString(),
           fee: new BN(ammConfig.tradeFeeRate.toString()),
           lpToken: { token1: token0Profile, token2: token1Profile },
           apr: 0,
-          tvl: 0,
+          tvl,
           dailyVol: 0,
           dailyVolperTvl: 0,
           reward24h: 0,
@@ -273,7 +321,7 @@ export function useGetAllPools() {
               pool.dailyVol =
                 vol.volumeBase * priceToken1 + vol.volumeQuote * priceToken2;
               pool.dailyVolperTvl =
-                pool.tvl > 0 ? (pool.dailyVol / pool.tvl) * 100 : 0;
+                pool.tvl >= MIN_TVL_USD ? (pool.dailyVol / pool.tvl) * 100 : 0;
             }
           }
         }

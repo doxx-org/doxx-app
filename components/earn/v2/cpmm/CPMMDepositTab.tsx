@@ -7,7 +7,7 @@ import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { usePrepareOpenCPMMPosition } from "@/lib/hooks/chain/v2/usePrepareOpenCPMMPosition";
-import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
+import { useAllPrices } from "@/lib/hooks/useAllPrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
 import { DepositPanel } from "../DepositPanel";
@@ -51,7 +51,7 @@ export const CPMMDepositTab = ({
       },
     );
 
-  const { data: prices } = useOraclePrices();
+  const { data: prices } = useAllPrices();
 
   const {
     data: prepareOpenCPMMPositionData,
@@ -141,7 +141,7 @@ export const CPMMDepositTab = ({
   return (
     <>
       <PoolInfo {...selectedPool} />
-      <div className="flex h-full flex-col justify-between">
+      <div className="flex flex-col justify-between">
         <div className="flex flex-col py-5">
           <DepositPanel
             tokenA={selectedPool.lpToken.token1}
@@ -158,7 +158,7 @@ export const CPMMDepositTab = ({
             onAmountLPChange={handleAmountLpChange}
           />
         </div>
-        <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-5">
+        <div className="flex flex-col justify-between gap-4 border-t border-dashed border-gray-800 px-4 py-5">
           <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
             <div className="flex justify-between">
               <p className="text-gray-500">Total Value</p>
