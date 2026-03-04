@@ -1,6 +1,10 @@
 import { useCallback, useState } from "react";
 import { BN, Program } from "@coral-xyz/anchor";
 import {
+  ApiV3PoolInfoStandardItemCpmm,
+  CpmmKeys,
+} from "@doxxorg/cpmm-sdk";
+import {
   ApiV3PoolInfoConcentratedItem,
   ClmmKeys,
   Raydium,
@@ -33,8 +37,8 @@ interface IDoxxClmmSwapV2Params {
   raydium: Raydium | undefined;
   // connection: Connection;
   program: Program<DoxxClmmIdl> | undefined;
-  poolInfo: ApiV3PoolInfoConcentratedItem | undefined;
-  poolKeys: ClmmKeys | undefined;
+  poolInfo: ApiV3PoolInfoConcentratedItem | ApiV3PoolInfoStandardItemCpmm | undefined;
+  poolKeys: ClmmKeys | CpmmKeys | undefined;
   remainingAccounts: PublicKey[] | undefined;
   wallet: AnchorWallet | undefined;
   onSuccess: (tx?: string) => void;
@@ -100,8 +104,8 @@ export function useDoxxClmmSwapV2({
           amountOutMin: params.minOut,
           inputMint: params.inputMint,
           outputMint: params.outputMint,
-          poolInfo,
-          poolKeys,
+          poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
+          poolKeys: poolKeys as ClmmKeys,
           remainingAccounts,
         });
 
@@ -168,8 +172,8 @@ export function useDoxxClmmSwapV2({
           amountOut: params.amountOut,
           outputMint: params.outputMint,
           inputMint: params.inputMint,
-          poolInfo,
-          poolKeys,
+          poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
+          poolKeys: poolKeys as ClmmKeys,
           remainingAccounts,
         });
 

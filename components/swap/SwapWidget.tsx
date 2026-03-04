@@ -29,6 +29,7 @@ import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useGetCLMMPools } from "@/lib/hooks/chain/useGetCLMMPools";
 import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
+import { useDoxxSDK } from "@/lib/hooks/chain/useDoxxSDK";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
 import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
@@ -193,8 +194,9 @@ export function SwapWidget() {
     true,
   );
 
-  // Initialize Raydium SDK
+  // Initialize Raydium SDK (CLMM) and CPMM SDK
   const { data: raydium } = useRaydium({ connection, wallet });
+  const { data: cpmmRaydium } = useDoxxSDK({ connection, wallet });
 
   // const {
   //   data: bestRoute,
@@ -222,6 +224,7 @@ export function SwapWidget() {
     refetch: refetchBestRouteV2,
   } = useBestRouteV2({
     raydium,
+    cpmmRaydium,
     inputToken: sellToken,
     outputToken: buyToken,
     cpmmPools: cpmmPoolStates,

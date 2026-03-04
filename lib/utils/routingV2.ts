@@ -1,5 +1,12 @@
 import { Program } from "@coral-xyz/anchor";
 import {
+  ApiV3PoolInfoStandardItemCpmm,
+  CpmmKeys,
+  Raydium as CpmmRaydium,
+  CurveCalculator,
+  FeeOn,
+} from "@doxxorg/cpmm-sdk";
+import {
   ApiV3PoolInfoConcentratedItem,
   ClmmKeys,
   ComputeClmmPoolInfo,
@@ -136,8 +143,8 @@ export interface IBestRouteV2BaseIn {
   poolType: PoolType;
   pool: CLMMPoolStateWithConfig | CPMMPoolStateWithConfig;
   minAmountOut: GetTransferAmountFee & { tokenDecimals: number };
-  poolInfo: ApiV3PoolInfoConcentratedItem;
-  poolKeys: ClmmKeys;
+  poolInfo: ApiV3PoolInfoConcentratedItem | ApiV3PoolInfoStandardItemCpmm;
+  poolKeys: ClmmKeys | CpmmKeys;
   remainingAccounts: PublicKey[];
   swapState: ISwapStateV2;
 }
@@ -146,8 +153,8 @@ export interface IBestRouteV2BaseOut {
   poolType: PoolType;
   pool: CLMMPoolStateWithConfig | CPMMPoolStateWithConfig;
   maxAmountIn: GetTransferAmountFee & { tokenDecimals: number };
-  poolInfo: ApiV3PoolInfoConcentratedItem;
-  poolKeys: ClmmKeys;
+  poolInfo: ApiV3PoolInfoConcentratedItem | ApiV3PoolInfoStandardItemCpmm;
+  poolKeys: ClmmKeys | CpmmKeys;
   remainingAccounts: PublicKey[];
   swapState: ISwapStateV2;
 }
@@ -1204,4 +1211,322 @@ async function resolveTokenProgramId(
   } catch {
     return TOKEN_PROGRAM_ID;
   }
+}
+
+interface IFindBestCpmmSwapBaseInParams {
+  cpmmRaydium: CpmmRaydium;
+  cpmmPools: CPMMPoolStateWithConfig[] | undefined;
+  inputToken: TokenProfile;
+  outputToken: TokenProfile;
+  slippageBps: number;
+  epochInfo: EpochInfo;
+  amountIn: BN;
+}
+
+export async function findBestCpmmSwapBaseIn({
+  cpmmRaydium,
+  cpmmPools,
+  amountIn,
+  inputToken,
+  outputToken,
+  slippageBps,
+}: IFindBestCpmmSwapBaseInParams): Promise<IBestRouteV2BaseIn> {
+  if (!cpmmPools || cpmmPools.length === 0)
+    throw Error(RoutingError.NO_POOLS_FOUND);
+
+  const inputMint = new PublicKey(inputToken.address);
+  const outputMint = new PublicKey(outputToken.address);
+
+  const tokenMatchPools = cpmmPools.filter((pool) =>
+    isTokenMatchPool(
+      inputMint,
+      outputMint,
+      pool.poolState.token0Mint,
+      pool.poolState.token1Mint,
+    ),
+  );
+
+  if (tokenMatchPools.length === 0) throw Error(RoutingError.NO_POOLS_FOUND);
+
+  let bestPool: CPMMPoolStateWithConfig | undefined;
+  let bestOutputAmount: BN | undefined;
+  let bestMinAmountOut: BN | undefined;
+  let bestSwapState: GetBestQuoteSwapStateBase | undefined;
+  let bestPoolInfo: ApiV3PoolInfoStandardItemCpmm | undefined;
+  let bestPoolKeys: CpmmKeys | undefined;
+
+  const rawPoolInfoResults = await Promise.allSettled(
+    tokenMatchPools.map((pool) =>
+      cpmmRaydium.cpmm.getPoolInfoFromRpc(pool.poolId.toBase58()),
+    ),
+  );
+
+  for (const [index, result] of rawPoolInfoResults.entries()) {
+    if (result.status !== "fulfilled") continue;
+
+    const pool = tokenMatchPools[index];
+    const { poolInfo, poolKeys, rpcData } = result.value;
+    const configInfo = rpcData.configInfo;
+    if (!configInfo) continue;
+
+    // Determine swap direction: baseIn = input is token0 (mintA)
+    const baseIn = inputMint.equals(pool.poolState.token0Mint);
+    const inputReserve = baseIn ? rpcData.baseReserve : rpcData.quoteReserve;
+    const outputReserve = baseIn ? rpcData.quoteReserve : rpcData.baseReserve;
+
+    // Creator fee applies on the input side when feeOn covers the input token
+    const isCreatorFeeOnInput =
+      rpcData.feeOn === FeeOn.BothToken ||
+      (baseIn
+        ? rpcData.feeOn === FeeOn.OnlyTokenA
+        : rpcData.feeOn === FeeOn.OnlyTokenB);
+
+    const swapResult = CurveCalculator.swapBaseInput(
+      amountIn,
+      inputReserve,
+      outputReserve,
+      configInfo.tradeFeeRate,
+      configInfo.creatorFeeRate,
+      configInfo.protocolFeeRate,
+      configInfo.fundFeeRate,
+      isCreatorFeeOnInput,
+    );
+
+    const { outputAmount } = swapResult;
+
+    if (!bestOutputAmount || outputAmount.gt(bestOutputAmount)) {
+      bestOutputAmount = outputAmount;
+      bestPool = pool;
+      bestPoolInfo = poolInfo;
+      bestPoolKeys = poolKeys;
+
+      // min out after slippage: outputAmount * (10000 - slippageBps) / 10000
+      const BPS_BN = new BN(10000);
+      bestMinAmountOut = outputAmount
+        .mul(BPS_BN.sub(new BN(slippageBps)))
+        .div(BPS_BN);
+
+      // Price impact: (expectedOutput - actualOutput) / expectedOutput
+      const expectedOutput = inputReserve.isZero()
+        ? new BN(0)
+        : amountIn.mul(outputReserve).div(inputReserve);
+
+      let priceImpactStr = "0";
+      if (!expectedOutput.isZero() && expectedOutput.gt(outputAmount)) {
+        const impactBps = expectedOutput
+          .sub(outputAmount)
+          .mul(new BN(10000))
+          .div(expectedOutput);
+        priceImpactStr = (impactBps.toNumber() / 100).toFixed(2);
+      }
+
+      const amountOutPerOneTokenIn = amountIn.isZero()
+        ? new BN(0)
+        : outputAmount.mul(ONE_E9).div(amountIn);
+      const amountInPerOneTokenOut = outputAmount.isZero()
+        ? new BN(0)
+        : amountIn.mul(ONE_E9).div(outputAmount);
+
+      bestSwapState = {
+        token0: inputMint,
+        token1: outputMint,
+        token0Amount: amountIn,
+        token1Amount: outputAmount,
+        token0Decimals: inputToken.decimals,
+        token1Decimals: outputToken.decimals,
+        amountOutPerOneTokenIn,
+        amountInPerOneTokenOut,
+        priceImpact: priceImpactStr,
+      };
+    }
+  }
+
+  if (
+    !bestPool ||
+    !bestOutputAmount ||
+    !bestMinAmountOut ||
+    !bestSwapState ||
+    !bestPoolInfo ||
+    !bestPoolKeys
+  )
+    throw Error(RoutingError.NO_BEST_QUOTE_FOUND);
+
+  return {
+    poolType: PoolType.CPMM,
+    pool: bestPool,
+    poolInfo: bestPoolInfo,
+    poolKeys: bestPoolKeys,
+    minAmountOut: {
+      amount: bestMinAmountOut,
+      fee: undefined,
+      expirationTime: undefined,
+      tokenDecimals: outputToken.decimals,
+    },
+    remainingAccounts: [],
+    swapState: {
+      ...bestSwapState,
+      isBaseExactIn: true,
+      minMaxAmount: bestMinAmountOut,
+    },
+  };
+}
+
+interface IFindBestCpmmSwapBaseOutParams {
+  cpmmRaydium: CpmmRaydium;
+  cpmmPools: CPMMPoolStateWithConfig[] | undefined;
+  inputToken: TokenProfile;
+  outputToken: TokenProfile;
+  slippageBps: number;
+  epochInfo: EpochInfo;
+  amountOut: BN;
+}
+
+export async function findBestCpmmSwapBaseOut({
+  cpmmRaydium,
+  cpmmPools,
+  amountOut,
+  inputToken,
+  outputToken,
+  slippageBps,
+}: IFindBestCpmmSwapBaseOutParams): Promise<IBestRouteV2BaseOut> {
+  if (!cpmmPools || cpmmPools.length === 0)
+    throw Error(RoutingError.NO_POOLS_FOUND);
+
+  const inputMint = new PublicKey(inputToken.address);
+  const outputMint = new PublicKey(outputToken.address);
+
+  const tokenMatchPools = cpmmPools.filter((pool) =>
+    isTokenMatchPool(
+      inputMint,
+      outputMint,
+      pool.poolState.token0Mint,
+      pool.poolState.token1Mint,
+    ),
+  );
+
+  if (tokenMatchPools.length === 0) throw Error(RoutingError.NO_POOLS_FOUND);
+
+  let bestPool: CPMMPoolStateWithConfig | undefined;
+  let bestInputAmount: BN | undefined;
+  let bestMaxAmountIn: BN | undefined;
+  let bestSwapState: GetBestQuoteSwapStateBase | undefined;
+  let bestPoolInfo: ApiV3PoolInfoStandardItemCpmm | undefined;
+  let bestPoolKeys: CpmmKeys | undefined;
+
+  const rawPoolInfoResults = await Promise.allSettled(
+    tokenMatchPools.map((pool) =>
+      cpmmRaydium.cpmm.getPoolInfoFromRpc(pool.poolId.toBase58()),
+    ),
+  );
+
+  for (const [index, result] of rawPoolInfoResults.entries()) {
+    if (result.status !== "fulfilled") continue;
+
+    const pool = tokenMatchPools[index];
+    const { poolInfo, poolKeys, rpcData } = result.value;
+    const configInfo = rpcData.configInfo;
+    if (!configInfo) continue;
+
+    const baseIn = inputMint.equals(pool.poolState.token0Mint);
+    const inputReserve = baseIn ? rpcData.baseReserve : rpcData.quoteReserve;
+    const outputReserve = baseIn ? rpcData.quoteReserve : rpcData.baseReserve;
+
+    // Cannot fill the order if the pool doesn't have enough output liquidity
+    if (amountOut.gte(outputReserve)) continue;
+
+    const isCreatorFeeOnInput =
+      rpcData.feeOn === FeeOn.BothToken ||
+      (baseIn
+        ? rpcData.feeOn === FeeOn.OnlyTokenA
+        : rpcData.feeOn === FeeOn.OnlyTokenB);
+
+    const swapResult = CurveCalculator.swapBaseOutput(
+      amountOut,
+      inputReserve,
+      outputReserve,
+      configInfo.tradeFeeRate,
+      configInfo.creatorFeeRate,
+      configInfo.protocolFeeRate,
+      configInfo.fundFeeRate,
+      isCreatorFeeOnInput,
+    );
+
+    const { inputAmount } = swapResult;
+
+    // Lower input needed = better route for the user
+    if (!bestInputAmount || inputAmount.lt(bestInputAmount)) {
+      bestInputAmount = inputAmount;
+      bestPool = pool;
+      bestPoolInfo = poolInfo;
+      bestPoolKeys = poolKeys;
+
+      // max in after slippage: inputAmount * (10000 + slippageBps) / 10000
+      const BPS_BN = new BN(10000);
+      bestMaxAmountIn = inputAmount
+        .mul(BPS_BN.add(new BN(slippageBps)))
+        .div(BPS_BN);
+
+      // Price impact: (actualInput - theoreticalInput) / theoreticalInput
+      const theoreticalInput = outputReserve.isZero()
+        ? new BN(0)
+        : amountOut.mul(inputReserve).div(outputReserve);
+
+      let priceImpactStr = "0";
+      if (!theoreticalInput.isZero() && inputAmount.gt(theoreticalInput)) {
+        const impactBps = inputAmount
+          .sub(theoreticalInput)
+          .mul(new BN(10000))
+          .div(theoreticalInput);
+        priceImpactStr = (impactBps.toNumber() / 100).toFixed(2);
+      }
+
+      const amountOutPerOneTokenIn = inputAmount.isZero()
+        ? new BN(0)
+        : amountOut.mul(ONE_E9).div(inputAmount);
+      const amountInPerOneTokenOut = amountOut.isZero()
+        ? new BN(0)
+        : inputAmount.mul(ONE_E9).div(amountOut);
+
+      bestSwapState = {
+        token0: inputMint,
+        token1: outputMint,
+        token0Amount: inputAmount,
+        token1Amount: amountOut,
+        token0Decimals: inputToken.decimals,
+        token1Decimals: outputToken.decimals,
+        amountOutPerOneTokenIn,
+        amountInPerOneTokenOut,
+        priceImpact: priceImpactStr,
+      };
+    }
+  }
+
+  if (
+    !bestPool ||
+    !bestInputAmount ||
+    !bestMaxAmountIn ||
+    !bestSwapState ||
+    !bestPoolInfo ||
+    !bestPoolKeys
+  )
+    throw Error(RoutingError.NO_BEST_QUOTE_FOUND);
+
+  return {
+    poolType: PoolType.CPMM,
+    pool: bestPool,
+    poolInfo: bestPoolInfo,
+    poolKeys: bestPoolKeys,
+    maxAmountIn: {
+      amount: bestMaxAmountIn,
+      fee: undefined,
+      expirationTime: undefined,
+      tokenDecimals: inputToken.decimals,
+    },
+    remainingAccounts: [],
+    swapState: {
+      ...bestSwapState,
+      isBaseExactIn: false,
+      minMaxAmount: bestMaxAmountIn,
+    },
+  };
 }

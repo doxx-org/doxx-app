@@ -1,5 +1,10 @@
 import { useMemo } from "react";
 import {
+  ApiV3PoolInfoStandardItemCpmm,
+  CpmmKeys,
+  Raydium as CpmmRaydium,
+} from "@doxxorg/cpmm-sdk";
+import {
   ApiV3PoolInfoConcentratedItem,
   ClmmKeys,
   Raydium,
@@ -12,9 +17,13 @@ import { DEFAULT_SLIPPAGE_BPS } from "@/lib/constants";
 import { simplifyRoutingErrorMsg } from "@/lib/utils/errors/routing-error";
 import { parseAmountBN } from "@/lib/utils/number";
 import {
+  IBestRouteV2BaseIn,
+  IBestRouteV2BaseOut,
   ISwapStateV2,
   findBestClmmSwapBaseIn,
   findBestClmmSwapBaseOut,
+  findBestCpmmSwapBaseIn,
+  findBestCpmmSwapBaseOut,
 } from "@/lib/utils/routingV2";
 import { CLMMPoolStateWithConfig, CPMMPoolStateWithConfig } from "../types";
 
@@ -23,12 +32,13 @@ export type IUseBestRouteV2Response = {
   pool: CPMMPoolStateWithConfig | CLMMPoolStateWithConfig;
   swapState: ISwapStateV2;
   remainingAccounts: PublicKey[];
-  poolInfo: ApiV3PoolInfoConcentratedItem;
-  poolKeys: ClmmKeys;
+  poolInfo: ApiV3PoolInfoConcentratedItem | ApiV3PoolInfoStandardItemCpmm;
+  poolKeys: ClmmKeys | CpmmKeys;
 };
 
 export type IUseBestRouteV2Params = {
   raydium: Raydium | undefined;
+  cpmmRaydium: CpmmRaydium | undefined;
   inputToken: TokenProfile;
   outputToken: TokenProfile;
   baseInput: string;
@@ -40,6 +50,7 @@ export type IUseBestRouteV2Params = {
 
 export function useBestRouteV2({
   raydium,
+  cpmmRaydium,
   inputToken,
   outputToken,
   baseInput,
@@ -55,7 +66,8 @@ export function useBestRouteV2({
       ((cpmmPools !== undefined && cpmmPools.length > 0) ||
         (clmmPools !== undefined && clmmPools.length > 0)) &&
       inputToken.address !== "" &&
-      outputToken.address !== ""
+      outputToken.address !== "" &&
+      (!!raydium || !!cpmmRaydium)
     );
   }, [
     baseInput,
@@ -63,6 +75,8 @@ export function useBestRouteV2({
     clmmPools,
     inputToken.address,
     outputToken.address,
+    raydium,
+    cpmmRaydium,
   ]);
 
   return useQuery({
@@ -82,50 +96,84 @@ export function useBestRouteV2({
           ((!cpmmPools || cpmmPools.length === 0) &&
             (!clmmPools || clmmPools.length === 0)) ||
           inputToken.address === "" ||
-          outputToken.address === "" ||
-          !raydium
+          outputToken.address === ""
         )
           return null;
 
-        const epochInfo = await raydium.fetchEpochInfo();
-
-        // Calculate based on base input or base output
         if (isBaseExactIn) {
-          const inputTokenDecimals = inputToken.decimals;
-          // TODO: implement cpmm route
-          const amountIn = parseAmountBN(baseInput, inputTokenDecimals);
+          const amountIn = parseAmountBN(baseInput, inputToken.decimals);
 
-          const clmmQuote = await findBestClmmSwapBaseIn({
-            raydium,
-            clmmPools,
-            inputToken,
-            outputToken,
-            amountIn,
-            epochInfo,
-            slippageBps,
-          });
+          const [clmmResult, cpmmResult] = await Promise.allSettled([
+            raydium
+              ? findBestClmmSwapBaseIn({
+                  raydium,
+                  clmmPools,
+                  inputToken,
+                  outputToken,
+                  amountIn,
+                  epochInfo: await raydium.fetchEpochInfo(),
+                  slippageBps,
+                })
+              : Promise.reject(new Error("No CLMM raydium")),
+            cpmmRaydium
+              ? findBestCpmmSwapBaseIn({
+                  cpmmRaydium,
+                  cpmmPools,
+                  inputToken,
+                  outputToken,
+                  amountIn,
+                  epochInfo: {} as never,
+                  slippageBps,
+                })
+              : Promise.reject(new Error("No CPMM raydium")),
+          ]);
 
-          return {
-            ...clmmQuote,
-            poolType: PoolType.CLMM,
-          };
+          const clmmQuote =
+            clmmResult.status === "fulfilled" ? clmmResult.value : null;
+          const cpmmQuote =
+            cpmmResult.status === "fulfilled" ? cpmmResult.value : null;
+
+          const best = pickBestBaseIn(clmmQuote, cpmmQuote);
+          if (!best) throw new Error("No route found");
+          return best;
         }
 
+        // Base-exact-out: run CLMM and CPMM in parallel, return best
         const amountOut = parseAmountBN(baseInput, outputToken.decimals);
-        const clmmQuote = await findBestClmmSwapBaseOut({
-          raydium,
-          clmmPools,
-          amountOut,
-          inputToken,
-          outputToken,
-          epochInfo,
-          slippageBps,
-        });
 
-        return {
-          ...clmmQuote,
-          poolType: PoolType.CLMM,
-        };
+        const [clmmOutResult, cpmmOutResult] = await Promise.allSettled([
+          raydium
+            ? findBestClmmSwapBaseOut({
+                raydium,
+                clmmPools,
+                amountOut,
+                inputToken,
+                outputToken,
+                epochInfo: await raydium.fetchEpochInfo(),
+                slippageBps,
+              })
+            : Promise.reject(new Error("No CLMM raydium")),
+          cpmmRaydium
+            ? findBestCpmmSwapBaseOut({
+                cpmmRaydium,
+                cpmmPools,
+                amountOut,
+                inputToken,
+                outputToken,
+                epochInfo: {} as never,
+                slippageBps,
+              })
+            : Promise.reject(new Error("No CPMM raydium")),
+        ]);
+
+        const clmmOutQuote =
+          clmmOutResult.status === "fulfilled" ? clmmOutResult.value : null;
+        const cpmmOutQuote =
+          cpmmOutResult.status === "fulfilled" ? cpmmOutResult.value : null;
+
+        const best = pickBestBaseOut(clmmOutQuote, cpmmOutQuote);
+        if (!best) throw new Error("No route found");
+        return best;
       } catch (error) {
         console.log("🚀 ~ error:", error);
         throw new Error(simplifyRoutingErrorMsg(error));
@@ -142,4 +190,36 @@ export function useBestRouteV2({
     refetchOnWindowFocus: false,
     refetchOnReconnect: true,
   });
+}
+
+/**
+ * Pick the quote with the highest output amount (best deal for the user).
+ * A null quote (failed/no matching pool) is always beaten by a valid one.
+ */
+function pickBestBaseIn(
+  clmm: IBestRouteV2BaseIn | null,
+  cpmm: IBestRouteV2BaseIn | null,
+): IBestRouteV2BaseIn | null {
+  if (!clmm && !cpmm) return null;
+  if (!clmm) return cpmm;
+  if (!cpmm) return clmm;
+
+  // Higher minAmountOut = better route for the user
+  return clmm.minAmountOut.amount.gte(cpmm.minAmountOut.amount) ? clmm : cpmm;
+}
+
+/**
+ * Pick the quote with the lowest required input amount (best deal for the user).
+ * A null quote is always beaten by a valid one.
+ */
+function pickBestBaseOut(
+  clmm: IBestRouteV2BaseOut | null,
+  cpmm: IBestRouteV2BaseOut | null,
+): IBestRouteV2BaseOut | null {
+  if (!clmm && !cpmm) return null;
+  if (!clmm) return cpmm;
+  if (!cpmm) return clmm;
+
+  // Lower maxAmountIn = less you need to pay = better route
+  return clmm.maxAmountIn.amount.lte(cpmm.maxAmountIn.amount) ? clmm : cpmm;
 }
