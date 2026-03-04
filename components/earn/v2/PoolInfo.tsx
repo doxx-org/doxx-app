@@ -1,4 +1,3 @@
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import BN from "bn.js";
 import { CopyIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -147,8 +146,7 @@ export const PoolInfo = ({
   poolType,
   priceBperA,
   reward24h,
-  // raydium,
-}: Pool & { raydium: Raydium | undefined }) => {
+}: Pool) => {
   return (
     <div className="flex w-full flex-col gap-5 border-b border-gray-800 px-4 py-5">
       <PoolDetail1

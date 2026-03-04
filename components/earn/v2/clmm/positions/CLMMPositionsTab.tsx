@@ -27,7 +27,6 @@ interface CLMMPositionsTabProps {
 const PositionTabHeader = ({
   selectedPosition,
   selectedPool,
-  raydium,
   onBack,
 }: Pick<CLMMPositionsTabProps, "selectedPool" | "raydium"> & {
   selectedPosition: IPositionWithValue | undefined;
@@ -43,7 +42,7 @@ const PositionTabHeader = ({
     );
   }
 
-  return <PoolInfo {...selectedPool} raydium={raydium} />;
+  return <PoolInfo {...selectedPool} />;
 };
 
 export const CLMMPositionsTab = ({

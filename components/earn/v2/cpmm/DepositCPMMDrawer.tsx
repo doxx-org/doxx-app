@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { Raydium } from "@doxxorg/cpmm-sdk";
+import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Pool } from "@/components/earn/v2/types";
 import {
   Drawer,
@@ -7,9 +9,11 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDoxxSDK } from "@/lib/hooks/chain/useDoxxSDK";
+import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
+import { useGetUserCPMMPositions } from "@/lib/hooks/chain/useGetUserCpmmPositions";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-import { PoolInfo } from "../PoolInfo";
 import { CPMMDepositTab } from "./CPMMDepositTab";
 import { CPMMPositionsTab } from "./CPMMPositionsTab";
 
@@ -18,18 +22,48 @@ enum Tab {
   POSITIONS = "Positions",
 }
 
-const PoolTabs = ({
-  activeTab,
-  selectedPool,
-}: {
+interface PoolTabsProps {
   activeTab: Tab;
   selectedPool: Pool;
-}) => {
+  raydium: Raydium | undefined;
+}
+
+const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
+  const wallet = useAnchorWallet();
+
+  const { data: allPools, refetch: refetchAllPools } = useGetAllPools();
+
+  const {
+    data: allPositions,
+    isLoading: isLoadingAllPositions,
+    refetch: refetchAllPositions,
+  } = useGetUserCPMMPositions(raydium, wallet?.publicKey, allPools);
+
+  const handleCTAPositionSuccess = useCallback(() => {
+    refetchAllPools();
+    refetchAllPositions();
+  }, [refetchAllPools, refetchAllPositions]);
+
   if (activeTab === Tab.DEPOSIT) {
-    return <CPMMDepositTab selectedPool={selectedPool} />;
+    return (
+      <CPMMDepositTab
+        selectedPool={selectedPool}
+        raydium={raydium}
+        onDepositSuccess={handleCTAPositionSuccess}
+      />
+    );
   }
 
-  return <CPMMPositionsTab />;
+  return (
+    <CPMMPositionsTab
+      selectedPool={selectedPool}
+      raydium={raydium}
+      positions={allPositions}
+      isLoadingPositions={isLoadingAllPositions}
+      allPools={allPools}
+      onPositionCTASuccess={handleCTAPositionSuccess}
+    />
+  );
 };
 
 interface DepositCPMMDrawerProps {
@@ -44,6 +78,11 @@ export const DepositCPMMDrawer = ({
   selectedPool,
 }: DepositCPMMDrawerProps) => {
   const [activeTab, setActiveTab] = useState(Tab.DEPOSIT);
+  const { connection } = useConnection();
+  const wallet = useAnchorWallet();
+
+  // Initialize Raydium SDK
+  const { data: raydium } = useDoxxSDK({ connection, wallet });
 
   return (
     <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
@@ -69,8 +108,13 @@ export const DepositCPMMDrawer = ({
             </Tabs>
           </DrawerTitle>
         </DrawerHeader>
-        <PoolInfo {...selectedPool} raydium={undefined} />
-        <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <PoolTabs
+            activeTab={activeTab}
+            selectedPool={selectedPool}
+            raydium={raydium}
+          />
+        </div>
       </DrawerContent>
     </Drawer>
   );

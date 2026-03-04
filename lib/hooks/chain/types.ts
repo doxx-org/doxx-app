@@ -1,5 +1,11 @@
 import { BN, IdlAccounts } from "@coral-xyz/anchor";
 import {
+  ApiV3PoolInfoStandardItemCpmm,
+  CpmmKeys,
+  CpmmParsedRpcData,
+  GetTransferAmountFee,
+} from "@doxxorg/cpmm-sdk";
+import {
   ApiV3PoolInfoConcentratedItem,
   ClmmKeys,
   ClmmPositionLayout,
@@ -9,6 +15,7 @@ import {
   ReturnTypeGetLiquidityAmountOut,
 } from "@raydium-io/raydium-sdk-v2";
 import { PublicKey } from "@solana/web3.js";
+import { Pool } from "@/components/earn/v2/types";
 import { TokenProfile } from "@/lib/config/tokens";
 import { DoxxClmmIdl, DoxxCpmmIdl } from "@/lib/idl";
 
@@ -34,6 +41,12 @@ export interface RawPoolInfo {
   poolKeys: ClmmKeys;
   computePoolInfo: ComputeClmmPoolInfo;
   tickData: ReturnTypeFetchMultiplePoolTickArrays;
+}
+
+export interface RawCPMMPoolInfo {
+  poolInfo: ApiV3PoolInfoStandardItemCpmm;
+  poolKeys: CpmmKeys;
+  rpcData: CpmmParsedRpcData;
 }
 
 export interface CLMMPoolStateWithConfig {
@@ -110,4 +123,39 @@ export interface IPositionWithValue extends UserPositionWithNFT {
 export type PrepareOpenCLMMPositionData = ReturnTypeGetLiquidityAmountOut &
   RawPoolInfo;
 
+export interface PrepareOpenCPMMPositionData extends RawCPMMPoolInfo {
+  inputAmountFee: GetTransferAmountFee;
+  anotherAmount: GetTransferAmountFee;
+  maxAnotherAmount: GetTransferAmountFee;
+  minAnotherAmount: GetTransferAmountFee;
+  liquidity: BN;
+}
+
 export type PositionInfoLayout = ReturnType<typeof PositionInfoLayout.decode>;
+
+export interface UserCPMMPosition {
+  poolId: PublicKey;
+  pool: Pool;
+  rpcData: CpmmParsedRpcData;
+  lpMint: PublicKey;
+  lpTokenAccount: PublicKey;
+  lpAmountRaw: BN;
+  lpDecimals: number;
+  userShare: number;
+  amount0: number;
+  amount1: number;
+  amount0Raw: BN;
+  amount1Raw: BN;
+  /**
+   * The user's proportional share of uncollected protocol/fund/creator fees
+   * sitting in the pool vaults. LP trading fee earnings are already baked
+   * into amount0/amount1 via reserve appreciation and are not separately
+   * claimable per position.
+   */
+  fees: PositionFees;
+  rewardInfos: PositionRewardInfo[];
+}
+
+export interface IUserCPMMPositionWithValue extends UserCPMMPosition {
+  positionValue: number;
+}

@@ -135,7 +135,7 @@ export const CLMMDepositTab = ({
   return (
     // <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
     <>
-      <PoolInfo {...selectedPool} raydium={raydium} />
+      <PoolInfo {...selectedPool} />
       <div className="flex min-h-full flex-col">
         <DepositRange
           priceMode={priceMode}

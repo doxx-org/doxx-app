@@ -11,16 +11,21 @@ import { useOraclePrices } from "@/lib/hooks/useOraclePrices";
 import { text } from "@/lib/text";
 import { cn, formatNumber, normalizeBN, parseDecimalsInput } from "@/lib/utils";
 import { DepositPanel } from "../DepositPanel";
+import { PoolInfo } from "../PoolInfo";
 import { Pool } from "../types";
 import { DepositCPMMButton } from "./DepositCPMMButton";
+
+interface CPMMPositionsTabProps {
+  selectedPool: Pool;
+  raydium: Raydium | undefined;
+  onDepositSuccess: () => void;
+}
 
 export const CPMMDepositTab = ({
   selectedPool,
   raydium,
-}: {
-  selectedPool: Pool;
-  raydium: Raydium | undefined;
-}) => {
+  onDepositSuccess,
+}: CPMMPositionsTabProps) => {
   const [tokenAAmount, setTokenAAmount] = useState("");
   const [tokenBAmount, setTokenBAmount] = useState("");
   const [baseIn, setBaseIn] = useState(true);
@@ -90,7 +95,8 @@ export const CPMMDepositTab = ({
     setTokenBAmount("");
     setLpAmount("");
     refetchAllSplBalances();
-  }, [refetchAllSplBalances]);
+    onDepositSuccess();
+  }, [refetchAllSplBalances, onDepositSuccess]);
 
   useEffect(() => {
     if (isLoadingPrepareOpenCPMMPosition) {
@@ -133,61 +139,64 @@ export const CPMMDepositTab = ({
   ]);
 
   return (
-    <div className="flex h-full flex-col justify-between">
-      <div className="flex flex-col py-5">
-        <DepositPanel
-          tokenA={selectedPool.lpToken.token1}
-          tokenB={selectedPool.lpToken.token2}
-          lpTokenMint={selectedPool.cpmmPoolState!.lpMint.toString()}
-          walletBalances={splBalances}
-          priceMap={prices}
-          tokenAInput={tokenAAmount}
-          tokenBInput={tokenBAmount}
-          tokenALoading={tokenALoading}
-          tokenBLoading={tokenBLoading}
-          onAmountAChange={handleAmountAChange}
-          onAmountBChange={handleAmountBChange}
-          onAmountLPChange={handleAmountLpChange}
-        />
-      </div>
-      <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-5">
-        <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
-          <div className="flex justify-between">
-            <p className="text-gray-500">Total Value</p>
-            <p className="text-gray-200">${depositingInfo.totalValue}</p>
-          </div>
-          <div className="flex justify-between">
-            <div className="flex items-center gap-2">
-              <p className="text-gray-600">Estimated Yields</p>
-              <span
-                className={cn(
-                  text.sb4(),
-                  "text-green rounded-full bg-gray-900 px-3 py-1.5",
-                )}
-              >
-                1Y
-              </span>
-            </div>
-            <p className="text-gray-200">${depositingInfo.estimatedYields}</p>
-          </div>
+    <>
+      <PoolInfo {...selectedPool} />
+      <div className="flex h-full flex-col justify-between">
+        <div className="flex flex-col py-5">
+          <DepositPanel
+            tokenA={selectedPool.lpToken.token1}
+            tokenB={selectedPool.lpToken.token2}
+            lpTokenMint={selectedPool.cpmmPoolState!.lpMint.toString()}
+            walletBalances={splBalances}
+            priceMap={prices}
+            tokenAInput={tokenAAmount}
+            tokenBInput={tokenBAmount}
+            tokenALoading={tokenALoading}
+            tokenBLoading={tokenBLoading}
+            onAmountAChange={handleAmountAChange}
+            onAmountBChange={handleAmountBChange}
+            onAmountLPChange={handleAmountLpChange}
+          />
         </div>
-        <DepositCPMMButton
-          prepareOpenCPMMPositionData={prepareOpenCPMMPositionData}
-          raydium={raydium}
-          baseIn={baseIn}
-          poolId={selectedPool.poolId}
-          tokenA={selectedPool.lpToken.token1}
-          tokenB={selectedPool.lpToken.token2}
-          tokenAAmount={tokenAAmount}
-          tokenBAmount={tokenBAmount}
-          lpTokenAmount={lpAmount}
-          poolState={selectedPool.cpmmPoolState as CPMMPoolState}
-          wallet={wallet}
-          walletBalances={splBalances}
-          doxxAmmProgram={doxxAmmProgram}
-          onSuccess={handleDepositSuccess}
-        />
+        <div className="flex h-full flex-col justify-between border-t border-dashed border-gray-800 px-4 py-5">
+          <div className={cn(text.sb3(), "flex flex-col gap-3 leading-none")}>
+            <div className="flex justify-between">
+              <p className="text-gray-500">Total Value</p>
+              <p className="text-gray-200">${depositingInfo.totalValue}</p>
+            </div>
+            <div className="flex justify-between">
+              <div className="flex items-center gap-2">
+                <p className="text-gray-600">Estimated Yields</p>
+                <span
+                  className={cn(
+                    text.sb4(),
+                    "text-green rounded-full bg-gray-900 px-3 py-1.5",
+                  )}
+                >
+                  1Y
+                </span>
+              </div>
+              <p className="text-gray-200">${depositingInfo.estimatedYields}</p>
+            </div>
+          </div>
+          <DepositCPMMButton
+            prepareOpenCPMMPositionData={prepareOpenCPMMPositionData}
+            raydium={raydium}
+            baseIn={baseIn}
+            poolId={selectedPool.poolId}
+            tokenA={selectedPool.lpToken.token1}
+            tokenB={selectedPool.lpToken.token2}
+            tokenAAmount={tokenAAmount}
+            tokenBAmount={tokenBAmount}
+            lpTokenAmount={lpAmount}
+            poolState={selectedPool.cpmmPoolState as CPMMPoolState}
+            wallet={wallet}
+            walletBalances={splBalances}
+            doxxAmmProgram={doxxAmmProgram}
+            onSuccess={handleDepositSuccess}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
