@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { ChevronDown } from "lucide-react";
 import Plus from "@/assets/icons/table/plus.svg";
@@ -38,10 +38,11 @@ export default function Home() {
     // refetch,
     cpmmPoolsData,
     clmmPoolsData,
+    refetch: refetchAllPools,
   } = useGetAllPools();
 
   // Fetch token balances
-  const { data: splBalances } = useAllSplBalances(
+  const { data: splBalances, refetch: refetchSplBalances } = useAllSplBalances(
     connection,
     wallet?.publicKey ?? undefined,
     knownTokenProfiles,
@@ -73,11 +74,14 @@ export default function Home() {
     });
   }, [allPools]);
 
-  const { data: allTokenProfiles, isLoading: isLoadingAllTokenProfiles } =
-    useGetAllTokenInfos({
-      poolTokens,
-      rawTokenProfiles: rawTokenProfilesFromSplBalances,
-    });
+  const {
+    data: allTokenProfiles,
+    isLoading: isLoadingAllTokenProfiles,
+    refetch: refetchAllTokenProfiles,
+  } = useGetAllTokenInfos({
+    poolTokens,
+    rawTokenProfiles: rawTokenProfilesFromSplBalances,
+  });
 
   const handleOpenCreateCLMMPoolDialog = () => {
     setIsCreatePoolOpen(true);
@@ -88,6 +92,13 @@ export default function Home() {
     setIsCreatePoolOpen(true);
     setPoolDrawer(PoolType.CPMM);
   };
+
+  const handleCTASuccess = useCallback(() => {
+    setIsCreatePoolOpen(false);
+    refetchAllPools();
+    refetchSplBalances();
+    refetchAllTokenProfiles();
+  }, [refetchAllPools, refetchSplBalances, refetchAllTokenProfiles]);
 
   return (
     <div className="flex min-h-screen justify-center gap-16 p-8 sm:p-20 sm:pt-26">
@@ -154,6 +165,7 @@ export default function Home() {
           poolsData={
             poolDrawer === PoolType.CPMM ? cpmmPoolsData : clmmPoolsData
           }
+          onSuccess={handleCTASuccess}
         />
       )}
     </div>

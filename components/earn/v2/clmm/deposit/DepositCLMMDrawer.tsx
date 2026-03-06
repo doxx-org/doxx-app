@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { Raydium } from "@raydium-io/raydium-sdk-v2";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import {
   Drawer,
@@ -8,11 +7,11 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useRaydiumContext } from "@/lib/context/RaydiumContext";
 import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetUserClmmPositions } from "@/lib/hooks/chain/useGetUserClmmPositions";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
-import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import { Pool } from "../../types";
@@ -27,15 +26,18 @@ enum Tab {
 interface PoolTabsProps {
   activeTab: Tab;
   selectedPool: Pool;
-  raydium: Raydium | undefined;
 }
 
-const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
+const PoolTabs = ({ activeTab, selectedPool }: PoolTabsProps) => {
   // Hooks
+  const {
+    raydiumQuery: { data: raydium, refetch: refetchRaydium },
+  } = useRaydiumContext();
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
   const doxxClmmProgram = useDoxxClmmProgram({ provider });
+
   const { data: allPools, refetch: refetchAllPools } = useGetAllPools();
 
   const {
@@ -50,9 +52,10 @@ const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
   );
 
   const handleCTAPositionSuccess = useCallback(() => {
+    refetchRaydium();
     refetchAllPools();
     refetchAllPositions();
-  }, [refetchAllPools, refetchAllPositions]);
+  }, [refetchRaydium, refetchAllPools, refetchAllPositions]);
 
   if (activeTab === Tab.DEPOSIT) {
     return (
@@ -88,11 +91,6 @@ export const DepositCLMMDrawer = ({
   selectedPool,
 }: DepositCLMMDrawerProps) => {
   const [activeTab, setActiveTab] = useState(Tab.DEPOSIT);
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-
-  // Initialize Raydium SDK
-  const { data: raydium } = useRaydium({ connection, wallet });
 
   return (
     <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
@@ -119,11 +117,7 @@ export const DepositCLMMDrawer = ({
           </DrawerTitle>
         </DrawerHeader>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <PoolTabs
-            activeTab={activeTab}
-            selectedPool={selectedPool}
-            raydium={raydium}
-          />
+          <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
         </div>
       </DrawerContent>
     </Drawer>

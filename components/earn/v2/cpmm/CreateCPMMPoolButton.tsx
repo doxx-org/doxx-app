@@ -34,6 +34,7 @@ interface CreatePoolButtonProps {
   onAmountChangeA: (amount: string) => void;
   onAmountChangeB: (amount: string) => void;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
   selectedFeeIndex: number;
   isPoolExists: boolean | undefined;
 }
@@ -52,6 +53,7 @@ export const CreatePoolButton = ({
   onOpenChange,
   selectedFeeIndex,
   isPoolExists,
+  onSuccess,
 }: CreatePoolButtonProps) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -71,6 +73,7 @@ export const CreatePoolButton = ({
     onAmountChangeA("");
     onAmountChangeB("");
     onOpenChange(false);
+    onSuccess();
   };
 
   const handleError = (error: Error) => {

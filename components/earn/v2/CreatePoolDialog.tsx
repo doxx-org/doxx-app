@@ -15,6 +15,7 @@ interface CreatePoolDialogProps {
   createPoolType: PoolType;
   allTokenProfiles: TokenProfile[];
   poolsData: CPMMPoolStateWithConfig[] | CLMMPoolStateWithConfig[] | undefined;
+  onSuccess: () => void;
 }
 
 export const CreatePoolDialog = ({
@@ -24,6 +25,7 @@ export const CreatePoolDialog = ({
   createPoolType,
   allTokenProfiles,
   poolsData,
+  onSuccess,
 }: CreatePoolDialogProps) => {
   if (createPoolType === PoolType.CPMM) {
     return (
@@ -33,6 +35,7 @@ export const CreatePoolDialog = ({
         splBalances={splBalances}
         allTokenProfiles={allTokenProfiles}
         poolsData={poolsData as CPMMPoolStateWithConfig[] | undefined}
+        onSuccess={onSuccess}
       />
     );
   }
@@ -44,6 +47,7 @@ export const CreatePoolDialog = ({
       splBalances={splBalances}
       allTokenProfiles={allTokenProfiles}
       poolsData={poolsData as CLMMPoolStateWithConfig[] | undefined}
+      onSuccess={onSuccess}
     />
   );
 };

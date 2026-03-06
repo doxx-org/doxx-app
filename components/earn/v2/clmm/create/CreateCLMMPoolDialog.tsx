@@ -34,6 +34,7 @@ interface CreateCLMMPoolDialogProps {
   allTokenProfiles: TokenProfile[];
   poolsData: CLMMPoolStateWithConfig[] | undefined;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
 // enum SelectTokenType {
@@ -50,6 +51,7 @@ export const CreateCLMMPoolDialog = ({
   allTokenProfiles,
   poolsData,
   onOpenChange,
+  onSuccess,
 }: CreateCLMMPoolDialogProps) => {
   // const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
@@ -319,6 +321,7 @@ export const CreateCLMMPoolDialog = ({
                 onOpenChange={onOpenChange}
                 selectedFeeIndex={selectedFeeIndex}
                 isPoolExists={isPoolExists}
+                onSuccess={onSuccess}
               />
             </div>
           </DialogBody>

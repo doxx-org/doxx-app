@@ -11,6 +11,7 @@ import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { WalletConnectionProvider } from "@/components/wallet/WalletConnectionProvider";
+import { RaydiumProvider } from "@/lib/context/RaydiumContext";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -46,12 +47,14 @@ export default function RootLayout({
       >
         <WalletConnectionProvider>
           <QueryProvider>
-            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-              <Navbar />
-              <main className="flex min-h-screen flex-col">{children}</main>
-              <AppFooter />
-              <Toaster />
-            </ThemeProvider>
+            <RaydiumProvider>
+              <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+                <Navbar />
+                <main className="flex min-h-screen flex-col">{children}</main>
+                <AppFooter />
+                <Toaster />
+              </ThemeProvider>
+            </RaydiumProvider>
           </QueryProvider>
         </WalletConnectionProvider>
         <Analytics />

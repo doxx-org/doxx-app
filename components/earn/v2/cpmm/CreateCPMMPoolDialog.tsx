@@ -31,6 +31,7 @@ interface CreateCPMMPoolDialogProps {
   allTokenProfiles: TokenProfile[];
   poolsData: CPMMPoolStateWithConfig[] | undefined;
   onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
 }
 
 enum SelectTokenType {
@@ -47,6 +48,7 @@ export const CreateCPMMPoolDialog = ({
   allTokenProfiles,
   poolsData,
   onOpenChange,
+  onSuccess,
 }: CreateCPMMPoolDialogProps) => {
   // const [tokenA, setTokenA] = useState<TokenProfile | null>(null);
   const [tokenB, setTokenB] = useState<TokenProfile | null>(null);
@@ -144,7 +146,7 @@ export const CreateCPMMPoolDialog = ({
       splBalances[tokenA.address]?.amount ?? 0,
       tokenB ? (splBalances[tokenB.address]?.amount ?? 0) : 0,
     ];
-  }, [tokenA, tokenB, splBalances]);
+  }, [tokenB, splBalances]);
 
   return (
     <>
@@ -265,6 +267,7 @@ export const CreateCPMMPoolDialog = ({
                 onOpenChange={onOpenChange}
                 selectedFeeIndex={selectedFeeIndex}
                 isPoolExists={isPoolExists}
+                onSuccess={onSuccess}
               />
             </div>
           </DialogBody>

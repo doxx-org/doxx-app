@@ -23,15 +23,14 @@ import {
 import { ConnectButtonWrapper } from "@/components/wallet/ConnectButtonWrapper";
 import { TokenProfile, defaultSwapTokens } from "@/lib/config/tokens";
 import { DEFAULT_SLIPPAGE } from "@/lib/constants";
+import { useRaydiumContext } from "@/lib/context/RaydiumContext";
 import { useDoxxClmmProgram } from "@/lib/hooks/chain/useDoxxClmmProgram";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
-import { useDoxxSDK } from "@/lib/hooks/chain/useDoxxSDK";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetAllTokenInfos } from "@/lib/hooks/chain/useGetAllTokenInfos";
 import { useGetCLMMPools } from "@/lib/hooks/chain/useGetCLMMPools";
 import { useGetCPMMPools } from "@/lib/hooks/chain/useGetCPMMPools";
 import { useProvider } from "@/lib/hooks/chain/useProvider";
-import { useRaydium } from "@/lib/hooks/chain/useRaydium";
 import { useAllSplBalances } from "@/lib/hooks/chain/useSplBalance";
 import { useBestRouteV2 } from "@/lib/hooks/chain/v2/useBestRouteV2";
 import { useAllPrices } from "@/lib/hooks/useAllPrices";
@@ -195,8 +194,10 @@ export function SwapWidget() {
   );
 
   // Initialize Raydium SDK (CLMM) and CPMM SDK
-  const { data: raydium } = useRaydium({ connection, wallet });
-  const { data: cpmmRaydium } = useDoxxSDK({ connection, wallet });
+  const {
+    raydiumQuery: { data: raydium, refetch: refetchRaydium },
+    cpmmRaydiumQuery: { data: cpmmRaydium, refetch: refetchCpmmRaydium },
+  } = useRaydiumContext();
 
   // const {
   //   data: bestRoute,
@@ -215,6 +216,11 @@ export function SwapWidget() {
   //   isBaseExactIn,
   //   slippageBps,
   // });
+
+  const handleRefetchSwapSuccess = useCallback(() => {
+    refetchRaydium();
+    refetchCpmmRaydium();
+  }, [refetchRaydium, refetchCpmmRaydium]);
 
   const {
     data: bestRouteV2,
@@ -401,11 +407,17 @@ export function SwapWidget() {
         refetchSplBalances();
         refetchCPMMPoolStates();
         refetchCLMMPoolStates();
+        handleRefetchSwapSuccess();
         setSellAmount("");
         setBuyAmount("");
       }, 2000);
     },
-    [refetchSplBalances, refetchCPMMPoolStates, refetchCLMMPoolStates],
+    [
+      refetchSplBalances,
+      refetchCPMMPoolStates,
+      refetchCLMMPoolStates,
+      handleRefetchSwapSuccess,
+    ],
   );
 
   const handleError = (error: Error, txSignature?: string) => {

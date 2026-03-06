@@ -30,6 +30,7 @@ interface CreateCLMMPoolButtonProps {
   onAmountChangeB: (amount: string) => void;
   onInitialPriceChange: (value: string) => void;
   onOpenChange: (open: boolean) => void;
+  onSuccess?: () => void;
   selectedFeeIndex: number;
   isPoolExists: boolean | undefined;
 }
@@ -51,6 +52,7 @@ export const CreateCLMMPoolButton = ({
   onOpenChange,
   selectedFeeIndex,
   isPoolExists,
+  onSuccess,
 }: CreateCLMMPoolButtonProps) => {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
@@ -71,6 +73,7 @@ export const CreateCLMMPoolButton = ({
     onAmountChangeB("");
     onInitialPriceChange("");
     onOpenChange(false);
+    onSuccess?.();
   };
 
   const handleError = (error: Error, txSignature?: string) => {

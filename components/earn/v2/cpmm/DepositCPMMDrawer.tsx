@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
-import { Raydium } from "@doxxorg/cpmm-sdk";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { Pool } from "@/components/earn/v2/types";
 import {
   Drawer,
@@ -9,7 +8,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useDoxxSDK } from "@/lib/hooks/chain/useDoxxSDK";
+import { useRaydiumContext } from "@/lib/context/RaydiumContext";
 import { useGetAllPools } from "@/lib/hooks/chain/useGetAllPools";
 import { useGetUserCPMMPositions } from "@/lib/hooks/chain/useGetUserCpmmPositions";
 import { text } from "@/lib/text";
@@ -25,12 +24,13 @@ enum Tab {
 interface PoolTabsProps {
   activeTab: Tab;
   selectedPool: Pool;
-  raydium: Raydium | undefined;
 }
 
-const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
+const PoolTabs = ({ activeTab, selectedPool }: PoolTabsProps) => {
   const wallet = useAnchorWallet();
-
+  const {
+    cpmmRaydiumQuery: { data: raydium, refetch: refetchCpmmRaydium },
+  } = useRaydiumContext();
   const { data: allPools, refetch: refetchAllPools } = useGetAllPools();
 
   const {
@@ -42,7 +42,8 @@ const PoolTabs = ({ activeTab, selectedPool, raydium }: PoolTabsProps) => {
   const handleCTAPositionSuccess = useCallback(() => {
     refetchAllPools();
     refetchAllPositions();
-  }, [refetchAllPools, refetchAllPositions]);
+    refetchCpmmRaydium();
+  }, [refetchAllPools, refetchAllPositions, refetchCpmmRaydium]);
 
   if (activeTab === Tab.DEPOSIT) {
     return (
@@ -78,12 +79,6 @@ export const DepositCPMMDrawer = ({
   selectedPool,
 }: DepositCPMMDrawerProps) => {
   const [activeTab, setActiveTab] = useState(Tab.DEPOSIT);
-  const { connection } = useConnection();
-  const wallet = useAnchorWallet();
-
-  // Initialize Raydium SDK
-  const { data: raydium } = useDoxxSDK({ connection, wallet });
-
   return (
     <Drawer open={isOpen} onOpenChange={onOpenChange} direction="right">
       <DrawerContent
@@ -109,11 +104,7 @@ export const DepositCPMMDrawer = ({
           </DrawerTitle>
         </DrawerHeader>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <PoolTabs
-            activeTab={activeTab}
-            selectedPool={selectedPool}
-            raydium={raydium}
-          />
+          <PoolTabs activeTab={activeTab} selectedPool={selectedPool} />
         </div>
       </DrawerContent>
     </Drawer>
