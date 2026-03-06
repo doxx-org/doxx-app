@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { getAccount } from "@solana/spl-token";
+import { useMemo } from "react";
+import { unpackAccount } from "@solana/spl-token";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useQuery } from "@tanstack/react-query";
 import { BN } from "bn.js";
@@ -17,7 +17,6 @@ import { useGetCPMMPools } from "./useGetCPMMPools";
 import { useProvider } from "./useProvider";
 
 export function useGetAllPools() {
-  const [isLoading, setIsLoading] = useState(true);
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
   const provider = useProvider({ connection, wallet });
@@ -73,8 +72,26 @@ export function useGetAllPools() {
     refetch: refetchAllTokenProfiles,
   } = useGetAllTokenInfos({ poolTokens });
 
+  // Stable fingerprints so the query reruns when the pool set changes
+  const cpmmPoolIds = useMemo(
+    () =>
+      cpmmPoolsData
+        ?.map((p) => p.poolId.toBase58())
+        .sort()
+        .join(",") ?? "",
+    [cpmmPoolsData],
+  );
+  const clmmPoolIds = useMemo(
+    () =>
+      clmmPoolsData
+        ?.map((p) => p.poolId.toBase58())
+        .sort()
+        .join(",") ?? "",
+    [clmmPoolsData],
+  );
+
   const result = useQuery({
-    queryKey: ["getAllPools"],
+    queryKey: ["getAllPools", cpmmPoolIds, clmmPoolIds],
     queryFn: async (): Promise<Pool[] | undefined> => {
       const pools: Pool[] = [];
       // Below this USD threshold the pool is effectively empty (dust reserves).
@@ -127,8 +144,39 @@ export function useGetAllPools() {
       //   return undefined;
       // };
 
+      // Batch-fetch every vault across all pools in a single RPC round-trip.
+      const cpmmPools = cpmmPoolsData ?? [];
+      const clmmPools = clmmPoolsData ?? [];
+
+      const allVaultAddresses = [
+        ...cpmmPools.flatMap((p) => [
+          p.poolState.token0Vault,
+          p.poolState.token1Vault,
+        ]),
+        ...clmmPools.flatMap((p) => [
+          p.poolState.tokenVault0,
+          p.poolState.tokenVault1,
+        ]),
+      ];
+
+      const clmmVaultOffset = cpmmPools.length * 2;
+
+      let allVaultInfos: Awaited<
+        ReturnType<typeof connection.getMultipleAccountsInfo>
+      >[number][] = new Array(allVaultAddresses.length).fill(null);
+
+      try {
+        allVaultInfos = await connection.getMultipleAccountsInfo(
+          allVaultAddresses,
+          "confirmed",
+        );
+      } catch {
+        // allVaultInfos stays null-filled; reserves will be 0
+      }
+
       // CPMM: price from vault reserves
-      for (const poolData of cpmmPoolsData ?? []) {
+      for (let i = 0; i < cpmmPools.length; i++) {
+        const poolData = cpmmPools[i];
         const { poolState, ammConfig } = poolData;
 
         const token0Profile = allTokenProfiles?.find(
@@ -141,32 +189,35 @@ export function useGetAllPools() {
         let priceToken1PerToken0 = 0;
         let reserve0Human = 0;
         let reserve1Human = 0;
+
         try {
-          const [vault0Account, vault1Account] = await Promise.all([
-            getAccount(connection, poolState.token0Vault),
-            getAccount(connection, poolState.token1Vault),
-          ]);
-          const reserve0 = new BN(vault0Account.amount.toString())
-            .sub(poolState.protocolFeesToken0)
-            .sub(poolState.fundFeesToken0)
-            .sub(
-              poolState.enableCreatorFee ? poolState.creatorFeesToken0 : ZERO,
-            );
-          const reserve1 = new BN(vault1Account.amount.toString())
-            .sub(poolState.protocolFeesToken1)
-            .sub(poolState.fundFeesToken1)
-            .sub(
-              poolState.enableCreatorFee ? poolState.creatorFeesToken1 : ZERO,
-            );
-          if (reserve0.gt(ZERO) && reserve1.gt(ZERO)) {
-            const dec0 = poolState.mint0Decimals;
-            const dec1 = poolState.mint1Decimals;
-            reserve0Human = reserve0.toNumber() / 10 ** dec0;
-            reserve1Human = reserve1.toNumber() / 10 ** dec1;
-            priceToken1PerToken0 = reserve1Human / reserve0Human;
+          const info0 = allVaultInfos[i * 2];
+          const info1 = allVaultInfos[i * 2 + 1];
+          if (info0 && info1) {
+            const vault0Account = unpackAccount(poolState.token0Vault, info0);
+            const vault1Account = unpackAccount(poolState.token1Vault, info1);
+            const reserve0 = new BN(vault0Account.amount.toString())
+              .sub(poolState.protocolFeesToken0)
+              .sub(poolState.fundFeesToken0)
+              .sub(
+                poolState.enableCreatorFee ? poolState.creatorFeesToken0 : ZERO,
+              );
+            const reserve1 = new BN(vault1Account.amount.toString())
+              .sub(poolState.protocolFeesToken1)
+              .sub(poolState.fundFeesToken1)
+              .sub(
+                poolState.enableCreatorFee ? poolState.creatorFeesToken1 : ZERO,
+              );
+            if (reserve0.gt(ZERO) && reserve1.gt(ZERO)) {
+              const dec0 = poolState.mint0Decimals;
+              const dec1 = poolState.mint1Decimals;
+              reserve0Human = reserve0.toNumber() / 10 ** dec0;
+              reserve1Human = reserve1.toNumber() / 10 ** dec1;
+              priceToken1PerToken0 = reserve1Human / reserve0Human;
+            }
           }
         } catch {
-          // leave 0 on vault fetch error
+          // leave 0 on vault parse error
         }
 
         const priceToken0PerToken1 =
@@ -209,7 +260,8 @@ export function useGetAllPools() {
       }
 
       // CLMM: price from sqrtPriceX64
-      for (const poolData of clmmPoolsData ?? []) {
+      for (let i = 0; i < clmmPools.length; i++) {
+        const poolData = clmmPools[i];
         const { poolState, ammConfig } = poolData;
 
         const token0Profile = allTokenProfiles?.find(
@@ -242,25 +294,28 @@ export function useGetAllPools() {
 
         let tvl = 0;
         try {
-          const [vault0Account, vault1Account] = await Promise.all([
-            getAccount(connection, poolState.tokenVault0),
-            getAccount(connection, poolState.tokenVault1),
-          ]);
-          const reserve0 = new BN(vault0Account.amount.toString())
-            .sub(new BN(poolState.protocolFeesToken0.toString()))
-            .sub(new BN(poolState.fund_fees_token_0.toString()));
-          const reserve1 = new BN(vault1Account.amount.toString())
-            .sub(new BN(poolState.protocolFeesToken1.toString()))
-            .sub(new BN(poolState.fund_fees_token_1.toString()));
-          if (reserve0.gten(0) && reserve1.gten(0)) {
-            const reserve0Human =
-              reserve0.toNumber() / 10 ** poolState.mintDecimals0;
-            const reserve1Human =
-              reserve1.toNumber() / 10 ** poolState.mintDecimals1;
-            tvl = reserve0Human * bestPrice0Usd + reserve1Human * bestPrice1Usd;
+          const info0 = allVaultInfos[clmmVaultOffset + i * 2];
+          const info1 = allVaultInfos[clmmVaultOffset + i * 2 + 1];
+          if (info0 && info1) {
+            const vault0Account = unpackAccount(poolState.tokenVault0, info0);
+            const vault1Account = unpackAccount(poolState.tokenVault1, info1);
+            const reserve0 = new BN(vault0Account.amount.toString())
+              .sub(new BN(poolState.protocolFeesToken0.toString()))
+              .sub(new BN(poolState.fund_fees_token_0.toString()));
+            const reserve1 = new BN(vault1Account.amount.toString())
+              .sub(new BN(poolState.protocolFeesToken1.toString()))
+              .sub(new BN(poolState.fund_fees_token_1.toString()));
+            if (reserve0.gten(0) && reserve1.gten(0)) {
+              const reserve0Human =
+                reserve0.toNumber() / 10 ** poolState.mintDecimals0;
+              const reserve1Human =
+                reserve1.toNumber() / 10 ** poolState.mintDecimals1;
+              tvl =
+                reserve0Human * bestPrice0Usd + reserve1Human * bestPrice1Usd;
+            }
           }
         } catch {
-          // leave tvl at 0 on vault fetch error
+          // leave tvl at 0 on vault parse error
         }
 
         pools.push({
@@ -335,18 +390,18 @@ export function useGetAllPools() {
     refetchOnMount: true,
   });
 
-  useEffect(() => {
-    if (result.isFetched) {
-      // eslint-disable-next-line
-      setIsLoading(false);
-    }
-  }, [result.isFetched]);
+  // Loading until all deps have loaded and the aggregated query has completed at least once
+  const isLoading =
+    isLoadingCpmmPools ||
+    isLoadingClmmPools ||
+    isLoadingAllTokenProfiles ||
+    isLoadingPrices ||
+    !result.isFetched;
 
   return {
     data: result.data,
     isLoading,
     refetch: () => {
-      setIsLoading(true);
       refetchCpmmPoolStates();
       refetchClmmPoolStates();
       refetchAllTokenProfiles();

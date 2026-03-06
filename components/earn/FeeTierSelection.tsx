@@ -1,122 +1,14 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { getFeeTiers } from "@/lib/config/feeTier";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils";
-
-// Fee tier configuration matching the AMM program's config indexes
-export const CLMM_FEE_TIERS = [
-  // {
-  //   index: 0,
-  //   fee: 0.25,
-  //   label: (
-  //     <div className="flex flex-row items-center gap-1">
-  //       <span>0.25% fee</span>
-  //       <span className={cn(text.sb3(), "text-green")}>(default)</span>
-  //     </div>
-  //   ),
-  //   description: "For testing purposes",
-  // },
-  {
-    index: 1,
-    fee: 0.3,
-    label: "0.3% fee",
-    description: "Best for very stable pairs",
-  },
-  {
-    index: 2,
-    fee: 0.35,
-    label: "0.35% fee",
-    description: "Best for stable pairs",
-    enabled: false,
-  },
-  // { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
-  // {
-  //   index: 4,
-  //   fee: 1.0,
-  //   label: "1.0% fee",
-  //   description: "Best for exotic pairs",
-  // },
-];
-
-export const CPMM_FEE_TIERS = [
-  {
-    index: 0,
-    fee: 0.25,
-    label: (
-      <div className="flex flex-row items-center gap-1">
-        <span>0.25% fee</span>
-        <span className={cn(text.sb3(), "text-green")}>(default)</span>
-      </div>
-    ),
-    description: "For testing purposes",
-  },
-  {
-    index: 1,
-    fee: 0.3,
-    label: "0.3% fee",
-    description: "Best for very stable pairs",
-  },
-  {
-    index: 2,
-    fee: 0.35,
-    label: "0.35% fee",
-    description: "Best for stable pairs",
-    enabled: false,
-  },
-  // { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
-  // {
-  //   index: 4,
-  //   fee: 1.0,
-  //   label: "1.0% fee",
-  //   description: "Best for exotic pairs",
-  // },
-];
-
-export const getFeeTiers = (feeType: "clmm" | "cpmm") => {
-  if (feeType === "clmm") {
-    return CLMM_FEE_TIERS;
-  }
-  return CPMM_FEE_TIERS;
-};
-
-// export const FEE_TIERS = [
-// {
-//   index: 0,
-//   fee: 0.25,
-//   label: (
-//     <div className="flex flex-row items-center gap-1">
-//       <span>0.25% fee</span>
-//       <span className={cn(text.sb3(), "text-green")}>(default)</span>
-//     </div>
-//   ),
-//   description: "For testing purposes",
-// },
-// {
-//   index: 1,
-//   fee: 0.3,
-//   label: "0.3% fee",
-//   description: "Best for very stable pairs",
-// },
-// {
-//   index: 2,
-//   fee: 0.35,
-//   label: "0.35% fee",
-//   description: "Best for stable pairs",
-//   enabled: false,
-// },
-// { index: 3, fee: 0.3, label: "0.3% fee", description: "Best for most pairs" },
-// {
-//   index: 4,
-//   fee: 1.0,
-//   label: "1.0% fee",
-//   description: "Best for exotic pairs",
-// },
-// ];
+import { PoolType } from "./v2/types";
 
 interface IFeeTierSelectionProps {
   selectedFeeIndex: number;
   onSelectFeeIndex: (feeIndex: number) => void;
-  poolType: "clmm" | "cpmm";
+  poolType: PoolType;
 }
 
 export const FeeTierSelection = ({
@@ -155,8 +47,10 @@ export const FeeTierSelection = ({
           <span>Select a fee tier </span>
           <span className={cn(text.sb3(), "text-green")}>
             (
-            {feeTiers.find((tier) => tier.index === selectedFeeIndex)?.fee ??
-              "--"}
+            {feeTiers.find((tier) => {
+              console.log("🚀 ~ selectedFeeIndex:", selectedFeeIndex);
+              return tier.index === selectedFeeIndex;
+            })?.fee ?? "--"}
             %)
           </span>
         </div>
@@ -192,7 +86,16 @@ export const FeeTierSelection = ({
             >
               <div className="flex w-full items-center justify-between">
                 <span className={cn(text.b3(), "font-semibold text-white")}>
-                  {tier.label}
+                  {tier.default ? (
+                    <div className="flex flex-row items-center gap-1">
+                      <span>{tier.label}</span>
+                      <span className={cn(text.sb3(), "text-green")}>
+                        (default)
+                      </span>
+                    </div>
+                  ) : (
+                    tier.label
+                  )}
                 </span>
                 <div
                   className={cn(

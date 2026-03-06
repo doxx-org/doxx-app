@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { BN } from "@coral-xyz/anchor";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { getDefaultFeeIndex, getFeeTiers } from "@/lib/config/feeTier";
 import { TokenProfile, solana } from "@/lib/config/tokens";
 import { BPS } from "@/lib/constants";
 import {
@@ -21,8 +22,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../../ui/dialog";
-import { FeeTierSelection, getFeeTiers } from "../../../FeeTierSelection";
-import { PriceMode } from "../../types";
+import { FeeTierSelection } from "../../../FeeTierSelection";
+import { PoolType, PriceMode } from "../../types";
 import { CLMMPriceRange } from "../CLMMPriceRange";
 import { DepositCLMMPanel } from "../DepositCLMMPanel";
 import { CreateCLMMPoolButton } from "./CreateCLMMPoolButton";
@@ -41,7 +42,7 @@ interface CreateCLMMPoolDialogProps {
 // }
 
 const tokenA = solana;
-const feeTiers = getFeeTiers("clmm");
+const feeTiers = getFeeTiers(PoolType.CLMM);
 
 export const CreateCLMMPoolDialog = ({
   isOpen,
@@ -62,7 +63,9 @@ export const CreateCLMMPoolDialog = ({
   //   SelectTokenType.TOKEN_A,
   // );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
-  const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
+  const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(
+    getDefaultFeeIndex(PoolType.CLMM) ?? 0,
+  );
   const [tokenALoading, _setTokenALoading] = useState(false);
   const [tokenBLoading, _setTokenBLoading] = useState(false);
 
@@ -237,7 +240,7 @@ export const CreateCLMMPoolDialog = ({
                 <FeeTierSelection
                   selectedFeeIndex={selectedFeeIndex}
                   onSelectFeeIndex={setSelectedFeeIndex}
-                  poolType="clmm"
+                  poolType={PoolType.CLMM}
                 />
                 {/* Full / Custom price range selection */}
                 <div className="flex flex-col gap-7">

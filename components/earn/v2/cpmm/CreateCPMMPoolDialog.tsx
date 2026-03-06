@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { BN } from "bn.js";
+import { getDefaultFeeIndex, getFeeTiers } from "@/lib/config/feeTier";
 import { TokenProfile, solana } from "@/lib/config/tokens";
+import { BPS } from "@/lib/constants";
 import {
   BalanceMapByMint,
   CPMMPoolStateWithConfig,
@@ -18,8 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../../ui/dialog";
-import { FeeTierSelection, getFeeTiers } from "../../FeeTierSelection";
+import { FeeTierSelection } from "../../FeeTierSelection";
 import { DepositLPPanel } from "../DepositLPPanel";
+import { PoolType } from "../types";
 import { CreatePoolButton } from "./CreateCPMMPoolButton";
 
 interface CreateCPMMPoolDialogProps {
@@ -35,7 +38,7 @@ enum SelectTokenType {
   TOKEN_B,
 }
 
-const feeTiers = getFeeTiers("cpmm");
+const feeTiers = getFeeTiers(PoolType.CPMM);
 const tokenA = solana;
 
 export const CreateCPMMPoolDialog = ({
@@ -54,7 +57,9 @@ export const CreateCPMMPoolDialog = ({
     SelectTokenType.TOKEN_A,
   );
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
-  const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(0);
+  const [selectedFeeIndex, setSelectedFeeIndex] = useState<number>(
+    getDefaultFeeIndex(PoolType.CPMM) ?? 0,
+  );
 
   const { data: prices } = useAllPrices();
 
@@ -125,10 +130,21 @@ export const CreateCPMMPoolDialog = ({
           (c.poolState.token1Mint.toString() === tokenA.address &&
             c.poolState.token0Mint.toString() === tokenB.address)) &&
         c.ammConfig.tradeFeeRate.eq(
-          new BN(feeTiers[selectedFeeIndex].fee * 100),
+          new BN(feeTiers[selectedFeeIndex].fee * BPS),
         ),
     );
   }, [poolsData, tokenB, selectedFeeIndex]);
+
+  const [balanceA, balanceB] = useMemo(() => {
+    if (!splBalances) {
+      return [0, 0];
+    }
+
+    return [
+      splBalances[tokenA.address]?.amount ?? 0,
+      tokenB ? (splBalances[tokenB.address]?.amount ?? 0) : 0,
+    ];
+  }, [tokenA, tokenB, splBalances]);
 
   return (
     <>
@@ -228,7 +244,7 @@ export const CreateCPMMPoolDialog = ({
                 <FeeTierSelection
                   selectedFeeIndex={selectedFeeIndex}
                   onSelectFeeIndex={setSelectedFeeIndex}
-                  poolType="cpmm"
+                  poolType={PoolType.CPMM}
                 />
               </div>
             </div>
@@ -239,6 +255,8 @@ export const CreateCPMMPoolDialog = ({
                 tokenB={tokenB}
                 amountA={amountA}
                 amountB={amountB}
+                balanceA={balanceA}
+                balanceB={balanceB}
                 onSelectTokenA={() => {}}
                 // onSelectTokenA={setTokenA}
                 onSelectTokenB={setTokenB}
