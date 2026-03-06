@@ -3,8 +3,8 @@ import {
   solayer,
   solayerUSD,
   ssol,
-  token1,
-  token2,
+  // token1,
+  // token2,
   usdc,
 } from "./tokenProfile";
 import { TokenProfile } from "./type";
@@ -18,8 +18,8 @@ export const knownTokenProfiles: TokenProfile[] = [
   solayer,
   solayerUSD,
   ssol,
-  token1,
-  token2,
+  // token1,
+  // token2,
 ];
 
 export const defaultSwapTokens: TokenProfile[] = [solana, solayer];

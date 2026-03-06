@@ -4,6 +4,7 @@ import {
   keepPreviousData,
   useQuery,
 } from "@tanstack/react-query";
+import { hiddenTokenAddresses } from "@/lib/config/hidden";
 import { DoxxClmmIdl } from "@/lib/idl";
 import { CLMMPoolStateWithConfig } from "./types";
 
@@ -86,7 +87,12 @@ export function useGetCLMMPools(
             observationState,
           };
         })
-        .filter((c) => c !== undefined);
+        .filter((c) => c !== undefined)
+        .filter(
+          (c) =>
+            !hiddenTokenAddresses.includes(c.poolState.tokenMint0.toString()) &&
+            !hiddenTokenAddresses.includes(c.poolState.tokenMint1.toString()),
+        );
 
       return allPoolStatesData;
     },

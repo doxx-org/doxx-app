@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import { hiddenTokenAddresses } from "@/lib/config/hidden";
 import { RawTokenProfile, knownTokenProfiles } from "../config/tokens";
 import { PoolToken } from "../hooks/chain/types";
 
@@ -14,9 +15,14 @@ export function mapPoolTokenToProfiles(
   poolTokens: PoolToken[],
   rawTokenProfiles: RawTokenProfile[] | undefined,
 ): RawTokenProfile[] {
-  // get all token profiles from pool states
-  const allTokenProfiles = poolTokens.flatMap((p) => {
+  const filteredPoolTokens = poolTokens.filter(
+    (p) =>
+      !hiddenTokenAddresses.includes(p.mint0Address) &&
+      !hiddenTokenAddresses.includes(p.mint1Address),
+  );
 
+  // get all token profiles from pool states
+  const allTokenProfiles = filteredPoolTokens.flatMap((p) => {
     const token0Profile: RawTokenProfile = {
       address: p.mint0Address,
       decimals: p.mint0Decimals,
@@ -30,6 +36,10 @@ export function mapPoolTokenToProfiles(
     return [token0Profile, token1Profile];
   });
 
+  const filteredRawTokenProfiles = rawTokenProfiles?.filter(
+    (p) => !hiddenTokenAddresses.includes(p.address),
+  );
+
   // merge with known token profiles
   const mergedTokenProfiles = [
     ...knownTokenProfiles.map((p) => ({
@@ -37,7 +47,7 @@ export function mapPoolTokenToProfiles(
       decimals: p.decimals,
     })),
     ...allTokenProfiles,
-    ...(rawTokenProfiles ?? []),
+    ...(filteredRawTokenProfiles ?? []),
   ];
 
   // filter out invalid token profiles

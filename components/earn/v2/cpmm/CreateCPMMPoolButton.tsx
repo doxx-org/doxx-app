@@ -3,7 +3,6 @@ import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { toast } from "sonner";
 import { CreatePoolSuccessToast } from "@/components/toast/CreatePool";
-import { getFeeTiers } from "@/lib/config/feeTier";
 import { TokenProfile } from "@/lib/config/tokens";
 import { useCreateCPMMPool } from "@/lib/hooks/chain/useCreateCPMMPool";
 import { useDoxxCpmmProgram } from "@/lib/hooks/chain/useDoxxCpmmProgram";
@@ -18,9 +17,6 @@ import {
 import { cn } from "@/lib/utils/style";
 import { Button } from "../../../ui/button";
 import { ConnectButtonWrapper } from "../../../wallet/ConnectButtonWrapper";
-import { PoolType } from "../types";
-
-const feeTiers = getFeeTiers(PoolType.CPMM);
 
 interface CreatePoolButtonProps {
   tokenA: TokenProfile | null;

@@ -1,5 +1,10 @@
 import { Program } from "@coral-xyz/anchor";
-import { keepPreviousData, UseQueryResult, useQuery } from "@tanstack/react-query";
+import {
+  UseQueryResult,
+  keepPreviousData,
+  useQuery,
+} from "@tanstack/react-query";
+import { hiddenTokenAddresses } from "@/lib/config/hidden";
 import { DoxxCpmmIdl } from "@/lib/idl";
 import { CPMMPoolStateWithConfig } from "./types";
 
@@ -62,8 +67,8 @@ export function useGetCPMMPools(
       );
 
       // combine pool states, amm configs and observation states
-      const allPoolStatesData: CPMMPoolStateWithConfig[] = allPoolStates.map(
-        (poolState) => {
+      const allPoolStatesData: CPMMPoolStateWithConfig[] = allPoolStates
+        .map((poolState) => {
           const ammConfig = ammConfigByAddress.get(
             poolState.account.ammConfig.toBase58(),
           );
@@ -81,8 +86,13 @@ export function useGetCPMMPools(
             ammConfig,
             observationState,
           };
-        },
-      ).filter(c => c !== undefined);
+        })
+        .filter((c) => c !== undefined)
+        .filter(
+          (c) =>
+            !hiddenTokenAddresses.includes(c.poolState.token0Mint.toString()) &&
+            !hiddenTokenAddresses.includes(c.poolState.token1Mint.toString()),
+        );
 
       return allPoolStatesData;
     },

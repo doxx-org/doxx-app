@@ -11,6 +11,7 @@ import {
   PublicKey,
   RpcResponseAndContext,
 } from "@solana/web3.js";
+import { hiddenTokenAddresses } from "@/lib/config/hidden";
 import { TokenProfile } from "../config/tokens";
 import { BalanceMapByMint, SplBalance } from "../hooks/chain/types";
 import { mintSummaryCache } from "./storage";
@@ -156,11 +157,18 @@ export async function getTokenAccountsByOwnerAllTokenProgramsRaw(
     }),
   ]);
 
+  const filteredLegacy = legacy.value.filter(
+    (v) => !hiddenTokenAddresses.includes(v.pubkey.toString()),
+  );
+  const filteredToken2022 = token2022.value.filter(
+    (v) => !hiddenTokenAddresses.includes(v.pubkey.toString()),
+  );
+
   return {
     context: legacy.context,
     value: [
-      ...legacy.value.map((v) => ({ ...v, programId: TOKEN_PROGRAM_ID })),
-      ...token2022.value.map((v) => ({
+      ...filteredLegacy.map((v) => ({ ...v, programId: TOKEN_PROGRAM_ID })),
+      ...filteredToken2022.map((v) => ({
         ...v,
         programId: TOKEN_2022_PROGRAM_ID,
       })),
