@@ -115,28 +115,28 @@ export const CreatePoolButton = ({
         doxxAmmProgram.programId,
       );
 
-      console.log(
-        "Using AMM config index:",
-        selectedFeeIndex,
-        "Address:",
-        ammConfig.toBase58(),
-      );
+      // console.log(
+      //   "Using AMM config index:",
+      //   selectedFeeIndex,
+      //   "Address:",
+      //   ammConfig.toBase58(),
+      // );
 
       // Convert amounts to BN with proper decimals
       const initAmount0 = parseAmountBN(amountA, tokenA.decimals);
       const initAmount1 = parseAmountBN(amountB, tokenB.decimals);
 
-      console.log("Creating pool with:", {
-        tokenA: tokenA.symbol,
-        tokenB: tokenB.symbol,
-        amountA,
-        amountB,
-        feeIndex: selectedFeeIndex,
-        feeTier: feeTiers[selectedFeeIndex].fee + "%",
-        ammConfig: ammConfig.toBase58(),
-        initAmount0: initAmount0.toString(),
-        initAmount1: initAmount1.toString(),
-      });
+      // console.log("Creating pool with:", {
+      //   tokenA: tokenA.symbol,
+      //   tokenB: tokenB.symbol,
+      //   amountA,
+      //   amountB,
+      //   feeIndex: selectedFeeIndex,
+      //   feeTier: feeTiers[selectedFeeIndex].fee + "%",
+      //   ammConfig: ammConfig.toBase58(),
+      //   initAmount0: initAmount0.toString(),
+      //   initAmount1: initAmount1.toString(),
+      // });
 
       await createPool({
         ammConfig,

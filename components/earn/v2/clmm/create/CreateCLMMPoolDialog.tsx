@@ -110,7 +110,8 @@ export const CreateCLMMPoolDialog = ({
   // };
 
   const isPoolExists = useMemo(() => {
-    if (!tokenA || !tokenB || !poolsData) {
+    const feeTier = feeTiers.find((tier) => tier.index === selectedFeeIndex);
+    if (!tokenA || !tokenB || !poolsData || !feeTier) {
       return undefined;
     }
 
@@ -121,7 +122,7 @@ export const CreateCLMMPoolDialog = ({
           (c.poolState.tokenMint1.toString() === tokenA.address &&
             c.poolState.tokenMint0.toString() === tokenB.address)) &&
         new BN(c.ammConfig.tradeFeeRate.toString()).eq(
-          new BN(feeTiers[selectedFeeIndex].fee * BPS),
+          new BN(feeTier.fee * BPS),
         )
       );
     });

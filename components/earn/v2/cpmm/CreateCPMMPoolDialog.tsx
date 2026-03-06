@@ -121,7 +121,8 @@ export const CreateCPMMPoolDialog = ({
   }, [poolsData, tokenB]);
 
   const isPoolExists = useMemo(() => {
-    if (!tokenA || !tokenB || !poolsData) {
+    const feeTier = feeTiers.find((tier) => tier.index === selectedFeeIndex);
+    if (!tokenA || !tokenB || !poolsData || !feeTier) {
       return undefined;
     }
 
@@ -131,9 +132,7 @@ export const CreateCPMMPoolDialog = ({
           c.poolState.token1Mint.toString() === tokenB.address) ||
           (c.poolState.token1Mint.toString() === tokenA.address &&
             c.poolState.token0Mint.toString() === tokenB.address)) &&
-        c.ammConfig.tradeFeeRate.eq(
-          new BN(feeTiers[selectedFeeIndex].fee * BPS),
-        ),
+        c.ammConfig.tradeFeeRate.eq(new BN(feeTier.fee * BPS)),
     );
   }, [poolsData, tokenB, selectedFeeIndex]);
 
