@@ -35,7 +35,7 @@ export function MobileGuard({ children }: { children: React.ReactNode }) {
           </h1>
           <p className="font-plus-jakarta-sans max-w-xs text-sm leading-relaxed text-[#F4F4F4]/60">
             DoxX is currently only available on desktop. Please visit us on your
-            computer for the full experience.
+            desktop browser for the full experience.
           </p>
         </div>
 
