@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Discord from "@/assets/icons/socials/discord.svg";
+// import Discord from "@/assets/icons/socials/discord.svg";
 import X from "@/assets/icons/socials/x.svg";
 import { useProtocolStats } from "@/lib/hooks/useProtocolStats";
 import { text } from "@/lib/text";
@@ -28,14 +28,14 @@ export function ProModeFooter() {
     <div className="bg-background fixed bottom-0 z-50 max-h-[3.0625rem] w-full">
       <div className="flex items-center justify-between border-t border-gray-800 px-8 py-3">
         <div className="flex items-center gap-8">
-          <Link href="https://x.com/doxx_exchange" target="_blank">
+          <Link href="https://x.com/DoxXExchange" target="_blank">
             <X />
           </Link>
-          <Link href="https://discord.gg/doxx" target="_blank">
+          {/* <Link href="https://discord.gg/doxx" target="_blank">
             <Discord />
-          </Link>
+          </Link> */}
           <Link
-            href="/docs"
+            href="https://doxx-exchange.gitbook.io/docs"
             target="_blank"
             className={cn(text.sb3(), "leading-none text-gray-600")}
           >

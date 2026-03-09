@@ -48,6 +48,18 @@ interface MultipleMenuItemProps extends Omit<SingleNavigationItem, "href"> {
   subItems?: SingleNavigationItem[];
 }
 
+const InfiniSVMLogo = () => {
+  return (
+    <div className="flex items-center justify-center gap-2 align-middle">
+      <span className="relative flex h-3 w-3">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
+      </span>
+      <span className={cn(text.sbx2())}>InfiniSVM Devnet</span>
+    </div>
+  );
+};
+
 const SingleMenuItem = ({
   name,
   href,
@@ -151,6 +163,7 @@ export function Navbar() {
           </div>
 
           <div className="flex items-center gap-4">
+            <InfiniSVMLogo />
             {/* <TradingToggle /> */}
             <ConnectButtonWrapper className={cn(text.hsb3())} />
           </div>
