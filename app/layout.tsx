@@ -6,7 +6,7 @@ import {
   Poltawski_Nowy,
   Roboto_Mono,
 } from "next/font/google";
-import { AppFooter, Navbar } from "@/components/layout";
+import { AppFooter, MobileGuard, Navbar } from "@/components/layout";
 import { QueryProvider } from "@/components/query-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -49,10 +49,12 @@ export default function RootLayout({
           <QueryProvider>
             <RaydiumProvider>
               <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-                <Navbar />
-                <main className="flex min-h-screen flex-col">{children}</main>
-                <AppFooter />
-                <Toaster />
+                <MobileGuard>
+                  <Navbar />
+                  <main className="flex min-h-screen flex-col">{children}</main>
+                  <AppFooter />
+                  <Toaster />
+                </MobileGuard>
               </ThemeProvider>
             </RaydiumProvider>
           </QueryProvider>
