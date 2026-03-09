@@ -51,11 +51,11 @@ interface MultipleMenuItemProps extends Omit<SingleNavigationItem, "href"> {
 const InfiniSVMLogo = () => {
   return (
     <div className="flex items-center justify-center gap-2 align-middle">
-      <span className="relative flex h-3 w-3">
+      <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-        <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
       </span>
-      <span className={cn(text.sbx2())}>InfiniSVM Devnet</span>
+      <span className={cn(text.sbx3())}>InfiniSVM Devnet</span>
     </div>
   );
 };
@@ -84,7 +84,7 @@ const MultipleMenuItem = ({
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "hover:text-green flex flex-row items-center gap-0.5",
+          "hover:text-green flex flex-row items-center gap-0.5 pl-0",
           subItems?.some((subItem) => pathname === subItem.href)
             ? "text-green"
             : "",
@@ -123,8 +123,18 @@ export function Navbar() {
     <nav className="bg-background text-it5 fixed top-0 z-50 max-h-14 w-full border-b border-gray-800">
       <div className="mx-auto w-full px-6 py-2">
         <div className="flex items-center justify-between gap-12">
-          <div className="flex items-center gap-12">
-            <DoxxIcon />
+          <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2">
+              <DoxxIcon />
+              <span
+                className={cn(
+                  text.sbx3(),
+                  "bg-green/20 text-green rounded-[6px] px-2 py-1 text-center",
+                )}
+              >
+                Beta
+              </span>
+            </div>
             {/* Desktop navigation */}
             <div
               className={cn(
