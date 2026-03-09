@@ -109,7 +109,10 @@ function ConnectWalletButton({
               {wallets.map((wallet, index) => (
                 <div
                   key={`${wallet.adapter.name}-${index}`}
-                  className="flex flex-row items-center gap-2.5 p-6 hover:cursor-pointer hover:bg-gray-800"
+                  className={cn(
+                    "flex flex-row items-center gap-2.5 p-6 hover:cursor-pointer hover:bg-gray-800",
+                    text.b2(),
+                  )}
                   onClick={() => {
                     handleConnectWallet(wallet.adapter.name);
                   }}
@@ -120,7 +123,16 @@ function ConnectWalletButton({
                     width={32}
                     height={32}
                   />
-                  {wallet.adapter.name}
+                  {wallet.adapter.name === "Nightly" ? (
+                    <div className="flex items-center gap-2">
+                      {wallet.adapter.name}
+                      <span className={cn(text.b3(), "text-green")}>
+                        {"(Recommended)"}
+                      </span>
+                    </div>
+                  ) : (
+                    wallet.adapter.name
+                  )}
                 </div>
               ))}
             </DialogBody>
