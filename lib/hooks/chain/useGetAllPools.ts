@@ -243,10 +243,10 @@ export function useGetAllPools() {
           poolId: poolData.poolId.toString(),
           fee: ammConfig.tradeFeeRate,
           lpToken: { token1: token0Profile, token2: token1Profile },
-          apr: 0,
+          apr: undefined,
           tvl,
-          dailyVol: 0,
-          dailyVolperTvl: 0,
+          dailyVol: undefined,
+          dailyVolperTvl: undefined,
           reward24h: 0,
           cpmmPoolState: poolState,
           oraclePriceToken1Usd,
@@ -292,7 +292,7 @@ export function useGetAllPools() {
         const bestPrice0Usd = oraclePriceToken1Usd ?? priceToken0Usd;
         const bestPrice1Usd = oraclePriceToken2Usd ?? priceToken1Usd;
 
-        let tvl = 0;
+        let tvl: number | undefined = undefined;
         try {
           const info0 = allVaultInfos[clmmVaultOffset + i * 2];
           const info1 = allVaultInfos[clmmVaultOffset + i * 2 + 1];
@@ -322,10 +322,10 @@ export function useGetAllPools() {
           poolId: poolData.poolId.toString(),
           fee: new BN(ammConfig.tradeFeeRate.toString()),
           lpToken: { token1: token0Profile, token2: token1Profile },
-          apr: 0,
+          apr: undefined,
           tvl,
-          dailyVol: 0,
-          dailyVolperTvl: 0,
+          dailyVol: undefined,
+          dailyVolperTvl: undefined,
           reward24h: 0,
           clmmPoolState: poolState,
           oraclePriceToken1Usd,
@@ -366,7 +366,9 @@ export function useGetAllPools() {
               pool.dailyVol =
                 vol.volumeBase * priceToken1 + vol.volumeQuote * priceToken2;
               pool.dailyVolperTvl =
-                pool.tvl >= MIN_TVL_USD ? (pool.dailyVol / pool.tvl) * 100 : 0;
+                pool.tvl && pool.tvl >= MIN_TVL_USD
+                  ? (pool.dailyVol / pool.tvl) * 100
+                  : undefined;
             }
           }
         }

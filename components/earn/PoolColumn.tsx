@@ -42,7 +42,7 @@ export const createColumns = (
     accessorKey: "apr",
     header: ({ column }) => <SortHeader column={column} header="APR" />,
     cell: ({ row }) => (
-      <NumberRows value={row.original.apr.toString()} displayValue="percent" />
+      <NumberRows value={row.original.apr?.toString()} displayValue="percent" />
     ),
     sortingFn: numericSort,
   },
@@ -51,7 +51,7 @@ export const createColumns = (
     accessorKey: "tvl",
     header: ({ column }) => <SortHeader column={column} header="TVL" />,
     cell: ({ row }) => (
-      <NumberRows value={row.original.tvl.toString()} displayValue="dollar" />
+      <NumberRows value={row.original.tvl?.toString()} displayValue="dollar" />
     ),
     sortingFn: numericSort,
   },
@@ -61,7 +61,7 @@ export const createColumns = (
     header: ({ column }) => <SortHeader column={column} header="Volume 24h" />,
     cell: ({ row }) => (
       <NumberRows
-        value={row.original.dailyVol.toString()}
+        value={row.original.dailyVol?.toString()}
         displayValue="dollar"
       />
     ),
@@ -73,7 +73,7 @@ export const createColumns = (
     header: ({ column }) => <SortHeader column={column} header="1D Vol/TVL" />,
     cell: ({ row }) => (
       <NumberRows
-        value={row.original.dailyVolperTvl.toString()}
+        value={row.original.dailyVolperTvl?.toString()}
         displayValue="percent"
       />
     ),

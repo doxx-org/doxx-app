@@ -22,7 +22,7 @@ export function Pools() {
 
   const filteredPools = useMemo(() => {
     const allPoolsSortedByVolume = allPools?.sort(
-      (a, b) => b.dailyVol - a.dailyVol,
+      (a, b) => (b.dailyVol ?? 0) - (a.dailyVol ?? 0),
     );
     if (!searchValue || searchValue.trim() === "")
       return allPoolsSortedByVolume;

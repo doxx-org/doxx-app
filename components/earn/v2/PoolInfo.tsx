@@ -12,7 +12,7 @@ import { Pool, PoolType } from "./types";
 interface PoolDetail2Props {
   token1: TokenProfile;
   token2: TokenProfile;
-  tvl: number;
+  tvl: number | undefined;
   priceBperA: number;
   reward24h: number;
 }
@@ -57,7 +57,7 @@ interface PoolDetail1Props {
   poolType: PoolType;
   address: string;
   fee: BN;
-  apr: number;
+  apr: number | undefined;
 }
 
 const PoolDetail1 = ({
@@ -130,7 +130,7 @@ const PoolDetail1 = ({
         )}
       >
         <p>APR</p>
-        <p>{apr.toFixed(2)}</p>
+        <p>{apr ? apr.toFixed(2) : "N/A"}</p>
         <p>%</p>
       </div>
     </div>

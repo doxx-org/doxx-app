@@ -71,7 +71,7 @@ export const CPMMDepositTab = ({
     const estimatedYields = selectedPool.reward24h;
 
     return {
-      totalValue: formatNumber(totalValue),
+      totalValue: totalValue ? formatNumber(totalValue) : "N/A",
       estimatedYields: formatNumber(estimatedYields),
     };
   }, [selectedPool]);

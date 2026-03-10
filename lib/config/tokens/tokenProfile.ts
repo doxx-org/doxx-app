@@ -34,7 +34,7 @@ export const solayerUSD: TokenProfile = {
   name: "Solayer USD",
   symbol: TokenSymbol.sUSD,
   address: addressConfig.tokens.solayerUSD,
-  decimals: 6,
+  decimals: 9,
   displayDecimals: 4,
   image: "/coins/susd.svg",
   priceSource: PriceSource.ORACLE,

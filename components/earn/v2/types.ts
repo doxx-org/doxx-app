@@ -19,10 +19,10 @@ export type Pool = {
     token1: TokenProfile;
     token2: TokenProfile;
   };
-  apr: number; // in percentage
-  tvl: number; // in usd
-  dailyVol: number; // in usd
-  dailyVolperTvl: number; // in percentage
+  apr: number | undefined; // in percentage
+  tvl: number | undefined; // in usd
+  dailyVol: number | undefined; // in usd
+  dailyVolperTvl: number | undefined; // in percentage
   reward24h: number; // in usd
   cpmmPoolState?: CPMMPoolState;
   clmmPoolState?: CLMMPoolState;

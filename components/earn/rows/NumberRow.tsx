@@ -3,7 +3,7 @@ export function NumberRows({
   value,
   displayValue,
 }: {
-  value: string;
+  value: string | undefined;
   displayValue: "percent" | "dollar";
 }) {
   return (
@@ -11,10 +11,12 @@ export function NumberRows({
       {displayValue === "dollar" && <p className="text-gray-700">$</p>}
       {/* format value to 2 decimal places and add comma every 3 digits */}
       <p>
-        {Number(value).toLocaleString("en-US", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })}
+        {value
+          ? Number(value).toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          : "N/A"}
       </p>
       {displayValue === "percent" && <p className="text-gray-700">%</p>}
     </div>
