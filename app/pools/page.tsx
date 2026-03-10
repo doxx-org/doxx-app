@@ -88,10 +88,10 @@ export default function Home() {
     setPoolDrawer(PoolType.CLMM);
   };
 
-  const handleOpenCreateCPMMDrawer = () => {
-    setIsCreatePoolOpen(true);
-    setPoolDrawer(PoolType.CPMM);
-  };
+  // const handleOpenCreateCPMMDrawer = () => {
+  //   setIsCreatePoolOpen(true);
+  //   setPoolDrawer(PoolType.CPMM);
+  // };
 
   const handleCTASuccess = useCallback(() => {
     setIsCreatePoolOpen(false);
@@ -143,9 +143,9 @@ export default function Home() {
                   <DropdownMenuItem onClick={handleOpenCreateCLMMPoolDialog}>
                     Create CLMM Pool
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleOpenCreateCPMMDrawer}>
+                  {/* <DropdownMenuItem onClick={handleOpenCreateCPMMDrawer}>
                     Create CPMM Pool
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

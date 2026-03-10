@@ -144,9 +144,9 @@ export const DepositCPMMButton = ({
     const tokenABalance = walletBalances?.[tokenA.address]?.rawAmount ?? 0n;
     const tokenBBalance = walletBalances?.[tokenB.address]?.rawAmount ?? 0n;
 
-    // if (toBN(tokenABalance).lt(amount0) || toBN(tokenBBalance).lt(amount1)) {
-    //   return ["Insufficient Balance", true, undefined];
-    // }
+    if (toBN(tokenABalance).lt(amount0) || toBN(tokenBBalance).lt(amount1)) {
+      return ["Insufficient Balance", true, undefined];
+    }
 
     return ["Deposit", false, handleDeposit];
   }, [

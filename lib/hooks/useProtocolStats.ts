@@ -20,10 +20,10 @@ export function useProtocolStats(): ProtocolStats {
     let fees24h = 0;
 
     for (const pool of pools) {
-      tvl += pool.tvl;
-      volume24h += pool.dailyVol;
+      tvl += pool.tvl ?? 0;
+      volume24h += pool.dailyVol ?? 0;
       const feeRate = pool.fee.toNumber() / BPS;
-      fees24h += pool.dailyVol * feeRate;
+      fees24h += (pool.dailyVol ?? 0) * feeRate;
     }
 
     return { tvl, volume24h, fees24h };

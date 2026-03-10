@@ -103,7 +103,7 @@ export function useBestRouteV2({
         if (isBaseExactIn) {
           const amountIn = parseAmountBN(baseInput, inputToken.decimals);
 
-          const [clmmResult, cpmmResult] = await Promise.allSettled([
+          const [clmmResult, _cpmmResult] = await Promise.allSettled([
             raydium
               ? findBestClmmSwapBaseIn({
                   raydium,
@@ -130,8 +130,9 @@ export function useBestRouteV2({
 
           const clmmQuote =
             clmmResult.status === "fulfilled" ? clmmResult.value : null;
-          const cpmmQuote =
-            cpmmResult.status === "fulfilled" ? cpmmResult.value : null;
+          // const cpmmQuote =
+          //   cpmmResult.status === "fulfilled" ? cpmmResult.value : null;
+          const cpmmQuote = null;
 
           const best = pickBestBaseIn(clmmQuote, cpmmQuote);
           if (!best) throw new Error("No route found");
@@ -141,7 +142,7 @@ export function useBestRouteV2({
         // Base-exact-out: run CLMM and CPMM in parallel, return best
         const amountOut = parseAmountBN(baseInput, outputToken.decimals);
 
-        const [clmmOutResult, cpmmOutResult] = await Promise.allSettled([
+        const [clmmOutResult, _cpmmOutResult] = await Promise.allSettled([
           raydium
             ? findBestClmmSwapBaseOut({
                 raydium,
@@ -168,8 +169,9 @@ export function useBestRouteV2({
 
         const clmmOutQuote =
           clmmOutResult.status === "fulfilled" ? clmmOutResult.value : null;
-        const cpmmOutQuote =
-          cpmmOutResult.status === "fulfilled" ? cpmmOutResult.value : null;
+        const cpmmOutQuote = null;
+        // const cpmmOutQuote =
+        // cpmmOutResult.status === "fulfilled" ? cpmmOutResult.value : null;
 
         const best = pickBestBaseOut(clmmOutQuote, cpmmOutQuote);
         if (!best) throw new Error("No route found");

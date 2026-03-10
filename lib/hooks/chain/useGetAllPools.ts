@@ -8,7 +8,7 @@ import { solana, unknownToken } from "@/lib/config/tokens";
 import { NATIVE_SOL_MINT, SOLANA_PRICE, ZERO } from "@/lib/constants";
 import { calculateCLMMTokenPrices } from "@/lib/utils/calculation";
 import { useOraclePrices } from "../useOraclePrices";
-import { PoolToken } from "./types";
+import { CPMMPoolStateWithConfig, PoolToken } from "./types";
 import { useDoxxClmmProgram } from "./useDoxxClmmProgram";
 import { useDoxxCpmmProgram } from "./useDoxxCpmmProgram";
 import { useGetAllTokenInfos } from "./useGetAllTokenInfos";
@@ -145,7 +145,8 @@ export function useGetAllPools() {
       // };
 
       // Batch-fetch every vault across all pools in a single RPC round-trip.
-      const cpmmPools = cpmmPoolsData ?? [];
+      // const cpmmPools = cpmmPoolsData ?? [];
+      const cpmmPools: CPMMPoolStateWithConfig[] = [];
       const clmmPools = clmmPoolsData ?? [];
 
       const allVaultAddresses = [
