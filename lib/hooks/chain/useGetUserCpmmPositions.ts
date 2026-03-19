@@ -61,7 +61,7 @@ export function useGetUserCPMMPositions(
       );
 
       if (!userWallet || !cpmmPools || cpmmPools.length === 0 || !raydium)
-        return undefined;
+        return [];
 
       const connection = raydium.connection;
 
