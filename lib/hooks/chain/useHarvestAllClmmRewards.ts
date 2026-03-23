@@ -1,7 +1,6 @@
 import { useCallback, useState } from "react";
 import {
   Raydium,
-  TxVersion,
   ClmmInstrument,
   ClmmKeys,
   ClmmPositionLayout,
@@ -111,7 +110,7 @@ async function buildHarvestAllRewardsTx(
             checkCreateATAOwner: false,
           });
         ownerTokenAccountA = account!;
-        instructionParams && txBuilder.addInstruction(instructionParams);
+        if (instructionParams) txBuilder.addInstruction(instructionParams);
       } else {
         const mint = new PublicKey(poolInfo.mintA.address);
         ownerTokenAccountA = raydium.account.getAssociatedTokenAccount(
@@ -148,7 +147,7 @@ async function buildHarvestAllRewardsTx(
             checkCreateATAOwner: false,
           });
         ownerTokenAccountB = account!;
-        instructionParams && txBuilder.addInstruction(instructionParams);
+        if (instructionParams) txBuilder.addInstruction(instructionParams);
       } else {
         const mint = new PublicKey(poolInfo.mintB.address);
         ownerTokenAccountB = raydium.account.getAssociatedTokenAccount(
@@ -190,7 +189,7 @@ async function buildHarvestAllRewardsTx(
             associatedOnly: rewardUseSOLBalance ? false : true,
           });
         ownerRewardAccount = account!;
-        instructionParams && txBuilder.addInstruction(instructionParams);
+        if (instructionParams) txBuilder.addInstruction(instructionParams);
       }
       ownerMintToAccount[itemReward.mint.address] = ownerRewardAccount;
       rewardAccounts.push(ownerRewardAccount!);
