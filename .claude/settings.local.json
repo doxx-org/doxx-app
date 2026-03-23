@@ -7,7 +7,9 @@
       "Bash(grep -r raydium.clmm. /Users/prompt/Documents/side-project/doxx-app/lib --include=*.ts --include=*.tsx)",
       "Bash(find /Users/prompt/Documents/side-project/doxx-app/node_modules/.pnpm/@raydium-io+raydium-sdk-v2@0.2.32-alpha_bufferutil@4.0.9_fastestsmallesttextencoderdeco_f988f8188d03e7512e766c68a8072e98/node_modules/@raydium-io/raydium-sdk-v2 -name *layout* -type f)",
       "Bash(npx next:*)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "Bash(npx tsc:*)",
+      "Bash(git:*)"
     ]
   },
   "hooks": {
