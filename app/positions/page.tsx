@@ -21,7 +21,7 @@ import { IUserCPMMPositionWithValue } from "@/lib/hooks/chain/types";
 import { text } from "@/lib/text";
 import { cn } from "@/lib/utils/style";
 import { toast } from "sonner";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
 import {
   Raydium,
   PositionUtils,
@@ -50,6 +50,7 @@ function useMultipleClmmPoolInfos(
 export default function PositionsPage() {
   const { connection } = useConnection();
   const wallet = useAnchorWallet();
+  const queryClient = useQueryClient();
   const { raydiumQuery, cpmmRaydiumQuery } = useRaydiumContext();
   const raydium = raydiumQuery.data;
   const cpmmRaydium = cpmmRaydiumQuery.data;
@@ -262,6 +263,13 @@ export default function PositionsPage() {
       });
       if (txId) {
         toast.success("Rewards claimed successfully");
+        // Refetch positions and pool infos to update pending yield values
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["userPositionsWithPools"] }),
+          queryClient.invalidateQueries({ queryKey: ["poolInfo"] }),
+        ]);
+      } else {
+        toast.error("Wallet or SDK not ready. Please try again.");
       }
     } catch {
       toast.error("Failed to claim rewards");
