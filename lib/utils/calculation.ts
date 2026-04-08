@@ -3,6 +3,28 @@ import BN from "bn.js";
 import { normalizeBN } from "./number";
 
 /**
+ * Convert a CLMM tick into a human-readable price.
+ *
+ * Composes SqrtPriceMath.getSqrtPriceX64FromTick with calculateCLMMTokenPrices
+ * to go from tick → sqrtPriceX64 → human price.
+ *
+ * Returns priceToken1PerToken0 (how many token1 per 1 token0).
+ */
+export function tickToHumanPrice(
+  tick: number,
+  decimalsToken0: number,
+  decimalsToken1: number,
+): number {
+  const sqrtPriceX64 = SqrtPriceMath.getSqrtPriceX64FromTick(tick);
+  const { priceToken1PerToken0 } = calculateCLMMTokenPrices({
+    sqrtPriceX64,
+    decimalsToken0,
+    decimalsToken1,
+  });
+  return priceToken1PerToken0;
+}
+
+/**
  * Calculate token amounts from liquidity and tick range
  * Based on Uniswap V3 / Raydium CLMM math
  */

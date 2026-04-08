@@ -370,6 +370,14 @@ export function useGetAllPools() {
                 pool.tvl && pool.tvl >= MIN_TVL_USD
                   ? (pool.dailyVol / pool.tvl) * 100
                   : undefined;
+
+              // APR = (dailyVolume * feeRate * 365) / TVL * 100
+              // fee is in BPS (basis points): e.g. 2500 = 0.25%
+              if (pool.tvl && pool.tvl >= MIN_TVL_USD) {
+                const feeRate = pool.fee.toNumber() / 1_000_000;
+                const dailyFees = pool.dailyVol * feeRate;
+                pool.apr = (dailyFees * 365 / pool.tvl) * 100;
+              }
             }
           }
         }

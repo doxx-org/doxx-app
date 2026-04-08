@@ -4,7 +4,6 @@ import { AnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { NATIVE_SOL_MINT } from "@/lib/constants";
-import { DOXX_CLMM_PROGRAM_ID } from "@/lib/idl";
 import {
   PROGRAM_WALLET_UNAVAILABLE_ERROR,
   compareTokenAddressesString,
@@ -100,22 +99,31 @@ export function useDecreaseClmmPosition(
     poolInfo: RawPoolInfo,
     wallet: AnchorWallet,
   ): Promise<string | null> => {
-    // console.log("🎁 Collecting fees and rewards...");
-
     try {
-      const allPoolInfo = { [poolInfo.poolInfo.id]: poolInfo.poolInfo };
-      const allPositions = {
-        [position.positionLayout.nftMint.toBase58()]: [position.positionLayout],
-      };
+      const isSOL =
+        compareTokenAddressesString(
+          poolInfo.poolInfo.mintA.address,
+          NATIVE_SOL_MINT,
+        ) ||
+        compareTokenAddressesString(
+          poolInfo.poolInfo.mintB.address,
+          NATIVE_SOL_MINT,
+        );
 
-      // Use SDK's harvest rewards function
-      const { execute } = await raydium.clmm.harvestAllRewards({
-        allPoolInfo,
-        allPositions,
-        clmmProgram: DOXX_CLMM_PROGRAM_ID,
+      // Use decreaseLiquidity with 0 liquidity to collect fees/rewards.
+      // harvestAllRewards calls Raydium's API for poolKeys which fails
+      // for custom Doxx CLMM pools.
+      const { execute } = await raydium.clmm.decreaseLiquidity({
+        poolInfo: poolInfo.poolInfo,
+        poolKeys: poolInfo.poolKeys,
+        ownerPosition: position.positionLayout,
         ownerInfo: {
-          useSOLBalance: true, // Handle SOL unwrapping
+          useSOLBalance: isSOL,
+          closePosition: false,
         },
+        liquidity: new BN(0),
+        amountMinA: new BN(0),
+        amountMinB: new BN(0),
         txVersion: TxVersion.LEGACY,
         feePayer: wallet.publicKey,
         computeBudgetConfig: {
@@ -124,17 +132,8 @@ export function useDecreaseClmmPosition(
         },
       });
 
-      const { txIds } = await execute({
-        sendAndConfirm: true,
-        sequentially: true,
-      });
-      // console.log("🚀 ~ txIds:", txIds);
-      // Always have only one txId for closing
-      const txId = txIds[0];
+      const { txId } = await execute({ sendAndConfirm: true });
 
-      // console.log("✅ Fees and rewards collected:", txId);
-
-      // Wait for confirmation
       const status = await pollSignatureStatus({
         connection: raydium.connection,
         signature: txId,

@@ -36,6 +36,7 @@ const navigations: NavigationItem[] = [
     name: "Earn",
     subItems: [
       { name: "Pools", href: "/pools" },
+      { name: "Positions", href: "/positions" },
       { name: "Harvest", href: "/harvest", disabled: true },
     ],
   },
